@@ -27,7 +27,6 @@ postal_code = col3.text_input(label="Postal Code")
 
 st.checkbox("ID Verified?")
 
-signature = None
 if rental_type is not None:
     st.divider()
     st.subheader("Payment Information")
@@ -57,6 +56,7 @@ if rental_type is not None:
     st.markdown("insert bunch of conditions here...")
 
     st.markdown("Signature")
+    # pylint: disable=invalid-name
     signature = st_canvas(
         stroke_width=2,
         stroke_color="#1E90FF",

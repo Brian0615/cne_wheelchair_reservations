@@ -1,3 +1,5 @@
+# pylint: disable=not-context-manager
+
 import os
 from typing import List
 
@@ -11,7 +13,9 @@ from common.data_models.device import Device
 
 
 class DataService:
+    """Service class to interact with the PostgreSQL database."""
 
+    # pylint: disable=too-many-arguments
     def __init__(
             self,
             host: str = os.environ["POSTGRES_HOST"],
@@ -28,7 +32,7 @@ class DataService:
         self.db_name = db_name
         self.schema = schema
 
-    def __initialize_handle(self) -> psycopg.Connection:
+    def __initialize_handle(self):
         return psycopg.connect(
             host=self.host,
             port=self.port,
@@ -36,15 +40,6 @@ class DataService:
             password=self.password,
             dbname=self.db_name,
         )
-
-    @staticmethod
-    def __load_sql_query(query_path: str):
-        with open(
-                os.path.join(os.path.dirname(__file__), f"sql/{query_path}"),
-                mode="r",
-                encoding="utf-8",
-        ) as query_file:
-            return query_file.read()
 
     def __form_truncate_query(self, table_name: Table) -> sql.Composed:
         """Form a query to truncate (clear) a table in the database"""
@@ -61,6 +56,7 @@ class DataService:
         )
 
     def get_full_inventory(self):
+        """Get the full inventory of devices from the database."""
         with self.__initialize_handle() as handle:
             with handle.cursor() as cursor:
                 cursor.execute(self.__form_select_all_query(table_name=Table.DEVICES))
@@ -69,7 +65,7 @@ class DataService:
                 return pd.DataFrame(result, columns=col_names)
 
     def set_full_inventory(self, devices: List[Device]):
-
+        """Set the full inventory of devices in the database. Will overwrite any existing inventory"""
         with self.__initialize_handle() as handle:
             # clear everything from existing devices table
             handle.execute(self.__form_truncate_query(table_name=Table.DEVICES))

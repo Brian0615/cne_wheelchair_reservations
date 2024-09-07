@@ -10,6 +10,7 @@ from common.data_models.device import Device
 
 
 def display_inventory(device_type: DeviceType, inventory: pd.DataFrame):
+    """Display the inventory of a device type."""
     st.subheader(f"{device_type} Details")
     location_filter = st.selectbox(
         "Filter by Location",
@@ -33,6 +34,7 @@ def display_inventory(device_type: DeviceType, inventory: pd.DataFrame):
 
 
 def display_inventory_admin(device_type: str, inventory: pd.DataFrame):
+    """Display the inventory of a device type on the admin page."""
     st.subheader(f"{device_type} Inventory")
     updated_inventory = st.data_editor(
         inventory.sort_values(by="id", ascending=True).reset_index(drop=True),
@@ -59,6 +61,7 @@ def display_inventory_admin(device_type: str, inventory: pd.DataFrame):
 
 
 def load_reservations_for_date(date: datetime):
+    """Load mock reservations for a given date."""
     reservations = pd.DataFrame(
         data={
             "name": ["Person A", "Person B", "Person C"],
@@ -74,7 +77,9 @@ def load_reservations_for_date(date: datetime):
     return reservations
 
 
+# noinspection PyTypeChecker
 def create_inventory_chart(inventory: pd.DataFrame):
+    """Create a chart to display the inventory."""
     colour_mapping = {
         DeviceStatus.AVAILABLE: "#49994C",
         DeviceStatus.RENTED: "#E6920B",

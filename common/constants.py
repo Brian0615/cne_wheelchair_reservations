@@ -2,6 +2,7 @@ from enum import StrEnum
 
 
 class DeviceType(StrEnum):
+    """Types of mobility device available for rent"""
     __SCOOTER_DEPOSIT = 100
     __SCOOTER_FEE = 45
     __WHEELCHAIR_DEPOSIT = 50
@@ -12,16 +13,18 @@ class DeviceType(StrEnum):
 
     @classmethod
     def get_fee_amount(cls, device):
+        """Get the rental fee for a given device type"""
         match device:
             case cls.SCOOTER:
                 return DeviceType.__SCOOTER_FEE
             case cls.WHEELCHAIR:
                 return DeviceType.__WHEELCHAIR_FEE
             case _:
-                raise Exception(f"Unrecognized device {device}")
+                raise ValueError(f"Unrecognized device {device}")
 
     @classmethod
     def get_deposit_amount(cls, device):
+        """Get the deposit amount for a given device type"""
         match device:
             case cls.SCOOTER:
                 return DeviceType.__SCOOTER_DEPOSIT
@@ -32,31 +35,20 @@ class DeviceType(StrEnum):
 
 
 class Location(StrEnum):
+    """Rental locations"""
     BLC = "BLC"
     PG = "PG"
 
 
 class PaymentMethod(StrEnum):
+    """Accepted payment methods"""
     CASH = "Cash"
     CREDIT_CARD = "Credit Card"
 
 
 class DeviceStatus(StrEnum):
+    """Status of a mobility device"""
     AVAILABLE = "Available"
     BACKUP = "Backup"
     OUT_OF_SERVICE = "Out of Service"
     RENTED = "Rented"
-
-    @classmethod
-    def status_to_int(cls, status) -> int:
-        match status:
-            case cls.AVAILABLE:
-                return 1
-            case cls.BACKUP:
-                return 2
-            case cls.OUT_OF_SERVICE:
-                return 3
-            case cls.RENTED:
-                return 4
-            case _:
-                raise ValueError(f"Unrecognized status {status}")

@@ -1,8 +1,8 @@
 import streamlit as st
 
 from common.constants import DeviceType
-from src.utils import display_inventory, create_inventory_chart
 from ui.src.data_service import DataService
+from ui.src.utils import display_inventory, create_inventory_chart
 
 st.set_page_config(layout="wide")
 st.header("Inventory")
