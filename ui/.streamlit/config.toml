@@ -1,0 +1,16 @@
+[theme]
+base = "light"
+
+[client]
+toolbarMode = "minimal"
+showSidebarNavigation = true
+
+[server]
+folderWatchBlacklist = [
+    "tests",
+    ".git",
+    ".vscode",
+    ".idea",
+    "tmp",
+    "logs"
+]
