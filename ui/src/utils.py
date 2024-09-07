@@ -7,22 +7,33 @@ from plotly import graph_objects as go
 
 from common.constants import DeviceStatus, Location, DeviceType
 from common.data_models.device import Device
+from ui.src.data_service import DataService
 
 
 def display_inventory(device_type: DeviceType, inventory: pd.DataFrame):
     """Display the inventory of a device type."""
     st.subheader(f"{device_type} Details")
-    location_filter = st.selectbox(
-        "Filter by Location",
-        options=Location,
-        index=None,
-        key=f"{device_type.value.lower()}_location_filter",
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        status_filter = st.multiselect(
+            "Filter by Status",
+            options=DeviceStatus,
+            key=f"{device_type.value.lower()}_status_filter",
+        )
+    with col2:
+        location_filter = st.selectbox(
+            "Filter by Location",
+            options=Location,
+            index=None,
+            key=f"{device_type.value.lower()}_location_filter",
+        )
+    if status_filter:
+        inventory = inventory[inventory["status"].isin(status_filter)]
     if location_filter:
         inventory = inventory[inventory["location"] == location_filter]
     st.dataframe(
         data=inventory,
-        column_order=["id", "status", "status"],
+        column_order=["id", "status", "location"],
         column_config={
             "id": st.column_config.TextColumn(label=Device.model_fields["id"].title),
             "status": st.column_config.TextColumn(label=Device.model_fields["status"].title),
@@ -33,28 +44,68 @@ def display_inventory(device_type: DeviceType, inventory: pd.DataFrame):
     )
 
 
-def display_inventory_admin(device_type: str, inventory: pd.DataFrame):
+def admin_add_devices(data_service: DataService, device_type: DeviceType, inventory: pd.DataFrame):
+    """Add devices to the inventory."""
+    num_to_add = st.slider(f"Select the number of {device_type}s to add", 1, 50, 1, 1)
+
+    add_clicked = st.button(f"Add {num_to_add} {device_type.value}{'s' if num_to_add > 1 else ''}")
+    if add_clicked:
+        if inventory.empty:
+            next_device_index = 1
+        else:
+            next_device_index = inventory["id"].str.extract(r"(\d+)")[0].astype(int).max() + 1
+
+        new_devices = [
+            Device(
+                id=f"{device_type.value[0].upper()}{next_device_index + i:02}",
+                type=device_type,
+                status=DeviceStatus.AVAILABLE,
+                location=Location.BLC,
+            )
+            for i in range(num_to_add)
+        ]
+
+        data_service.add_to_inventory(devices=new_devices)
+        st.rerun()
+
+
+@st.dialog("Add Scooters")
+def admin_add_scooters(data_service: DataService, scooter_inventory: pd.DataFrame):
+    """Add scooters to the inventory."""
+    return admin_add_devices(data_service, DeviceType.SCOOTER, scooter_inventory)
+
+
+@st.dialog("Add Wheelchairs")
+def admin_add_wheelchairs(data_service: DataService, wheelchair_inventory: pd.DataFrame):
+    """Add wheelchairs to the inventory."""
+    return admin_add_devices(data_service, DeviceType.WHEELCHAIR, wheelchair_inventory)
+
+
+def display_admin_inventory(device_type: str, inventory: pd.DataFrame):
     """Display the inventory of a device type on the admin page."""
-    st.subheader(f"{device_type} Inventory")
+
     updated_inventory = st.data_editor(
-        inventory.sort_values(by="id", ascending=True).reset_index(drop=True),
+        data=inventory,
         column_order=["id", "status", "location"],
         column_config={
-            "id": st.column_config.TextColumn(label=Device.model_fields["id"].title),
+            "id": st.column_config.TextColumn(label=Device.model_fields["id"].title, required=True, disabled=True),
             "status": st.column_config.SelectboxColumn(
                 label=Device.model_fields["status"].title,
                 options=DeviceStatus,
                 default=DeviceStatus.AVAILABLE,
+                required=True,
             ),
             "location": st.column_config.SelectboxColumn(
                 label=Device.model_fields["location"].title,
                 options=Location,
                 default=Location.BLC,
+                required=True,
             ),
         },
         hide_index=True,
-        num_rows="dynamic",
+        num_rows="fixed",
         use_container_width=True,
+        key=f"admin_inventory_{device_type.lower()}"
     )
     updated_inventory["type"] = device_type
     return updated_inventory
