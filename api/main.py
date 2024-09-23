@@ -5,8 +5,9 @@ from pydantic import constr
 
 from api.src.data_service import DataService
 from api.src.exceptions import UniqueViolation
-from common.constants import DeviceType, Location
+from common.constants import DeviceType, Location, RESERVATION_ID_PATTERN
 from common.data_models.device import Device
+from common.data_models.reservation import NewReservation
 
 app = FastAPI()
 data_service = DataService()
@@ -38,5 +39,14 @@ def update_inventory(devices: List[Device]):
     """Set the full inventory of devices. Overwrites the existing inventory."""
     try:
         return data_service.update_inventory(devices)
+    except UniqueViolation as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/reservations/add_new_reservation")
+def add_new_reservation(reservation: NewReservation) -> constr(to_upper=True, pattern=RESERVATION_ID_PATTERN):
+    """Add a new reservation"""
+    try:
+        return data_service.add_new_reservation(reservation)
     except UniqueViolation as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc

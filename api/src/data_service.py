@@ -9,8 +9,9 @@ from psycopg import sql
 
 from api.src.constants import Table
 from api.src.exceptions import UniqueViolation
-from common.constants import DeviceStatus, DeviceType, Location
+from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
 from common.data_models.device import Device
+from common.data_models.reservation import NewReservation
 
 
 class DataService:
@@ -147,3 +148,60 @@ class DataService:
                 except psycopg.errors.UniqueViolation as exc:
                     handle.rollback()
                     raise UniqueViolation(exc.diag.message_primary + " - " + exc.diag.message_detail) from exc
+
+    def add_new_reservation(self, reservation: NewReservation):
+        """Create a reservation in the database."""
+        with self.__initialize_handle() as handle:
+            with handle.cursor() as cursor:
+                insert_query = sql.SQL(
+                    """
+                    WITH reservation_id_table AS (
+                        SELECT
+                            {device_type_prefix} || to_char({date}, 'MMDD') || (select lpad((1 + count(id))::text, 3, '0')) AS reservation_id
+                        FROM wheelchairs.reservations
+                        WHERE date = {date}
+                    )
+                    
+                    INSERT INTO {schema}.{table} (id, date, type, name, phone_number, location, pickup_time, status)
+                    VALUES (
+                        (SELECT reservation_id FROM reservation_id_table),
+                        {date},
+                        {device_type},
+                        {name},
+                        {phone_number},
+                        {location},
+                        {pickup_time},
+                        {status}
+                    )
+                    RETURNING (SELECT reservation_id FROM reservation_id_table);
+                    """
+                ).format(
+                    device_type_prefix=sql.Placeholder(),
+                    schema=sql.Identifier(self.schema),
+                    table=sql.Identifier(Table.RESERVATIONS),
+                    date=sql.Placeholder(),
+                    device_type=sql.Placeholder(),
+                    name=sql.Placeholder(),
+                    phone_number=sql.Placeholder(),
+                    location=sql.Placeholder(),
+                    pickup_time=sql.Placeholder(),
+                    status=sql.Placeholder(),
+                )
+
+                cursor.execute(
+                    insert_query,
+                    (
+                        reservation.device_type.get_device_prefix(),
+                        reservation.date,
+                        reservation.date,
+                        reservation.date,
+                        reservation.device_type,
+                        reservation.name,
+                        reservation.phone_number,
+                        reservation.location,
+                        reservation.pickup_time,
+                        ReservationStatus.get_default_reservation_status(device_type=reservation.device_type),
+                    )
+                )
+                result = cursor.fetchall()
+                return result[0][0]

@@ -1,9 +1,11 @@
 import math
 from datetime import datetime, time
+from typing import List
 
 import pandas as pd
 import streamlit as st
 from plotly import graph_objects as go
+from pydantic import BaseModel
 
 from common.constants import DeviceStatus, Location, DeviceType
 from common.data_models.device import Device
@@ -184,3 +186,26 @@ def create_inventory_chart(inventory: pd.DataFrame):
             )
         )
     return fig
+
+
+def display_validation_errors(errors: List[dict], validation_class: type[BaseModel]):
+    """Display validation errors on the UI."""
+    display_errors = []
+    for error in errors:
+        field_name = validation_class.model_fields[error['loc'][0]].title
+        if not field_name:
+            field_name = error['loc'][0]
+
+        match error['type']:
+            case "enum":
+                message = error["msg"].replace("Input should be", "Input should be one of:")
+            case "string_too_short" | "string_too_long":
+                message = error["msg"].replace("String", "Input")
+            case _:
+                message = error["msg"]
+        display_errors.append(f"{field_name}: {message}")
+
+    error_str = "**Validation Error:** There was an error validating the input data. Please check the following fields:"
+    error_str = "\n* ".join([error_str] + display_errors)
+
+    st.error(error_str)

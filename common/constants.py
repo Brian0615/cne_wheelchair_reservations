@@ -1,5 +1,16 @@
 from enum import StrEnum
 
+RENTAL_ID_PATTERN = r"[S|W]0[8-9][0-9]{2}[0-9]{3}"
+RESERVATION_ID_PATTERN = r"[S|W]0[8-9][0-9]{2}[0-9]{3}"
+
+
+class DeviceStatus(StrEnum):
+    """Status of a mobility device"""
+    AVAILABLE = "Available"
+    BACKUP = "Backup"
+    OUT_OF_SERVICE = "Out of Service"
+    RENTED = "Rented"
+
 
 class DeviceType(StrEnum):
     """Types of mobility device available for rent"""
@@ -33,6 +44,10 @@ class DeviceType(StrEnum):
             case _:
                 raise ValueError(f"Unrecognized device {device}")
 
+    def get_device_prefix(self):
+        """Get the prefix for a device (for IDs)"""
+        return self.value[0]
+
 
 class Location(StrEnum):
     """Rental locations"""
@@ -41,14 +56,38 @@ class Location(StrEnum):
 
 
 class PaymentMethod(StrEnum):
-    """Accepted payment methods"""
+    """Possible payment methods"""
     CASH = "Cash"
     CREDIT_CARD = "Credit Card"
+    DEBIT_CARD = "Debit Card"
+
+    @classmethod
+    def get_accepted_deposit_payment_methods(cls):
+        """Get a set of accepted deposit payment methods"""
+        return {cls.CASH, cls.CREDIT_CARD}
+
+    @classmethod
+    def get_accepted_fee_payment_methods(cls):
+        """Get a set of accepted fee payment methods"""
+        return {cls.CASH, cls.CREDIT_CARD, cls.DEBIT_CARD}
 
 
-class DeviceStatus(StrEnum):
-    """Status of a mobility device"""
-    AVAILABLE = "Available"
-    BACKUP = "Backup"
-    OUT_OF_SERVICE = "Out of Service"
-    RENTED = "Rented"
+class ReservationStatus(StrEnum):
+    """Reservation statuses"""
+    PENDING = "Pending Confirmation"
+    CONFIRMED = "Confirmed"
+    RESERVED = "Reserved"
+    PICKED_UP = "Picked Up"
+    COMPLETED = "Completed"
+    CANCELLED = "Cancelled"
+
+    @classmethod
+    def get_default_reservation_status(cls, device_type: DeviceType):
+        """Get the default reservation status for a given device type"""
+        match device_type:
+            case DeviceType.SCOOTER:
+                return cls.PENDING
+            case DeviceType.WHEELCHAIR:
+                return cls.RESERVED
+            case _:
+                raise ValueError(f"Unrecognized device type {device_type}")

@@ -7,6 +7,7 @@ import streamlit as st
 
 from common.constants import DeviceType, Location
 from common.data_models.device import Device
+from common.data_models.reservation import NewReservation
 
 DEFAULT_TIMEOUT = 10
 
@@ -38,7 +39,7 @@ class DataService:
             response = requests.get(
                 url=f"http://{host}:{port}/devices/get_full_inventory",
                 timeout=DEFAULT_TIMEOUT)
-            return pd.DataFrame([Device(**device).dict() for device in response.json()])
+            return pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
 
         if reset_cache:
             get_full_inventory_helper.clear()
@@ -49,7 +50,7 @@ class DataService:
         """Add devices to the inventory using the API."""
         response = requests.post(
             f"http://{self.api_host}:{self.api_port}/devices/add_to_inventory",
-            json=[device.dict() for device in devices],
+            json=[device.model_dump(mode="json") for device in devices],
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()
@@ -58,7 +59,17 @@ class DataService:
         """Set the full inventory of devices using the API."""
         response = requests.post(
             f"http://{self.api_host}:{self.api_port}/devices/update_inventory",
-            json=[device.dict() for device in inventory],
+            json=[device.model_dump(mode="json") for device in inventory],
             timeout=DEFAULT_TIMEOUT,
         )
+        return response.status_code, response.json()
+
+    def add_new_reservation(self, reservation: NewReservation):
+        """Add a new reservation using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/reservations/add_new_reservation",
+            json=reservation.model_dump(mode="json"),
+            timeout=DEFAULT_TIMEOUT,
+        )
+        st.write(response)
         return response.status_code, response.json()

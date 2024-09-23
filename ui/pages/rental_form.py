@@ -53,12 +53,12 @@ if rental_type is not None:
     col1, col2 = st.columns(2)
     fee_payment_type = col1.selectbox(
         label=f"Payment Type for **${DeviceType.get_fee_amount(rental_type)}** Fee",
-        options=PaymentMethod,
+        options=PaymentMethod.get_accepted_fee_payment_methods(),
         index=None,
     )
     deposit_payment_type = col2.selectbox(
         label=f"Payment Type for **${DeviceType.get_deposit_amount(rental_type)}** Deposit",
-        options=PaymentMethod,
+        options=PaymentMethod.get_accepted_deposit_payment_methods(),
         index=None,
     )
 
