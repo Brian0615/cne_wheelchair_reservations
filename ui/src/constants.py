@@ -21,7 +21,13 @@ class CNEDates:
         return [(start_date + timedelta(days=i)).date() for i in range((end_date - start_date).days + 1)]
 
     @classmethod
-    def get_default_reservation_date(cls):
+    def get_default_date(cls):
+        """Get the default date for displaying reservations."""
+        all_dates = cls.get_cne_date_list(year=datetime.today().year)
+        return min(max(all_dates), max(min(all_dates), datetime.today().date()))
+
+    @classmethod
+    def get_default_new_reservation_date(cls):
         """Get the default reservation date for the reservation form."""
         all_dates = cls.get_cne_date_list(year=datetime.today().year)
         return min(max(all_dates), max(min(all_dates), datetime.today().date() + timedelta(days=1)))
