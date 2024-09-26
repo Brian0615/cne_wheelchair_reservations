@@ -213,10 +213,9 @@ def display_validation_errors(errors: List[dict], validation_class: type[BaseMod
 
 def display_reservations(reservations: pd.DataFrame, device_type: DeviceType):
     """Display the reservations on the UI."""
-    st.subheader(f"{device_type} Reservations")
 
     # filter for reservations of the right type
-    reservations = reservations[reservations["device_type"] == device_type]
+    reservations = reservations[reservations["device_type"] == device_type].sort_index(ascending=True)
     if reservations.empty:
         st.warning(f"**No {device_type} Reservations Today**: There are no reservations for {device_type.value}s.")
         return
