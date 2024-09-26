@@ -14,9 +14,9 @@ data_service = DataService()
 
 
 @app.get("/devices/get_available_devices")
-def get_available_devices(device_type: DeviceType, location: Location) -> List[constr(pattern=r"[S|W][0-9]{2}")]:
+def get_available_device_ids(device_type: DeviceType, location: Location) -> List[constr(pattern=r"[S|W][0-9]{2}")]:
     """Get the available devices of a specific type at a specific location"""
-    return data_service.get_available_devices(device_type, location)
+    return data_service.select_available_device_ids(device_type, location)
 
 
 @app.get("/devices/get_full_inventory")
@@ -26,27 +26,27 @@ def get_full_inventory() -> List[Device]:
 
 
 @app.post("/devices/add_to_inventory")
-def add_to_inventory(devices: List[Device]):
+def insert_devices(devices: List[Device]):
     """Add a device to the inventory"""
     try:
-        return data_service.add_to_inventory(devices)
+        return data_service.insert_devices(devices)
     except UniqueViolation as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.post("/devices/update_inventory")
-def update_inventory(devices: List[Device]):
+def update_devices(devices: List[Device]):
     """Set the full inventory of devices. Overwrites the existing inventory."""
     try:
-        return data_service.update_inventory(devices)
+        return data_service.update_devices(devices)
     except UniqueViolation as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.post("/reservations/add_new_reservation")
-def add_new_reservation(reservation: NewReservation) -> constr(to_upper=True, pattern=RESERVATION_ID_PATTERN):
+def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True, pattern=RESERVATION_ID_PATTERN):
     """Add a new reservation"""
     try:
-        return data_service.add_new_reservation(reservation)
+        return data_service.insert_new_reservation(reservation)
     except UniqueViolation as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc

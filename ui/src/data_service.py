@@ -71,5 +71,4 @@ class DataService:
             json=reservation.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
-        st.write(response)
         return response.status_code, response.json()

@@ -59,135 +59,99 @@ class DataService:
                 col_names = [desc[0] for desc in cursor.description]
                 return pd.DataFrame(result, columns=col_names)
 
-    def get_available_devices(self, device_type: DeviceType, location: Location):
+    def select_available_device_ids(self, device_type: DeviceType, location: Location):
         """Get all available devices of a given type at a given location."""
+
+        with open(
+                os.path.join(os.path.dirname(__file__), "sql/select_available_device_ids.sql"),
+                mode="r",
+                encoding="utf-8",
+        ) as file:
+            select_query = sql.SQL(file.read()).format(
+                schema=sql.Identifier(self.schema),
+                table=sql.Identifier(Table.DEVICES),
+                device_type=sql.Literal(device_type.value),
+                status=sql.Literal(DeviceStatus.AVAILABLE.value),
+                location=sql.Literal(location.value),
+            )
+
         with self.__initialize_handle() as handle:
             with handle.cursor() as cursor:
-                cursor.execute(
-                    sql.SQL(
-                        """
-                        SELECT id FROM {schema}.{table}
-                        WHERE type = {device_type} AND status = {status} AND location = {location}
-                        """
-                    ).format(
-                        schema=sql.Identifier(self.schema),
-                        table=sql.Identifier(Table.DEVICES),
-                        device_type=sql.Literal(device_type.value),
-                        status=sql.Literal(DeviceStatus.AVAILABLE.value),
-                        location=sql.Literal(location.value),
-                    )
-                )
+                cursor.execute(select_query)
                 result = cursor.fetchall()
                 col_names = [desc[0] for desc in cursor.description]
                 return pd.DataFrame(result, columns=col_names)["id"].tolist()
 
-    def add_to_inventory(self, devices: List[Device]):
+    def insert_devices(self, devices: List[Device]):
         """Add devices to the inventory in the database. Will raise an error if there are any conflicts."""
-        with self.__initialize_handle() as handle:
 
-            with handle.cursor() as cursor:
+        self._insert_or_update_devices_helper(devices, insert_only=True)
 
-                # insert the new data into the table
-                insert_query = sql.SQL(
-                    """
-                    INSERT INTO {schema}.{table} ({fields}) VALUES ({values}) 
-                    """
-                ).format(
-                    schema=sql.Identifier(self.schema),
-                    table=sql.Identifier(Table.DEVICES),
-                    fields=sql.SQL(", ").join([sql.Identifier(field) for field in Device.model_fields]),
-                    values=sql.SQL(", ").join([sql.Placeholder() for _ in Device.model_fields]),
-                )
-
-                try:
-                    cursor.executemany(
-                        insert_query,
-                        [(device.id, device.type, device.status, device.location) for device in devices],
-                    )
-                except psycopg.errors.UniqueViolation as exc:
-                    handle.rollback()
-                    raise UniqueViolation(exc.diag.message_primary + " - " + exc.diag.message_detail) from exc
-
-    def update_inventory(self, devices: List[Device]):
+    def update_devices(self, devices: List[Device]):
         """
         Update devices in the database.
         Will insert for any non-existing devices, and overwrite any existing devices
         """
+
+        self._insert_or_update_devices_helper(devices, insert_only=False)
+
+    def _insert_or_update_devices_helper(self, devices: List[Device], insert_only: bool):
+        """
+        Helper function to insert or update devices in the database.
+        If insert_only is False, will insert for any non-existing devices, and overwrite any existing devices.
+        """
+
+        query_filename = "insert_devices.sql" if insert_only else "update_devices.sql"
+        with open(
+                os.path.join(os.path.dirname(__file__), f"sql/{query_filename}"),
+                mode="r",
+                encoding="utf-8",
+        ) as file:
+            query = sql.SQL(file.read()).format(
+                schema=sql.Identifier(self.schema),
+                table=sql.Identifier(Table.DEVICES),
+                id=sql.Placeholder(),
+                type=sql.Placeholder(),
+                status=sql.Placeholder(),
+                location=sql.Placeholder(),
+            )
+
         with self.__initialize_handle() as handle:
-
             with handle.cursor() as cursor:
-
-                # insert the new data into the table
-                insert_query = sql.SQL(
-                    """
-                    INSERT INTO {schema}.{table} ({fields}) VALUES ({values}) 
-                    ON CONFLICT ({key_field}) 
-                    DO UPDATE SET 
-                        type=EXCLUDED.type, 
-                        status=EXCLUDED.status, 
-                        location=EXCLUDED.location
-                    """
-                ).format(
-                    schema=sql.Identifier(self.schema),
-                    table=sql.Identifier(Table.DEVICES),
-                    fields=sql.SQL(", ").join([sql.Identifier(field) for field in Device.model_fields]),
-                    values=sql.SQL(", ").join([sql.Placeholder() for _ in Device.model_fields]),
-                    key_field=sql.Identifier(Device.get_key_field()),
-                    update_set=sql.SQL(", ").join([
-                        sql.SQL("{field}=EXCLUDED.{field}").format(field=field)
-                        for field in Device.model_fields
-                        if field != Device.get_key_field()
-                    ])
-                )
-
                 try:
                     cursor.executemany(
-                        insert_query,
+                        query,
                         [(device.id, device.type, device.status, device.location) for device in devices],
                     )
                 except psycopg.errors.UniqueViolation as exc:
                     handle.rollback()
                     raise UniqueViolation(exc.diag.message_primary + " - " + exc.diag.message_detail) from exc
 
-    def add_new_reservation(self, reservation: NewReservation):
+    def insert_new_reservation(self, reservation: NewReservation):
         """Create a reservation in the database."""
+
+        # load the query from file
+        with open(
+                os.path.join(os.path.dirname(__file__), "sql/insert_new_reservation.sql"),
+                mode="r",
+                encoding="utf-8",
+        ) as file:
+            insert_query = sql.SQL(file.read()).format(
+                device_type_prefix=sql.Placeholder(),
+                schema=sql.Identifier(self.schema),
+                table=sql.Identifier(Table.RESERVATIONS),
+                date=sql.Placeholder(),
+                device_type=sql.Placeholder(),
+                name=sql.Placeholder(),
+                phone_number=sql.Placeholder(),
+                location=sql.Placeholder(),
+                pickup_time=sql.Placeholder(),
+                status=sql.Placeholder(),
+            )
+
+        # execute the query and return the created reservation ID
         with self.__initialize_handle() as handle:
             with handle.cursor() as cursor:
-                insert_query = sql.SQL(
-                    """
-                    WITH reservation_id_table AS (
-                        SELECT
-                            {device_type_prefix} || to_char({date}, 'MMDD') || (select lpad((1 + count(id))::text, 3, '0')) AS reservation_id
-                        FROM wheelchairs.reservations
-                        WHERE date = {date}
-                    )
-                    
-                    INSERT INTO {schema}.{table} (id, date, type, name, phone_number, location, pickup_time, status)
-                    VALUES (
-                        (SELECT reservation_id FROM reservation_id_table),
-                        {date},
-                        {device_type},
-                        {name},
-                        {phone_number},
-                        {location},
-                        {pickup_time},
-                        {status}
-                    )
-                    RETURNING (SELECT reservation_id FROM reservation_id_table);
-                    """
-                ).format(
-                    device_type_prefix=sql.Placeholder(),
-                    schema=sql.Identifier(self.schema),
-                    table=sql.Identifier(Table.RESERVATIONS),
-                    date=sql.Placeholder(),
-                    device_type=sql.Placeholder(),
-                    name=sql.Placeholder(),
-                    phone_number=sql.Placeholder(),
-                    location=sql.Placeholder(),
-                    pickup_time=sql.Placeholder(),
-                    status=sql.Placeholder(),
-                )
-
                 cursor.execute(
                     insert_query,
                     (
