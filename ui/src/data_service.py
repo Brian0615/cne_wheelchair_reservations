@@ -1,3 +1,4 @@
+import datetime
 import os
 from typing import List
 
@@ -7,9 +8,9 @@ import streamlit as st
 
 from common.constants import DeviceType, Location
 from common.data_models.device import Device
-from common.data_models.reservation import NewReservation
+from common.data_models.reservation import NewReservation, Reservation
 
-DEFAULT_TIMEOUT = 10
+DEFAULT_TIMEOUT = 5
 
 
 class DataService:
@@ -72,3 +73,14 @@ class DataService:
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()
+
+    def get_reservations_on_date(self, date: datetime.date):
+        """Get the reservations on a specific date using the API."""
+        response = requests.get(
+            f"http://{self.api_host}:{self.api_port}/reservations/get_reservations_on_date",
+            params={"date": date.strftime("%Y-%m-%d")},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        reservations = response.json()
+        reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
+        return reservations

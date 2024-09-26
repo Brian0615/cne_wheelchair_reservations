@@ -7,7 +7,7 @@ import streamlit as st
 from plotly import graph_objects as go
 from pydantic import BaseModel
 
-from common.constants import DeviceStatus, Location, DeviceType
+from common.constants import DeviceStatus, DeviceType, Location
 from common.data_models.device import Device
 from ui.src.data_service import DataService
 
@@ -209,3 +209,37 @@ def display_validation_errors(errors: List[dict], validation_class: type[BaseMod
     error_str = "\n* ".join([error_str] + display_errors)
 
     st.error(error_str)
+
+
+def display_reservations(reservations: pd.DataFrame, device_type: DeviceType):
+    """Display the reservations on the UI."""
+    st.subheader(f"{device_type} Reservations")
+
+    # filter for reservations of the right type
+    reservations = reservations[reservations["device_type"] == device_type]
+    if reservations.empty:
+        st.warning(f"**No {device_type} Reservations Today**: There are no reservations for {device_type.value}s.")
+        return
+
+    # format datetime to be in EST
+    reservations["pickup_time"] = reservations["pickup_time"].dt.tz_convert("America/Toronto").dt.tz_localize(None)
+
+    # display reservations
+    st.dataframe(
+        data=reservations.set_index("id"),
+        column_config={
+            "id": st.column_config.TextColumn(label="ID"),
+            "date": None,
+            "device_type": None,
+            "name": st.column_config.TextColumn(label="Name"),
+            "phone_number": st.column_config.TextColumn(label="Phone Number"),
+            "location": st.column_config.TextColumn(label="Location", width="small"),
+            "pickup_time": st.column_config.TimeColumn(label="Reservation Time", format="hh:mm a"),
+            "status": st.column_config.TextColumn(label="Status", width="medium"),
+            "device_id": st.column_config.TextColumn(label="Assigned Chair"),
+            "rental_id": st.column_config.TextColumn(label="Rental ID"),
+            "notes": st.column_config.TextColumn(label="Notes", width="medium"),
+
+        },
+        use_container_width=True,
+    )

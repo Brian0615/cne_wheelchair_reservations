@@ -5,7 +5,7 @@ WITH reservation_id_table
              WHERE date = {date})
 
 INSERT
-INTO {schema}.{table} (id, date, type, name, phone_number, location, pickup_time, status)
+INTO {schema}.{table} (id, date, device_type, name, phone_number, location, pickup_time, status)
 VALUES ((SELECT reservation_id FROM reservation_id_table),
         {date},
         {device_type},

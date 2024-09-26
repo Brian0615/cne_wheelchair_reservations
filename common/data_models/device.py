@@ -1,12 +1,12 @@
 from pydantic import BaseModel, constr, Field, model_validator
 
-from common.constants import DeviceStatus, DeviceType, Location
+from common.constants import DeviceStatus, DeviceType, Location, DEVICE_ID_PATTERN
 
 
 class Device(BaseModel):
     """Data model for a mobility device"""
 
-    id: constr(to_upper=True, pattern=r"[A-Z][0-9]{2}") = Field(title="ID")
+    id: constr(to_upper=True, pattern=DEVICE_ID_PATTERN) = Field(title="ID")
     type: DeviceType = Field(title="Type")
     status: DeviceStatus = Field(title="Status")
     location: Location = Field(title="Location")

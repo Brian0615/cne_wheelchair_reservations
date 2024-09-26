@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 
 from fastapi import FastAPI, HTTPException
@@ -7,7 +8,7 @@ from api.src.data_service import DataService
 from api.src.exceptions import UniqueViolation
 from common.constants import DeviceType, Location, RESERVATION_ID_PATTERN
 from common.data_models.device import Device
-from common.data_models.reservation import NewReservation
+from common.data_models.reservation import NewReservation, Reservation
 
 app = FastAPI()
 data_service = DataService()
@@ -47,6 +48,13 @@ def update_devices(devices: List[Device]):
 def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True, pattern=RESERVATION_ID_PATTERN):
     """Add a new reservation"""
     try:
-        return data_service.insert_new_reservation(reservation)
+        return data_service.insert_new_reservation(reservation=reservation)
     except UniqueViolation as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/reservations/get_reservations_on_date")
+def get_reservations_on_date(date: str) -> List[Reservation]:
+    """Get the reservations on a specific date"""
+    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    return data_service.get_reservations_on_date(date=date).to_dict(orient="records")

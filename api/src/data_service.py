@@ -1,5 +1,6 @@
 # pylint: disable=not-context-manager
 
+import datetime
 import os
 from typing import List
 
@@ -63,7 +64,7 @@ class DataService:
         """Get all available devices of a given type at a given location."""
 
         with open(
-                os.path.join(os.path.dirname(__file__), "sql/select_available_device_ids.sql"),
+                os.path.join(os.path.dirname(__file__), "sql/get_available_device_ids.sql"),
                 mode="r",
                 encoding="utf-8",
         ) as file:
@@ -127,7 +128,7 @@ class DataService:
                     handle.rollback()
                     raise UniqueViolation(exc.diag.message_primary + " - " + exc.diag.message_detail) from exc
 
-    def insert_new_reservation(self, reservation: NewReservation):
+    def insert_new_reservation(self, reservation: NewReservation) -> str:
         """Create a reservation in the database."""
 
         # load the query from file
@@ -169,3 +170,23 @@ class DataService:
                 )
                 result = cursor.fetchall()
                 return result[0][0]
+
+    def get_reservations_on_date(self, date: datetime.date) -> pd.DataFrame:
+        """Get all reservations on a given date."""
+        with open(
+                os.path.join(os.path.dirname(__file__), "sql/get_reservations_on_date.sql"),
+                mode="r",
+                encoding="utf-8",
+        ) as file:
+            select_query = sql.SQL(file.read()).format(
+                schema=sql.Identifier(self.schema),
+                table=sql.Identifier(Table.RESERVATIONS),
+                date=sql.Placeholder(),
+            )
+
+        with self.__initialize_handle() as handle:
+            with handle.cursor() as cursor:
+                cursor.execute(select_query, (date,))
+                result = cursor.fetchall()
+                col_names = [desc[0] for desc in cursor.description]
+                return pd.DataFrame(result, columns=col_names)
