@@ -1,5 +1,5 @@
 import datetime
-from typing import List
+from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import constr
@@ -54,7 +54,8 @@ def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True,
 
 
 @app.get("/reservations/get_reservations_on_date")
-def get_reservations_on_date(date: str) -> List[Reservation]:
+def get_reservations_on_date(date: str, device_type: Optional[DeviceType] = None) -> List[Reservation]:
     """Get the reservations on a specific date"""
     date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-    return data_service.get_reservations_on_date(date=date).to_dict(orient="records")
+    reservations = data_service.get_reservations_on_date(date=date, device_type=device_type).to_dict(orient="records")
+    return [Reservation(**x) for x in reservations]

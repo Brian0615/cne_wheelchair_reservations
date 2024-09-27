@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 import requests
@@ -74,11 +74,11 @@ class DataService:
         )
         return response.status_code, response.json()
 
-    def get_reservations_on_date(self, date: datetime.date):
+    def get_reservations_on_date(self, date: datetime.date, device_type: Optional[DeviceType] = None):
         """Get the reservations on a specific date using the API."""
         response = requests.get(
             f"http://{self.api_host}:{self.api_port}/reservations/get_reservations_on_date",
-            params={"date": date.strftime("%Y-%m-%d")},
+            params={"date": date.strftime("%Y-%m-%d"), "device_type": device_type},
             timeout=DEFAULT_TIMEOUT,
         )
         reservations = response.json()

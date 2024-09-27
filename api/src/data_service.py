@@ -2,7 +2,7 @@
 
 import datetime
 import os
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 import psycopg
@@ -58,7 +58,7 @@ class DataService:
                 cursor.execute(self.__form_select_all_query(table_name=Table.DEVICES))
                 result = cursor.fetchall()
                 col_names = [desc[0] for desc in cursor.description]
-                return pd.DataFrame(result, columns=col_names)
+        return pd.DataFrame(result, columns=col_names)
 
     def select_available_device_ids(self, device_type: DeviceType, location: Location):
         """Get all available devices of a given type at a given location."""
@@ -81,7 +81,7 @@ class DataService:
                 cursor.execute(select_query)
                 result = cursor.fetchall()
                 col_names = [desc[0] for desc in cursor.description]
-                return pd.DataFrame(result, columns=col_names)["id"].tolist()
+        return pd.DataFrame(result, columns=col_names)["id"].tolist()
 
     def insert_devices(self, devices: List[Device]):
         """Add devices to the inventory in the database. Will raise an error if there are any conflicts."""
@@ -169,9 +169,9 @@ class DataService:
                     )
                 )
                 result = cursor.fetchall()
-                return result[0][0]
+        return result[0][0]
 
-    def get_reservations_on_date(self, date: datetime.date) -> pd.DataFrame:
+    def get_reservations_on_date(self, date: datetime.date, device_type: Optional[DeviceType] = None) -> pd.DataFrame:
         """Get all reservations on a given date."""
         with open(
                 os.path.join(os.path.dirname(__file__), "sql/get_reservations_on_date.sql"),
@@ -182,11 +182,12 @@ class DataService:
                 schema=sql.Identifier(self.schema),
                 table=sql.Identifier(Table.RESERVATIONS),
                 date=sql.Placeholder(),
+                device_type=sql.Placeholder(),
             )
 
         with self.__initialize_handle() as handle:
             with handle.cursor() as cursor:
-                cursor.execute(select_query, (date,))
+                cursor.execute(select_query, (date, device_type, device_type))
                 result = cursor.fetchall()
                 col_names = [desc[0] for desc in cursor.description]
-                return pd.DataFrame(result, columns=col_names)
+        return pd.DataFrame(result, columns=col_names)
