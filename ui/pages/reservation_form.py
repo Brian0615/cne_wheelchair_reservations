@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from common.constants import DeviceType, Location
 from common.data_models.reservation import NewReservation
-from src.constants import CNEDates
+from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import display_validation_errors
 

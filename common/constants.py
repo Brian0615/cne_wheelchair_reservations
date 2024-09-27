@@ -3,6 +3,7 @@ from enum import StrEnum
 DEVICE_ID_PATTERN = r"[S|W][0-9]{2}"
 RENTAL_ID_PATTERN = r"[S|W]0[8-9][0-9]{2}[0-9]{3}"
 RESERVATION_ID_PATTERN = r"[S|W]0[8-9][0-9]{2}[0-9]{3}"
+WALK_IN_RESERVATION_ID = "Walk-In (No Reservation)"
 
 
 class DeviceStatus(StrEnum):
@@ -48,6 +49,16 @@ class DeviceType(StrEnum):
     def get_device_prefix(self):
         """Get the prefix for a device (for IDs)"""
         return self.value[0]
+
+
+class ItemLeftBehind(StrEnum):
+    """Items that may be left behind by a renter"""
+    CANE = 'Cane'
+    CRUTCHES = 'Crutches',
+    STROLLER = 'Stroller'
+    WALKER = 'Walker'
+    WHEELCHAIR = 'Wheelchair'
+    OTHER = 'Other'
 
 
 class Location(StrEnum):
