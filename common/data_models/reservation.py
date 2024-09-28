@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 
-from pydantic import AwareDatetime, BaseModel, constr, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, constr, Field
 
 from common.constants import (
     DeviceType,
@@ -15,6 +15,8 @@ from common.constants import (
 
 class Reservation(BaseModel):
     """Data validation class for a reservation"""
+    model_config = ConfigDict(extra="forbid")
+
     id: constr(to_upper=True, pattern=RESERVATION_ID_PATTERN) = Field(title="Reservation ID")
     date: datetime.date = Field(title="Reservation Date")
     device_type: DeviceType = Field(title="Reservation Type")
@@ -31,5 +33,7 @@ class Reservation(BaseModel):
 
 class NewReservation(Reservation):
     """Data validation class for a New Reservation"""
+    model_config = ConfigDict(extra="forbid")
+
     id: Optional[constr(to_upper=True, pattern=RESERVATION_ID_PATTERN)] = Field(title="Reservation ID", default=None)
     status: Optional[ReservationStatus] = Field(title="Status", default=None)

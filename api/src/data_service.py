@@ -2,17 +2,15 @@
 
 import datetime
 import os
-from typing import List, Optional
+from typing import List, Optional, LiteralString
 
 import pandas as pd
 import psycopg
 from psycopg import sql
 
 from api.src.constants import Table
-from api.src.exceptions import UniqueViolation
 from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
-from common.data_models.device import Device
-from common.data_models.reservation import NewReservation
+from common.data_models import Device, NewRental, NewReservation
 
 
 class DataService:
@@ -34,8 +32,20 @@ class DataService:
         self.password = password
         self.db_name = db_name
         self.schema = schema
+        self.is_custom_functions_initialized = False
 
-    def __initialize_handle(self):
+    @staticmethod
+    def _load_query_by_name(query_name: str) -> LiteralString:
+        """Load a SQL query from a file by name."""
+        with open(
+                os.path.join(os.path.dirname(__file__), f"sql/{query_name}.sql"),
+                mode="r",
+                encoding="utf-8",
+        ) as query_file:
+            return query_file.read()
+
+    def _initialize_handle(self):
+        """Initialize a connection to the database."""
         return psycopg.connect(
             host=self.host,
             port=self.port,
@@ -43,6 +53,21 @@ class DataService:
             password=self.password,
             dbname=self.db_name,
         )
+
+    def _initialize_custom_functions(self):
+        """Initialize custom functions in the database."""
+        query = sql.SQL(
+            self._load_query_by_name(query_name="define_custom_functions")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            custom_exceptions_table=sql.Identifier(Table.CUSTOM_EXCEPTIONS),
+            devices_table=sql.Identifier(Table.DEVICES),
+            reservations_table=sql.Identifier(Table.RESERVATIONS),
+        )
+        with self._initialize_handle() as handle:
+            with handle.cursor() as cursor:
+                cursor.execute(query)
+        self.is_custom_functions_initialized = True
 
     def __form_select_all_query(self, table_name: Table) -> sql.Composed:
         """Form a query to select all rows from a table in the database"""
@@ -53,7 +78,7 @@ class DataService:
 
     def get_full_inventory(self):
         """Get the full inventory of devices from the database."""
-        with self.__initialize_handle() as handle:
+        with self._initialize_handle() as handle:
             with handle.cursor() as cursor:
                 cursor.execute(self.__form_select_all_query(table_name=Table.DEVICES))
                 result = cursor.fetchall()
@@ -63,20 +88,17 @@ class DataService:
     def select_available_device_ids(self, device_type: DeviceType, location: Location):
         """Get all available devices of a given type at a given location."""
 
-        with open(
-                os.path.join(os.path.dirname(__file__), "sql/get_available_device_ids.sql"),
-                mode="r",
-                encoding="utf-8",
-        ) as file:
-            select_query = sql.SQL(file.read()).format(
-                schema=sql.Identifier(self.schema),
-                table=sql.Identifier(Table.DEVICES),
-                device_type=sql.Literal(device_type.value),
-                status=sql.Literal(DeviceStatus.AVAILABLE.value),
-                location=sql.Literal(location.value),
-            )
+        select_query = sql.SQL(
+            self._load_query_by_name(query_name="get_available_device_ids")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+            device_type=sql.Literal(device_type.value),
+            status=sql.Literal(DeviceStatus.AVAILABLE.value),
+            location=sql.Literal(location.value),
+        )
 
-        with self.__initialize_handle() as handle:
+        with self._initialize_handle() as handle:
             with handle.cursor() as cursor:
                 cursor.execute(select_query)
                 result = cursor.fetchall()
@@ -102,92 +124,152 @@ class DataService:
         If insert_only is False, will insert for any non-existing devices, and overwrite any existing devices.
         """
 
-        query_filename = "insert_devices.sql" if insert_only else "update_devices.sql"
-        with open(
-                os.path.join(os.path.dirname(__file__), f"sql/{query_filename}"),
-                mode="r",
-                encoding="utf-8",
-        ) as file:
-            query = sql.SQL(file.read()).format(
-                schema=sql.Identifier(self.schema),
-                table=sql.Identifier(Table.DEVICES),
-                id=sql.Placeholder(),
-                type=sql.Placeholder(),
-                status=sql.Placeholder(),
-                location=sql.Placeholder(),
-            )
+        query = sql.SQL(
+            self._load_query_by_name(query_name="insert_devices" if insert_only else "update_devices")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+            id=sql.Placeholder(name="id"),
+            type=sql.Placeholder(name="type"),
+            status=sql.Placeholder(name="status"),
+            location=sql.Placeholder(name="location"),
+        )
 
-        with self.__initialize_handle() as handle:
+        with self._initialize_handle() as handle:
             with handle.cursor() as cursor:
                 try:
                     cursor.executemany(
                         query,
-                        [(device.id, device.type, device.status, device.location) for device in devices],
+                        [
+                            {
+                                "id": device.id,
+                                "type": device.type,
+                                "status": device.status,
+                                "location": device.location
+                            } for device in devices
+                        ],
                     )
-                except psycopg.errors.UniqueViolation as exc:
+                except psycopg.errors.UniqueViolation:
                     handle.rollback()
-                    raise UniqueViolation(exc.diag.message_primary + " - " + exc.diag.message_detail) from exc
+                    raise
 
     def insert_new_reservation(self, reservation: NewReservation) -> str:
         """Create a reservation in the database."""
 
-        # load the query from file
-        with open(
-                os.path.join(os.path.dirname(__file__), "sql/insert_new_reservation.sql"),
-                mode="r",
-                encoding="utf-8",
-        ) as file:
-            insert_query = sql.SQL(file.read()).format(
-                device_type_prefix=sql.Placeholder(),
-                schema=sql.Identifier(self.schema),
-                table=sql.Identifier(Table.RESERVATIONS),
-                date=sql.Placeholder(),
-                device_type=sql.Placeholder(),
-                name=sql.Placeholder(),
-                phone_number=sql.Placeholder(),
-                location=sql.Placeholder(),
-                pickup_time=sql.Placeholder(),
-                status=sql.Placeholder(),
-            )
+        insert_query = sql.SQL(
+            self._load_query_by_name(query_name="insert_new_reservation")
+        ).format(
+            device_type_prefix=sql.Placeholder(name="device_type_prefix"),
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            date=sql.Placeholder(name="date"),
+            device_type=sql.Placeholder(name="device_type"),
+            name=sql.Placeholder(name="name"),
+            phone_number=sql.Placeholder(name="phone_number"),
+            location=sql.Placeholder(name="location"),
+            pickup_time=sql.Placeholder(name="pickup_time"),
+            status=sql.Placeholder(name="status"),
+        )
 
         # execute the query and return the created reservation ID
-        with self.__initialize_handle() as handle:
+        with self._initialize_handle() as handle:
             with handle.cursor() as cursor:
                 cursor.execute(
                     insert_query,
-                    (
-                        reservation.device_type.get_device_prefix(),
-                        reservation.date,
-                        reservation.date,
-                        reservation.date,
-                        reservation.device_type,
-                        reservation.name,
-                        reservation.phone_number,
-                        reservation.location,
-                        reservation.pickup_time,
-                        ReservationStatus.get_default_reservation_status(device_type=reservation.device_type),
-                    )
+                    {
+                        "device_type_prefix": reservation.device_type.get_device_prefix(),
+                        "date": reservation.date,
+                        "device_type": reservation.device_type,
+                        "name": reservation.name,
+                        "phone_number": reservation.phone_number,
+                        "location": reservation.location,
+                        "pickup_time": reservation.pickup_time,
+                        "status": ReservationStatus.get_default_reservation_status(device_type=reservation.device_type),
+                    }
                 )
                 result = cursor.fetchall()
         return result[0][0]
 
     def get_reservations_on_date(self, date: datetime.date, device_type: Optional[DeviceType] = None) -> pd.DataFrame:
         """Get all reservations on a given date."""
-        with open(
-                os.path.join(os.path.dirname(__file__), "sql/get_reservations_on_date.sql"),
-                mode="r",
-                encoding="utf-8",
-        ) as file:
-            select_query = sql.SQL(file.read()).format(
-                schema=sql.Identifier(self.schema),
-                table=sql.Identifier(Table.RESERVATIONS),
-                date=sql.Placeholder(),
-                device_type=sql.Placeholder(),
-            )
+        select_query = sql.SQL(
+            self._load_query_by_name(query_name="get_reservations_on_date")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            date=sql.Placeholder(),
+            device_type=sql.Placeholder(),
+        )
 
-        with self.__initialize_handle() as handle:
+        with self._initialize_handle() as handle:
             with handle.cursor() as cursor:
                 cursor.execute(select_query, (date, device_type, device_type))
                 result = cursor.fetchall()
                 col_names = [desc[0] for desc in cursor.description]
         return pd.DataFrame(result, columns=col_names)
+
+    def add_new_rental(self, new_rental: NewRental):
+        """Create a new rental in the database."""
+        if not self.is_custom_functions_initialized:
+            self._initialize_custom_functions()
+
+        insert_query = sql.SQL(
+            self._load_query_by_name(query_name="insert_new_rental")
+        ).format(
+            device_id=sql.Placeholder(name="device_id"),
+            reservation_id=sql.Placeholder(name="reservation_id"),
+            device_type_prefix=sql.Placeholder(name="device_type_prefix"),
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RENTALS),
+            date=sql.Placeholder(name="date"),
+            device_type=sql.Placeholder(name="device_type"),
+            pickup_location=sql.Placeholder(name="pickup_location"),
+            pickup_time=sql.Placeholder(name="pickup_time"),
+            name=sql.Placeholder(name="name"),
+            address=sql.Placeholder(name="address"),
+            city=sql.Placeholder(name="city"),
+            province=sql.Placeholder(name="province"),
+            postal_code=sql.Placeholder(name="postal_code"),
+            country=sql.Placeholder(name="country"),
+            phone_number=sql.Placeholder(name="phone_number"),
+            fee_payment_method=sql.Placeholder(name="fee_payment_method"),
+            fee_payment_amount=sql.Placeholder(name="fee_payment_amount"),
+            deposit_payment_method=sql.Placeholder(name="deposit_payment_method"),
+            deposit_payment_amount=sql.Placeholder(name="deposit_payment_amount"),
+            staff_name=sql.Placeholder(name="staff_name"),
+            items_left_behind=sql.Placeholder(name="items_left_behind"),
+            notes=sql.Placeholder(name="notes"),
+            signature=sql.Placeholder(name="signature"),
+        )
+
+        with self._initialize_handle() as handle:
+            with handle.cursor() as cursor:
+                cursor.execute(
+                    insert_query,
+                    {
+                        "device_id": new_rental.device_id,
+                        "reservation_id": new_rental.reservation_id,
+                        "device_type_prefix": new_rental.device_type.get_device_prefix(),
+                        "date": new_rental.date,
+                        "device_type": new_rental.device_type,
+                        "pickup_location": new_rental.pickup_location,
+                        "pickup_time": new_rental.pickup_time,
+                        "name": new_rental.name,
+                        "address": new_rental.address,
+                        "city": new_rental.city,
+                        "province": new_rental.province,
+                        "postal_code": new_rental.postal_code,
+                        "country": new_rental.country,
+                        "phone_number": new_rental.phone_number,
+                        "fee_payment_method": new_rental.fee_payment_method,
+                        "fee_payment_amount": new_rental.fee_payment_amount,
+                        "deposit_payment_method": new_rental.deposit_payment_method,
+                        "deposit_payment_amount": new_rental.deposit_payment_amount,
+                        "staff_name": new_rental.staff_name,
+                        "items_left_behind": new_rental.items_left_behind,
+                        "notes": new_rental.notes,
+                        "signature": new_rental.signature,
+                    }
+                )
+                result = cursor.fetchall()
+        return result[0][0]

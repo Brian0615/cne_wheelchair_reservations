@@ -7,8 +7,7 @@ import requests
 import streamlit as st
 
 from common.constants import DeviceType, Location
-from common.data_models.device import Device
-from common.data_models.reservation import NewReservation, Reservation
+from common.data_models import Device, NewRental, NewReservation, Reservation
 
 DEFAULT_TIMEOUT = 5
 
@@ -84,3 +83,12 @@ class DataService:
         reservations = response.json()
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
         return reservations
+
+    def add_new_rental(self, new_rental: NewRental):
+        """Add a new rental using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/reservations/add_new_rental",
+            json=new_rental.model_dump(mode="json"),
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.json()

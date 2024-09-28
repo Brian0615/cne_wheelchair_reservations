@@ -1,15 +1,32 @@
+import base64
+import io
 import math
 from datetime import datetime, time
 from typing import List
 
 import pandas as pd
 import streamlit as st
+from PIL import Image
 from plotly import graph_objects as go
 from pydantic import BaseModel
+from pypdf import PdfReader, PdfWriter
 
 from common.constants import DeviceStatus, DeviceType, Location
 from common.data_models.device import Device
+from common.data_models.rental import NewRental
 from ui.src.data_service import DataService
+
+
+def decode_signature_base64(signature_bytes: bytes) -> Image:
+    """Decode a base64 encoded signature."""
+    return Image.open(io.BytesIO(base64.b64decode(signature_bytes)))
+
+
+def encode_signature_base64(signature: Image) -> bytes:
+    """Encode a signature as base64."""
+    signature_bytes = io.BytesIO()
+    signature.save(signature_bytes, format="PNG")
+    return base64.b64encode(signature_bytes.getvalue())
 
 
 def display_inventory(device_type: DeviceType, inventory: pd.DataFrame):

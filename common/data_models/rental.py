@@ -16,7 +16,7 @@ from common.constants import (
 
 class Rental(BaseModel):
     """Data model for a rental."""
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", ser_json_bytes="utf8")
 
     id: constr(to_upper=True, pattern=RENTAL_ID_PATTERN) = Field(title="Rental ID")
     date: datetime.date = Field(title="Rental Date")
@@ -48,7 +48,6 @@ class NewRental(Rental):
     model_config = ConfigDict(extra="forbid")
 
     id: Optional[constr(to_upper=True, pattern=RENTAL_ID_PATTERN)] = Field(title="Rental ID", default=None)
-    reservation_id: constr(pattern=rf"({RESERVATION_ID_PATTERN})|(Walk\-In \(No Reservation\))") = Field(
-        title="Reservation ID")
+    reservation_id: Optional[constr(pattern=RESERVATION_ID_PATTERN)] = Field(title="Reservation ID", default=None)
     return_location: Optional[Location] = Field(title="Return Location", default=None)
     return_time: Optional[AwareDatetime] = Field(title="Return Time", default=None)
