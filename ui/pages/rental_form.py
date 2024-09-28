@@ -120,6 +120,7 @@ if not available_devices:
 reservations_df = data_service.get_reservations_on_date(
     date=rental_information["date"],
     device_type=rental_information["device_type"],
+    exclude_picked_up_reservations=True,
 )
 reservations_list = reservations_df["name"] + " (" + reservations_df["id"] + ")"
 col1, col2, _, _ = st.columns(4)
@@ -158,6 +159,9 @@ rental_information['postal_code'] = col2.text_input(label="Postal Code", key="re
 rental_information['country'] = col3.text_input(label="Country", value="Canada", key="rental_form_country")
 
 id_verified = st.checkbox("ID Verified?")
+
+if not id_verified:
+    st.stop()
 
 st.divider()
 st.subheader("Payment Information")

@@ -53,11 +53,19 @@ def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True,
 
 @app.get("/reservations/get_reservations_on_date")
 @auto_process_database_errors
-def get_reservations_on_date(date: str, device_type: Optional[DeviceType] = None) -> List[Reservation]:
+def get_reservations_on_date(
+        date: str,
+        device_type: Optional[DeviceType] = None,
+        exclude_picked_up_reservations: bool = False,
+) -> List[Reservation]:
     """Get the reservations on a specific date"""
     date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-    reservations = data_service.get_reservations_on_date(date=date, device_type=device_type).to_dict(orient="records")
-    return [Reservation(**x) for x in reservations]
+    reservations = data_service.get_reservations_on_date(
+        date=date,
+        device_type=device_type,
+        exclude_picked_up_reservations=exclude_picked_up_reservations,
+    )
+    return [Reservation(**x) for x in reservations.to_dict(orient="records")]
 
 
 @app.post("/reservations/add_new_rental")

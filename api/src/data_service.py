@@ -6,7 +6,7 @@ from typing import List, Optional, LiteralString
 
 import pandas as pd
 import psycopg
-from psycopg import sql
+from psycopg import sql, Connection
 
 from api.src.constants import Table
 from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
@@ -44,7 +44,7 @@ class DataService:
         ) as query_file:
             return query_file.read()
 
-    def _initialize_handle(self):
+    def _initialize_connection(self) -> Connection:
         """Initialize a connection to the database."""
         return psycopg.connect(
             host=self.host,
@@ -64,8 +64,8 @@ class DataService:
             devices_table=sql.Identifier(Table.DEVICES),
             reservations_table=sql.Identifier(Table.RESERVATIONS),
         )
-        with self._initialize_handle() as handle:
-            with handle.cursor() as cursor:
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
                 cursor.execute(query)
         self.is_custom_functions_initialized = True
 
@@ -78,8 +78,8 @@ class DataService:
 
     def get_full_inventory(self):
         """Get the full inventory of devices from the database."""
-        with self._initialize_handle() as handle:
-            with handle.cursor() as cursor:
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
                 cursor.execute(self.__form_select_all_query(table_name=Table.DEVICES))
                 result = cursor.fetchall()
                 col_names = [desc[0] for desc in cursor.description]
@@ -98,8 +98,8 @@ class DataService:
             location=sql.Literal(location.value),
         )
 
-        with self._initialize_handle() as handle:
-            with handle.cursor() as cursor:
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
                 cursor.execute(select_query)
                 result = cursor.fetchall()
                 col_names = [desc[0] for desc in cursor.description]
@@ -135,8 +135,8 @@ class DataService:
             location=sql.Placeholder(name="location"),
         )
 
-        with self._initialize_handle() as handle:
-            with handle.cursor() as cursor:
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
                 try:
                     cursor.executemany(
                         query,
@@ -150,7 +150,7 @@ class DataService:
                         ],
                     )
                 except psycopg.errors.UniqueViolation:
-                    handle.rollback()
+                    cursor.rollback()
                     raise
 
     def insert_new_reservation(self, reservation: NewReservation) -> str:
@@ -172,8 +172,8 @@ class DataService:
         )
 
         # execute the query and return the created reservation ID
-        with self._initialize_handle() as handle:
-            with handle.cursor() as cursor:
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
                 cursor.execute(
                     insert_query,
                     {
@@ -190,10 +190,21 @@ class DataService:
                 result = cursor.fetchall()
         return result[0][0]
 
-    def get_reservations_on_date(self, date: datetime.date, device_type: Optional[DeviceType] = None) -> pd.DataFrame:
+    def get_reservations_on_date(
+            self,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            exclude_picked_up_reservations: bool = False,
+    ) -> pd.DataFrame:
         """Get all reservations on a given date."""
+
+        query_name = (
+            "get_not_picked_up_reservations_on_date"
+            if exclude_picked_up_reservations
+            else "get_reservations_on_date"
+        )
         select_query = sql.SQL(
-            self._load_query_by_name(query_name="get_reservations_on_date")
+            self._load_query_by_name(query_name=query_name)
         ).format(
             schema=sql.Identifier(self.schema),
             table=sql.Identifier(Table.RESERVATIONS),
@@ -201,8 +212,8 @@ class DataService:
             device_type=sql.Placeholder(),
         )
 
-        with self._initialize_handle() as handle:
-            with handle.cursor() as cursor:
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
                 cursor.execute(select_query, (date, device_type, device_type))
                 result = cursor.fetchall()
                 col_names = [desc[0] for desc in cursor.description]
@@ -242,8 +253,25 @@ class DataService:
             signature=sql.Placeholder(name="signature"),
         )
 
-        with self._initialize_handle() as handle:
-            with handle.cursor() as cursor:
+        update_reservation_query = sql.SQL(
+            self._load_query_by_name(query_name="update_reservation_at_rental_start")
+        ).format(
+            reservation_id=sql.Placeholder(name="reservation_id"),
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            rental_id=sql.Placeholder(name="rental_id"),
+        )
+
+        update_device_query = sql.SQL(
+            self._load_query_by_name(query_name="update_device_at_rental_start")
+        ).format(
+            device_id=sql.Placeholder(name="device_id"),
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
                 cursor.execute(
                     insert_query,
                     {
@@ -271,5 +299,23 @@ class DataService:
                         "signature": new_rental.signature,
                     }
                 )
-                result = cursor.fetchall()
-        return result[0][0]
+                rental_id = cursor.fetchall()[0][0]
+
+                # add rental ID to reservation if there was a reservation
+                if new_rental.reservation_id:
+                    cursor.execute(
+                        update_reservation_query,
+                        {
+                            "reservation_id": new_rental.reservation_id,
+                            "rental_id": rental_id,
+                        },
+                    )
+
+                # update device status
+                cursor.execute(
+                    update_device_query,
+                    {
+                        "device_id": new_rental.device_id,
+                    },
+                )
+        return rental_id

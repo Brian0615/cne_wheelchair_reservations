@@ -73,11 +73,21 @@ class DataService:
         )
         return response.status_code, response.json()
 
-    def get_reservations_on_date(self, date: datetime.date, device_type: Optional[DeviceType] = None):
+    def get_reservations_on_date(
+            self,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            exclude_picked_up_reservations: bool = False,
+    ) -> pd.DataFrame:
         """Get the reservations on a specific date using the API."""
+
         response = requests.get(
             f"http://{self.api_host}:{self.api_port}/reservations/get_reservations_on_date",
-            params={"date": date.strftime("%Y-%m-%d"), "device_type": device_type},
+            params={
+                "date": date.strftime("%Y-%m-%d"),
+                "device_type": device_type,
+                "exclude_picked_up_reservations": exclude_picked_up_reservations,
+            },
             timeout=DEFAULT_TIMEOUT,
         )
         reservations = response.json()

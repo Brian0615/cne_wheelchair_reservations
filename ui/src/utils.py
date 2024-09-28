@@ -237,9 +237,6 @@ def display_reservations(reservations: pd.DataFrame, device_type: DeviceType):
         st.warning(f"**No {device_type} Reservations Today**: There are no reservations for {device_type.value}s.")
         return
 
-    # format datetime to be in EST
-    reservations["pickup_time"] = reservations["pickup_time"].dt.tz_convert("America/Toronto").dt.tz_localize(None)
-
     # display reservations
     st.dataframe(
         data=reservations.set_index("id"),
@@ -250,9 +247,7 @@ def display_reservations(reservations: pd.DataFrame, device_type: DeviceType):
             "name": st.column_config.TextColumn(label="Name"),
             "phone_number": st.column_config.TextColumn(label="Phone Number"),
             "location": st.column_config.TextColumn(label="Location", width="small"),
-            "pickup_time": st.column_config.TimeColumn(label="Reservation Time", format="hh:mm a"),
             "status": st.column_config.TextColumn(label="Status", width="medium"),
-            "device_id": st.column_config.TextColumn(label="Assigned Chair"),
             "rental_id": st.column_config.TextColumn(label="Rental ID"),
             "notes": st.column_config.TextColumn(label="Notes", width="medium"),
 
