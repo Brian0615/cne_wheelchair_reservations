@@ -162,7 +162,7 @@ def create_inventory_chart(inventory: pd.DataFrame):
     fig.update_layout(
         autosize=False,
         width=num_per_row * 50,
-        height=70 * num_rows,
+        height=35 * num_rows,
         margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
         plot_bgcolor="rgba(0, 0, 0, 0)",
         paper_bgcolor="rgba(0, 0, 0, 0)",
@@ -174,7 +174,7 @@ def create_inventory_chart(inventory: pd.DataFrame):
             i % num_per_row,
             -2 * (i // num_per_row),
             (i % num_per_row) + 0.8,
-            -2 * (i // num_per_row) - 1.8
+            -2 * (i // num_per_row) - 1.6
         )
         fig.add_trace(
             go.Scatter(

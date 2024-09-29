@@ -39,7 +39,10 @@ class DataService:
             response = requests.get(
                 url=f"http://{host}:{port}/devices/get_full_inventory",
                 timeout=DEFAULT_TIMEOUT)
-            return pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
+            inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
+            if not inventory.empty:
+                inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
+            return inventory
 
         if reset_cache:
             get_full_inventory_helper.clear()
