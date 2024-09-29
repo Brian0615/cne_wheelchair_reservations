@@ -5,13 +5,13 @@ WITH new_reservation_id
              WHERE date = {date})
 
 INSERT
-INTO {schema}.{table} (id, date, device_type, name, phone_number, location, pickup_time, status)
+INTO {schema}.{table} (id, date, device_type, name, phone_number, location, reservation_time, status)
 VALUES ((SELECT reservation_id FROM new_reservation_id),
         {date},
         {device_type},
         {name},
         {phone_number},
         {location},
-        {pickup_time},
+        {reservation_time},
         {status})
 RETURNING (SELECT reservation_id FROM new_reservation_id)

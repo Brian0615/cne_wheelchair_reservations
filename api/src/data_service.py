@@ -167,7 +167,7 @@ class DataService:
             name=sql.Placeholder(name="name"),
             phone_number=sql.Placeholder(name="phone_number"),
             location=sql.Placeholder(name="location"),
-            pickup_time=sql.Placeholder(name="pickup_time"),
+            reservation_time=sql.Placeholder(name="reservation_time"),
             status=sql.Placeholder(name="status"),
         )
 
@@ -183,7 +183,7 @@ class DataService:
                         "name": reservation.name,
                         "phone_number": reservation.phone_number,
                         "location": reservation.location,
-                        "pickup_time": reservation.pickup_time,
+                        "reservation_time": reservation.reservation_time,
                         "status": ReservationStatus.get_default_reservation_status(device_type=reservation.device_type),
                     }
                 )

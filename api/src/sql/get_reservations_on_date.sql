@@ -4,6 +4,7 @@ SELECT id,
        name,
        phone_number,
        location,
+       reservation_time,
        status,
        rental_id,
        notes
