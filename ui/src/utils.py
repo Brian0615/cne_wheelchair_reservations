@@ -9,11 +9,9 @@ import streamlit as st
 from PIL import Image
 from plotly import graph_objects as go
 from pydantic import BaseModel
-from pypdf import PdfReader, PdfWriter
 
 from common.constants import DeviceStatus, DeviceType, Location
 from common.data_models.device import Device
-from common.data_models.rental import NewRental
 from ui.src.data_service import DataService
 
 
@@ -237,6 +235,9 @@ def display_reservations(reservations: pd.DataFrame, device_type: DeviceType):
         st.warning(f"**No {device_type} Reservations Today**: There are no reservations for {device_type.value}s.")
         return
 
+    # turn times into naive timestamps
+    reservations["reservation_time"] = reservations["reservation_time"].dt.tz_localize(None)
+
     # display reservations
     st.dataframe(
         data=reservations.set_index("id"),
@@ -247,6 +248,7 @@ def display_reservations(reservations: pd.DataFrame, device_type: DeviceType):
             "name": st.column_config.TextColumn(label="Name"),
             "phone_number": st.column_config.TextColumn(label="Phone Number"),
             "location": st.column_config.TextColumn(label="Location", width="small"),
+            "reservation_time": st.column_config.TimeColumn(label="Time", width="small", format="hh:mm a"),
             "status": st.column_config.TextColumn(label="Status", width="medium"),
             "rental_id": st.column_config.TextColumn(label="Rental ID"),
             "notes": st.column_config.TextColumn(label="Notes", width="medium"),
@@ -254,3 +256,35 @@ def display_reservations(reservations: pd.DataFrame, device_type: DeviceType):
         },
         use_container_width=True,
     )
+
+
+def transfer_devices(data_service: DataService, device_type: DeviceType, device_ids: List[str]):
+    devices_to_transfer = st.multiselect(
+        f"{device_type}s to Transfer",
+        options=sorted(device_ids),
+        default=None,
+        key=f"{device_type.value.lower()}_to_transfer",
+    )
+    new_location = st.selectbox(
+        label="New Location",
+        options=Location,
+        index=None,
+        key=f"{device_type.value.lower()}_new_location",
+    )
+
+    num_devices_str = f"{len(devices_to_transfer)} {device_type}{'s' if len(devices_to_transfer) > 1 else ''}"
+    if st.button(
+            label=f"Transfer {num_devices_str}",
+            disabled=(not devices_to_transfer or not new_location)
+    ):
+        status_code, result = data_service.update_devices_location(
+            device_ids=devices_to_transfer,
+            location=new_location,
+        )
+        if status_code == 200:
+            st.session_state["transfer_devices_toast_msg"] = (
+                f"**Success!** Transferred {num_devices_str} to {new_location}"
+            )
+            st.rerun()
+        else:
+            st.error(result)

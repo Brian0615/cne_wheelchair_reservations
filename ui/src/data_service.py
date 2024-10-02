@@ -4,7 +4,6 @@ from typing import List, Optional
 
 import pandas as pd
 import requests
-import streamlit as st
 
 from common.constants import DeviceType, Location
 from common.data_models import Device, NewRental, NewReservation, Reservation
@@ -28,26 +27,22 @@ class DataService:
         response = requests.get(
             url=f"http://{self.api_host}:{self.api_port}/devices/get_available_devices",
             params={"device_type": device_type, "location": location},
-            timeout=DEFAULT_TIMEOUT)
+            timeout=DEFAULT_TIMEOUT,
+        )
         return response.json()
 
-    def get_full_inventory(self, reset_cache=False) -> pd.DataFrame:
+    def get_full_inventory(self) -> pd.DataFrame:
         """Get the full inventory of devices using the API."""
 
-        @st.cache_data(ttl=60, show_spinner=False)
-        def get_full_inventory_helper(host, port):
-            response = requests.get(
-                url=f"http://{host}:{port}/devices/get_full_inventory",
-                timeout=DEFAULT_TIMEOUT)
-            inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
-            if not inventory.empty:
-                inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
-            return inventory
+        response = requests.get(
+            url=f"http://{self.api_host}:{self.api_port}/devices/get_full_inventory",
+            timeout=DEFAULT_TIMEOUT,
+        )
+        inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
+        if not inventory.empty:
+            inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
+        return inventory
 
-        if reset_cache:
-            get_full_inventory_helper.clear()
-
-        return get_full_inventory_helper(self.api_host, self.api_port)
 
     def add_to_inventory(self, devices: List[Device]):
         """Add devices to the inventory using the API."""
@@ -102,6 +97,16 @@ class DataService:
         response = requests.post(
             f"http://{self.api_host}:{self.api_port}/reservations/add_new_rental",
             json=new_rental.model_dump(mode="json"),
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.json()
+
+    def update_devices_location(self, device_ids: List[str], location: Location):
+        """Update the location of devices using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/devices/update_location",
+            params={"location": location},
+            json=device_ids,
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()

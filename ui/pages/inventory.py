@@ -10,7 +10,7 @@ st.header("Inventory")
 
 # load inventory
 data_service = DataService()
-inventory = data_service.get_full_inventory(reset_cache=True)
+inventory = data_service.get_full_inventory()
 scooter_inventory = inventory[inventory["type"] == DeviceType.SCOOTER]
 wheelchair_inventory = inventory[inventory["type"] == DeviceType.WHEELCHAIR]
 

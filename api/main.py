@@ -7,7 +7,7 @@ from pydantic import constr
 from api.src.data_service import DataService
 from api.src.exceptions import UniqueViolation
 from api.src.utils import auto_process_database_errors
-from common.constants import DeviceType, Location, RESERVATION_ID_PATTERN
+from common.constants import DeviceType, Location, DEVICE_ID_PATTERN, RESERVATION_ID_PATTERN
 from common.data_models import Device, NewRental, NewReservation, Reservation
 
 app = FastAPI()
@@ -39,6 +39,13 @@ def insert_devices(devices: List[Device]):
 def update_devices(devices: List[Device]):
     """Set the full inventory of devices. Overwrites the existing inventory."""
     return data_service.update_devices(devices)
+
+
+@app.post("/devices/update_location")
+@auto_process_database_errors
+def update_devices_location(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)], location: Location):
+    """Update the location of devices"""
+    return data_service.update_devices_location(device_ids, location)
 
 
 @app.post("/reservations/add_new_reservation")

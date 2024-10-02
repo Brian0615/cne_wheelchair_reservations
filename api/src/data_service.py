@@ -150,7 +150,7 @@ class DataService:
                         ],
                     )
                 except psycopg.errors.UniqueViolation:
-                    cursor.rollback()
+                    conn.rollback()
                     raise
 
     def insert_new_reservation(self, reservation: NewReservation) -> str:
@@ -319,3 +319,22 @@ class DataService:
                     },
                 )
         return rental_id
+
+    def update_devices_location(self, device_ids: List[str], location: Location):
+        """Update the location of devices in the database."""
+
+        update_query = sql.SQL(
+            self._load_query_by_name(query_name="update_devices_location")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+            device_id=sql.Placeholder(name="device_id"),
+            location=sql.Placeholder(name="location"),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.executemany(
+                    update_query,
+                    [{"device_id": device_id, "location": location} for device_id in device_ids],
+                )

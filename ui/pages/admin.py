@@ -1,3 +1,5 @@
+from typing import List
+
 import pandas as pd
 import streamlit as st
 from pydantic import ValidationError
@@ -5,13 +7,28 @@ from pydantic import ValidationError
 from common.constants import DeviceType
 from common.data_models.device import Device
 from ui.src.data_service import DataService
-from ui.src.utils import display_admin_inventory, admin_add_scooters, admin_add_wheelchairs
+from ui.src.utils import display_admin_inventory, admin_add_scooters, admin_add_wheelchairs, transfer_devices
 
 st.set_page_config(layout="wide")
-st.header("Admin Options")
-
 data_service = DataService()
 
+
+@st.dialog("Transfer Scooters")
+def transfer_scooters(scooter_ids: List[str]):
+    transfer_devices(data_service, DeviceType.SCOOTER, scooter_ids)
+
+
+@st.dialog("Transfer Wheelchairs")
+def transfer_wheelchairs(wheelchair_ids: List[str]):
+    transfer_devices(data_service, DeviceType.WHEELCHAIR, wheelchair_ids)
+
+
+# display possible success messages
+if st.session_state.get("transfer_devices_toast_msg"):
+    st.toast(st.session_state["transfer_devices_toast_msg"])
+    del st.session_state["transfer_devices_toast_msg"]
+
+st.header("Admin Options")
 inventory_tab, = st.tabs(["Inventory"])
 
 with inventory_tab:
@@ -39,18 +56,36 @@ with inventory_tab:
     scooter_col, wheelchair_col = st.columns(2)
     with scooter_col:
         st.subheader("Scooter Inventory")
-        add_scooters_clicked = st.button("Add Scooters", use_container_width=True)
-        if add_scooters_clicked:
-            admin_add_scooters(data_service=data_service, scooter_inventory=scooter_inventory)
+        add_col, transfer_col = st.columns(2)
+        with add_col:
+            add_scooters_clicked = st.button("Add Scooters", use_container_width=True)
+            if add_scooters_clicked:
+                admin_add_scooters(data_service=data_service, scooter_inventory=scooter_inventory)
+        with transfer_col:
+            st.button(
+                label="Transfer Scooters",
+                use_container_width=True,
+                on_click=transfer_scooters,
+                args=(scooter_inventory["id"].tolist(),),
+            )
         updated_scooter_inventory = display_admin_inventory(
             device_type=DeviceType.SCOOTER,
             inventory=scooter_inventory,
         )
     with wheelchair_col:
         st.subheader("Wheelchair Inventory")
-        add_wheelchairs_clicked = st.button("Add Wheelchairs", use_container_width=True)
-        if add_wheelchairs_clicked:
-            admin_add_wheelchairs(data_service=data_service, wheelchair_inventory=wheelchair_inventory)
+        add_col, transfer_col = st.columns(2)
+        with add_col:
+            add_wheelchairs_clicked = st.button("Add Wheelchairs", use_container_width=True)
+            if add_wheelchairs_clicked:
+                admin_add_wheelchairs(data_service=data_service, wheelchair_inventory=wheelchair_inventory)
+        with transfer_col:
+            st.button(
+                label="Transfer Wheelchairs",
+                use_container_width=True,
+                on_click=transfer_wheelchairs,
+                args=(wheelchair_inventory["id"].tolist(),),
+            )
         updated_wheelchair_inventory = display_admin_inventory(
             device_type=DeviceType.WHEELCHAIR,
             inventory=wheelchair_inventory,

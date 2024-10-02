@@ -78,3 +78,23 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION check_if_device_exists(device_id TEXT)
+    RETURNS VOID AS
+$$
+DECLARE
+    device_id_exists BOOLEAN;
+BEGIN
+    -- Check if the device exists
+    SELECT EXISTS (SELECT 1
+                   FROM {schema}.{devices_table}
+                   WHERE id = device_id)
+    INTO device_id_exists;
+
+    -- if device doesn't exist, raise error
+    IF NOT device_id_exists THEN
+        PERFORM raise_custom_error(p_error_code := 'E1001', details := device_id);
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
