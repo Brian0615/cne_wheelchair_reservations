@@ -13,6 +13,21 @@ class DeviceStatus(StrEnum):
     OUT_OF_SERVICE = "Out of Service"
     RENTED = "Rented"
 
+    @classmethod
+    def get_device_status_colour(cls, status):
+        """Get the colour for a device status"""
+        match status:
+            case cls.AVAILABLE:
+                return "#49994C"
+            case cls.BACKUP:
+                return "#A6A6A6"
+            case cls.OUT_OF_SERVICE:
+                return "#D94936"
+            case cls.RENTED:
+                return "#E6920B"
+            case _:
+                raise ValueError(f"Unrecognized device status {status}")
+
 
 class DeviceType(StrEnum):
     """Types of mobility device available for rent"""

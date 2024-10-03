@@ -27,41 +27,62 @@ def encode_signature_base64(signature: Image) -> bytes:
     return base64.b64encode(signature_bytes.getvalue())
 
 
-def display_inventory(device_type: DeviceType, inventory: pd.DataFrame):
+def display_inventory(
+        device_type: DeviceType,
+        inventory: pd.DataFrame,
+        admin_mode: bool = False,
+):
     """Display the inventory of a device type."""
-    st.subheader(f"{device_type} Details")
-    col1, col2 = st.columns(2)
-    with col1:
-        status_filter = st.multiselect(
-            "Filter by Status",
-            options=DeviceStatus,
-            key=f"{device_type.value.lower()}_status_filter",
-        )
-    with col2:
-        location_filter = st.selectbox(
-            "Filter by Location",
-            options=Location,
-            index=None,
-            key=f"{device_type.value.lower()}_location_filter",
-        )
-    if status_filter:
-        inventory = inventory[inventory["status"].isin(status_filter)]
-    if location_filter:
-        inventory = inventory[inventory["location"] == location_filter]
-    st.dataframe(
+
+    if not admin_mode:
+        col1, col2 = st.columns(2)
+        with col1:
+            status_filter = st.multiselect(
+                "Filter by Status",
+                options=DeviceStatus,
+                key=f"{device_type.value.lower()}_status_filter",
+            )
+        with col2:
+            location_filter = st.selectbox(
+                "Filter by Location",
+                options=Location,
+                index=None,
+                key=f"{device_type.value.lower()}_location_filter",
+            )
+        if status_filter:
+            inventory = inventory[inventory["status"].isin(status_filter)]
+        if location_filter:
+            inventory = inventory[inventory["location"] == location_filter]
+
+    updated_inventory = st.data_editor(
         data=inventory,
         column_order=["id", "status", "location"],
         column_config={
-            "id": st.column_config.TextColumn(label=Device.model_fields["id"].title),
-            "status": st.column_config.TextColumn(label=Device.model_fields["status"].title),
-            "location": st.column_config.TextColumn(label=Device.model_fields["location"].title),
+            "id": st.column_config.TextColumn(label=Device.model_fields["id"].title, required=True, disabled=True),
+            "status": st.column_config.SelectboxColumn(
+                label=Device.model_fields["status"].title,
+                options=DeviceStatus,
+                default=DeviceStatus.AVAILABLE,
+                required=True,
+                disabled=not admin_mode,
+            ),
+            "location": st.column_config.SelectboxColumn(
+                label=Device.model_fields["location"].title,
+                options=Location,
+                default=Location.BLC,
+                required=True,
+                disabled=not admin_mode,
+            ),
         },
         use_container_width=True,
         hide_index=True,
+        key=f"{'admin_' if admin_mode else ''}inventory_{device_type.lower()}"
     )
+    updated_inventory["type"] = device_type
+    return updated_inventory
 
 
-def admin_add_devices(data_service: DataService, device_type: DeviceType, inventory: pd.DataFrame):
+def add_devices(data_service: DataService, device_type: DeviceType, inventory: pd.DataFrame):
     """Add devices to the inventory."""
     num_to_add = st.slider(f"Select the number of {device_type}s to add", 1, 50, 1, 1)
 
@@ -86,48 +107,6 @@ def admin_add_devices(data_service: DataService, device_type: DeviceType, invent
         st.rerun()
 
 
-@st.dialog("Add Scooters")
-def admin_add_scooters(data_service: DataService, scooter_inventory: pd.DataFrame):
-    """Add scooters to the inventory."""
-    return admin_add_devices(data_service, DeviceType.SCOOTER, scooter_inventory)
-
-
-@st.dialog("Add Wheelchairs")
-def admin_add_wheelchairs(data_service: DataService, wheelchair_inventory: pd.DataFrame):
-    """Add wheelchairs to the inventory."""
-    return admin_add_devices(data_service, DeviceType.WHEELCHAIR, wheelchair_inventory)
-
-
-def display_admin_inventory(device_type: str, inventory: pd.DataFrame):
-    """Display the inventory of a device type on the admin page."""
-
-    updated_inventory = st.data_editor(
-        data=inventory,
-        column_order=["id", "status", "location"],
-        column_config={
-            "id": st.column_config.TextColumn(label=Device.model_fields["id"].title, required=True, disabled=True),
-            "status": st.column_config.SelectboxColumn(
-                label=Device.model_fields["status"].title,
-                options=DeviceStatus,
-                default=DeviceStatus.AVAILABLE,
-                required=True,
-            ),
-            "location": st.column_config.SelectboxColumn(
-                label=Device.model_fields["location"].title,
-                options=Location,
-                default=Location.BLC,
-                required=True,
-            ),
-        },
-        hide_index=True,
-        num_rows="fixed",
-        use_container_width=True,
-        key=f"admin_inventory_{device_type.lower()}"
-    )
-    updated_inventory["type"] = device_type
-    return updated_inventory
-
-
 def load_reservations_for_date(date: datetime):
     """Load mock reservations for a given date."""
     reservations = pd.DataFrame(
@@ -148,12 +127,7 @@ def load_reservations_for_date(date: datetime):
 # noinspection PyTypeChecker
 def create_inventory_chart(inventory: pd.DataFrame):
     """Create a chart to display the inventory."""
-    colour_mapping = {
-        DeviceStatus.AVAILABLE: "#49994C",
-        DeviceStatus.RENTED: "#E6920B",
-        DeviceStatus.OUT_OF_SERVICE: "#D94936",
-        DeviceStatus.BACKUP: "#A6A6A6"
-    }
+
     fig = go.Figure()
     num_per_row = 25
     num_rows = math.ceil(len(inventory) / num_per_row)
@@ -172,15 +146,15 @@ def create_inventory_chart(inventory: pd.DataFrame):
             i % num_per_row,
             -2 * (i // num_per_row),
             (i % num_per_row) + 0.8,
-            -2 * (i // num_per_row) - 1.6
+            -2 * (i // num_per_row) - 1.5
         )
         fig.add_trace(
             go.Scatter(
                 x=[x0, x0, x1, x1, x0],
                 y=[y0, y1, y1, y0, y0],
                 fill="toself",
-                fillcolor=colour_mapping[device["status"]],
-                line_color=colour_mapping[device["status"]],
+                fillcolor=DeviceStatus.get_device_status_colour(device["status"]),
+                line_color=DeviceStatus.get_device_status_colour(device["status"]),
                 mode="lines",
                 text=f"<b>{device['id']}</b><br>Status: {device['status']}<br>Location: {device['location']}",
                 hoverinfo="text",

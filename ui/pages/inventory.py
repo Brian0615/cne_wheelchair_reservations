@@ -10,9 +10,7 @@ st.header("Inventory")
 
 # load inventory
 data_service = DataService()
-inventory = data_service.get_full_inventory()
-scooter_inventory = inventory[inventory["type"] == DeviceType.SCOOTER]
-wheelchair_inventory = inventory[inventory["type"] == DeviceType.WHEELCHAIR]
+scooter_inventory, wheelchair_inventory = data_service.get_full_inventory()
 
 # generate and display summary charts
 st.subheader("Scooter Summary")
@@ -28,6 +26,8 @@ st.divider()
 # display inventory details
 scooter_col, wheelchair_col = st.columns(2)
 with scooter_col:
+    st.subheader("Scooter Details")
     display_inventory(DeviceType.SCOOTER, scooter_inventory)
 with wheelchair_col:
+    st.subheader("Wheelchair Details")
     display_inventory(DeviceType.WHEELCHAIR, wheelchair_inventory)

@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 import requests
@@ -31,7 +31,7 @@ class DataService:
         )
         return response.json()
 
-    def get_full_inventory(self) -> pd.DataFrame:
+    def get_full_inventory(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Get the full inventory of devices using the API."""
 
         response = requests.get(
@@ -39,10 +39,14 @@ class DataService:
             timeout=DEFAULT_TIMEOUT,
         )
         inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
-        if not inventory.empty:
-            inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
-        return inventory
+        if inventory.empty:
+            inventory = pd.DataFrame(data={field: [] for field in Device.model_fields}, dtype=str)
+        inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
 
+        return (
+            inventory[inventory["type"] == DeviceType.SCOOTER],
+            inventory[inventory["type"] == DeviceType.WHEELCHAIR],
+        )
 
     def add_to_inventory(self, devices: List[Device]):
         """Add devices to the inventory using the API."""
