@@ -2,15 +2,16 @@ import base64
 import io
 import math
 from datetime import datetime, time
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
+import pytz
 import streamlit as st
 from PIL import Image
 from plotly import graph_objects as go
 from pydantic import BaseModel
 
-from common.constants import DeviceStatus, DeviceType, Location
+from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
 from common.data_models.device import Device
 from ui.src.data_service import DataService
 
@@ -31,7 +32,7 @@ def display_inventory(
         device_type: DeviceType,
         inventory: pd.DataFrame,
         admin_mode: bool = False,
-):
+) -> pd.DataFrame:
     """Display the inventory of a device type."""
 
     if not admin_mode:
@@ -200,36 +201,61 @@ def display_validation_errors(errors: List[dict], validation_class: type[BaseMod
     st.error(error_str)
 
 
-def display_reservations(reservations: pd.DataFrame, device_type: DeviceType):
+def display_reservations(
+        reservations: pd.DataFrame,
+        device_type: DeviceType,
+        admin_mode: bool = False,
+) -> Optional[pd.DataFrame]:
     """Display the reservations on the UI."""
 
     # filter for reservations of the right type
-    reservations = reservations[reservations["device_type"] == device_type].sort_index(ascending=True)
     if reservations.empty:
         st.warning(f"**No {device_type} Reservations Today**: There are no reservations for {device_type.value}s.")
-        return
+        return None
 
     # turn times into naive timestamps
     reservations["reservation_time"] = reservations["reservation_time"].dt.tz_localize(None)
 
     # display reservations
-    st.dataframe(
+    updated_reservations = st.data_editor(
         data=reservations.set_index("id"),
         column_config={
-            "id": st.column_config.TextColumn(label="ID"),
+            "id": st.column_config.TextColumn(label="ID", required=True, disabled=True),
             "date": None,
             "device_type": None,
-            "name": st.column_config.TextColumn(label="Name"),
-            "phone_number": st.column_config.TextColumn(label="Phone Number"),
-            "location": st.column_config.TextColumn(label="Location", width="small"),
-            "reservation_time": st.column_config.TimeColumn(label="Time", width="small", format="hh:mm a"),
-            "status": st.column_config.TextColumn(label="Status", width="medium"),
-            "rental_id": st.column_config.TextColumn(label="Rental ID"),
-            "notes": st.column_config.TextColumn(label="Notes", width="medium"),
+            "name": st.column_config.TextColumn(label="Name", required=True, disabled=not admin_mode),
+            "phone_number": st.column_config.TextColumn(label="Phone Number", required=True, disabled=not admin_mode),
+            "location": st.column_config.SelectboxColumn(
+                label="Location",
+                options=Location,
+                width="small",
+                required=True,
+                disabled=not admin_mode,
+            ),
+            "reservation_time": st.column_config.TimeColumn(
+                label="Time",
+                width="small",
+                format="hh:mm a",
+                required=True,
+                disabled=not admin_mode,
+            ),
+            "status": st.column_config.SelectboxColumn(
+                label="Status",
+                options=ReservationStatus,
+                width="medium",
+                required=True,
+                disabled=not admin_mode
+            ),
+            "rental_id": st.column_config.TextColumn(label="Rental ID", required=True, disabled=True),
+            "notes": st.column_config.TextColumn(label="Notes", width="medium", disabled=not admin_mode),
 
         },
         use_container_width=True,
     )
+    updated_reservations["reservation_time"] = (
+        updated_reservations["reservation_time"].dt.tz_localize(pytz.timezone("America/Toronto"))
+    )
+    return updated_reservations
 
 
 def transfer_devices(data_service: DataService, device_type: DeviceType, device_ids: List[str]):

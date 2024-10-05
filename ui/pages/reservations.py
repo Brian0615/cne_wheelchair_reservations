@@ -35,7 +35,11 @@ for date, tab in zip(all_dates, tabs):
         if reservations.empty:
             st.warning(f"**No Reservations Today**: There are no reservations for {date.strftime('%b %d, %Y')}.")
             continue
+        scooter_reservations, wheelchair_reservations = (
+            reservations[reservations["device_type"] == DeviceType.SCOOTER],
+            reservations[reservations["device_type"] == DeviceType.WHEELCHAIR],
+        )
         st.subheader(f"{DeviceType.SCOOTER} Reservations")
-        display_reservations(reservations, device_type=DeviceType.SCOOTER)
+        display_reservations(scooter_reservations, device_type=DeviceType.SCOOTER)
         st.subheader(f"{DeviceType.WHEELCHAIR} Reservations")
-        display_reservations(reservations, device_type=DeviceType.WHEELCHAIR)
+        display_reservations(wheelchair_reservations, device_type=DeviceType.WHEELCHAIR)

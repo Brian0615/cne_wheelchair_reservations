@@ -73,9 +73,12 @@ for col, info in zip(cols, card_info):
             on_click=lambda: st.switch_page(info["page_link"]),
         )
 
-today_date = CNEDates.get_default_date()
-today_reservations = data_service.get_reservations_on_date(today_date)
+reservations = data_service.get_reservations_on_date(CNEDates.get_default_date())
+scooter_reservations, wheelchair_reservations = (
+    reservations[reservations["device_type"] == DeviceType.SCOOTER],
+    reservations[reservations["device_type"] == DeviceType.WHEELCHAIR],
+)
 st.subheader(f"Today's {DeviceType.SCOOTER} Reservations")
-display_reservations(today_reservations, device_type=DeviceType.SCOOTER)
+display_reservations(scooter_reservations, device_type=DeviceType.SCOOTER)
 st.subheader(f"Today's {DeviceType.WHEELCHAIR} Reservations")
-display_reservations(today_reservations, device_type=DeviceType.WHEELCHAIR)
+display_reservations(wheelchair_reservations, device_type=DeviceType.WHEELCHAIR)

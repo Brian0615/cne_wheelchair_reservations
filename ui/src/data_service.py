@@ -94,7 +94,7 @@ class DataService:
         )
         reservations = response.json()
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
-        return reservations
+        return reservations.sort_values(by="id")
 
     def add_new_rental(self, new_rental: NewRental):
         """Add a new rental using the API."""
