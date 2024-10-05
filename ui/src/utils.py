@@ -11,7 +11,7 @@ from PIL import Image
 from plotly import graph_objects as go
 from pydantic import BaseModel
 
-from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
+from common.constants import DeviceStatus, DeviceType, Location, PaymentMethod, ReservationStatus
 from common.data_models.device import Device
 from ui.src.data_service import DataService
 
@@ -256,6 +256,37 @@ def display_reservations(
         updated_reservations["reservation_time"].dt.tz_localize(pytz.timezone("America/Toronto"))
     )
     return updated_reservations
+
+
+def display_rentals(rentals: pd.DataFrame, device_type: DeviceType):
+    """Display the rentals on the UI."""
+    if rentals.empty:
+        st.warning(f"**No {device_type} Rentals Today**: There are no rentals for {device_type.value}s.")
+        return
+
+    # turn times into naive timestamps
+    rentals["pickup_time"] = rentals["pickup_time"].dt.tz_localize(None)
+    rentals["return_time"] = pd.to_datetime(rentals["return_time"]).dt.tz_localize(None)
+
+    # display rentals
+    st.dataframe(
+        data=rentals.set_index("id"),
+        column_config={
+            "id": st.column_config.TextColumn(label="ID"),
+            "date": None,
+            "device_type": None,
+            "name": st.column_config.TextColumn(label="Name", width="medium"),
+            "phone_number": st.column_config.TextColumn(label="Phone Number"),
+            "device_id": st.column_config.TextColumn(label=f"Chair ID", width="small"),
+            "pickup_location": st.column_config.SelectboxColumn(label="Pickup Location", options=Location),
+            "pickup_time": st.column_config.TimeColumn(label="Pickup Time", format="hh:mm a"),
+            "deposit_payment_method": st.column_config.SelectboxColumn(label="Deposit Method", options=PaymentMethod),
+            "return_location": st.column_config.SelectboxColumn(label="Return Location", options=Location),
+            "return_time": st.column_config.TimeColumn(label="Return Time", format="hh:mm a"),
+            "items_left_behind": st.column_config.ListColumn(label="Items Left Behind"),
+            "notes": st.column_config.TextColumn(label="Notes"),
+        },
+    )
 
 
 def transfer_devices(data_service: DataService, device_type: DeviceType, device_ids: List[str]):

@@ -66,10 +66,10 @@ class DeviceType(StrEnum):
         return self.value[0]
 
 
-class ItemLeftBehind(StrEnum):
+class HoldItem(StrEnum):
     """Items that may be left behind by a renter"""
     CANE = 'Cane'
-    CRUTCHES = 'Crutches',
+    CRUTCHES = 'Crutches'
     STROLLER = 'Stroller'
     WALKER = 'Walker'
     WHEELCHAIR = 'Wheelchair'

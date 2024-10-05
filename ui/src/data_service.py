@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 
 from common.constants import DeviceType, Location
-from common.data_models import Device, NewRental, NewReservation, Reservation
+from common.data_models import Device, NewRental, NewReservation, RentalBase, Reservation
 
 DEFAULT_TIMEOUT = 5
 
@@ -75,6 +75,21 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    def get_rentals_on_date(
+            self,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+    ):
+        """Get the rentals on a specific date using the API."""
+        response = requests.get(
+            f"http://{self.api_host}:{self.api_port}/rentals/get_rentals_on_date",
+            params={"date": date.strftime("%Y-%m-%d"), "device_type": device_type},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        rentals = response.json()
+        rentals = pd.DataFrame([RentalBase(**rental).model_dump() for rental in rentals])
+        return rentals.sort_values(by="id")
+
     def get_reservations_on_date(
             self,
             date: datetime.date,
@@ -99,7 +114,7 @@ class DataService:
     def add_new_rental(self, new_rental: NewRental):
         """Add a new rental using the API."""
         response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/reservations/add_new_rental",
+            f"http://{self.api_host}:{self.api_port}/rentals/add_new_rental",
             json=new_rental.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )

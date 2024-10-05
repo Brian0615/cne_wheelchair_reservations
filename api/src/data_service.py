@@ -7,9 +7,10 @@ from typing import List, Optional, LiteralString
 import pandas as pd
 import psycopg
 from psycopg import sql, Connection
+from psycopg.types.enum import EnumInfo, register_enum
 
 from api.src.constants import Table
-from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
+from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus
 from common.data_models import Device, NewRental, NewReservation
 
 
@@ -32,7 +33,9 @@ class DataService:
         self.password = password
         self.db_name = db_name
         self.schema = schema
-        self.is_custom_functions_initialized = False
+
+        self._initialize_enums()
+        self._initialize_custom_functions()
 
     @staticmethod
     def _load_query_by_name(query_name: str) -> LiteralString:
@@ -67,7 +70,20 @@ class DataService:
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(query)
-        self.is_custom_functions_initialized = True
+
+    def _initialize_enums(self):
+
+        for psql_enum_name, python_enum_class in [
+            ("device_status", DeviceStatus),
+            ("device_type", DeviceType),
+            ("hold_item", HoldItem),
+            ("location", Location),
+            ("payment_method", PaymentMethod),
+            ("reservation_status", ReservationStatus),
+        ]:
+            with self._initialize_connection() as conn:
+                enum_info = EnumInfo.fetch(conn, f"{self.schema}.{psql_enum_name}")
+                register_enum(enum_info, conn, python_enum_class)
 
     def __form_select_all_query(self, table_name: Table) -> sql.Composed:
         """Form a query to select all rows from a table in the database"""
@@ -81,9 +97,7 @@ class DataService:
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(self.__form_select_all_query(table_name=Table.DEVICES))
-                result = cursor.fetchall()
-                col_names = [desc[0] for desc in cursor.description]
-        return pd.DataFrame(result, columns=col_names)
+                return self._fetch_result_data_as_dataframe(cursor)
 
     def select_available_device_ids(self, device_type: DeviceType, location: Location):
         """Get all available devices of a given type at a given location."""
@@ -101,9 +115,7 @@ class DataService:
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(select_query)
-                result = cursor.fetchall()
-                col_names = [desc[0] for desc in cursor.description]
-        return pd.DataFrame(result, columns=col_names)["id"].tolist()
+                return [row[0] for row in cursor.fetchall()]
 
     def insert_devices(self, devices: List[Device]):
         """Add devices to the inventory in the database. Will raise an error if there are any conflicts."""
@@ -190,6 +202,27 @@ class DataService:
                 result = cursor.fetchall()
         return result[0][0]
 
+    def get_rentals_on_date(
+            self,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+    ):
+        """Get all rentals on a given date."""
+
+        select_query = sql.SQL(
+            self._load_query_by_name(query_name="get_rentals_on_date")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RENTALS),
+            date=sql.Placeholder(),
+            device_type=sql.Placeholder(),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(select_query, (date, device_type, device_type))
+                return self._fetch_result_data_as_dataframe(cursor)
+
     def get_reservations_on_date(
             self,
             date: datetime.date,
@@ -215,14 +248,10 @@ class DataService:
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(select_query, (date, device_type, device_type))
-                result = cursor.fetchall()
-                col_names = [desc[0] for desc in cursor.description]
-        return pd.DataFrame(result, columns=col_names)
+                return self._fetch_result_data_as_dataframe(cursor)
 
     def add_new_rental(self, new_rental: NewRental):
         """Create a new rental in the database."""
-        if not self.is_custom_functions_initialized:
-            self._initialize_custom_functions()
 
         insert_query = sql.SQL(
             self._load_query_by_name(query_name="insert_new_rental")
@@ -338,3 +367,10 @@ class DataService:
                     update_query,
                     [{"device_id": device_id, "location": location} for device_id in device_ids],
                 )
+
+    @staticmethod
+    def _fetch_result_data_as_dataframe(cursor) -> pd.DataFrame:
+        """Fetch data from a cursor as a pandas DataFrame."""
+        result = cursor.fetchall()
+        col_names = [desc[0] for desc in cursor.description]
+        return pd.DataFrame(result, columns=col_names)

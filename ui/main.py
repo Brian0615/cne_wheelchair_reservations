@@ -7,7 +7,7 @@ from streamlit_card import card
 from common.constants import DeviceType
 from src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import display_reservations
+from ui.src.utils import display_rentals, display_reservations
 
 st.set_page_config(layout="wide")
 data_service = DataService()
@@ -73,12 +73,26 @@ for col, info in zip(cols, card_info):
             on_click=lambda: st.switch_page(info["page_link"]),
         )
 
-reservations = data_service.get_reservations_on_date(CNEDates.get_default_date())
-scooter_reservations, wheelchair_reservations = (
-    reservations[reservations["device_type"] == DeviceType.SCOOTER],
-    reservations[reservations["device_type"] == DeviceType.WHEELCHAIR],
-)
-st.subheader(f"Today's {DeviceType.SCOOTER} Reservations")
-display_reservations(scooter_reservations, device_type=DeviceType.SCOOTER)
-st.subheader(f"Today's {DeviceType.WHEELCHAIR} Reservations")
-display_reservations(wheelchair_reservations, device_type=DeviceType.WHEELCHAIR)
+reservations_tab, rentals_tab = st.tabs(["Reservations", "Rentals"])
+
+with reservations_tab:
+    reservations = data_service.get_reservations_on_date(CNEDates.get_default_date())
+    scooter_reservations, wheelchair_reservations = (
+        reservations[reservations["device_type"] == DeviceType.SCOOTER],
+        reservations[reservations["device_type"] == DeviceType.WHEELCHAIR],
+    )
+    st.subheader(f"Today's {DeviceType.SCOOTER} Reservations")
+    display_reservations(scooter_reservations, device_type=DeviceType.SCOOTER)
+    st.subheader(f"Today's {DeviceType.WHEELCHAIR} Reservations")
+    display_reservations(wheelchair_reservations, device_type=DeviceType.WHEELCHAIR)
+
+with rentals_tab:
+    rentals = data_service.get_rentals_on_date(CNEDates.get_default_date())
+    scooter_rentals, wheelchair_rentals = (
+        rentals[rentals["device_type"] == DeviceType.SCOOTER],
+        rentals[rentals["device_type"] == DeviceType.WHEELCHAIR],
+    )
+    st.subheader(f"Today's {DeviceType.SCOOTER} Rentals")
+    display_rentals(scooter_rentals, device_type=DeviceType.SCOOTER)
+    st.subheader(f"Today's {DeviceType.WHEELCHAIR} Rentals")
+    display_rentals(wheelchair_rentals, device_type=DeviceType.WHEELCHAIR)

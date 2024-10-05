@@ -8,7 +8,7 @@ from api.src.data_service import DataService
 from api.src.exceptions import UniqueViolation
 from api.src.utils import auto_process_database_errors
 from common.constants import DeviceType, Location, DEVICE_ID_PATTERN, RESERVATION_ID_PATTERN
-from common.data_models import Device, NewRental, NewReservation, Reservation
+from common.data_models import Device, NewRental, NewReservation, RentalBase, Reservation
 
 app = FastAPI()
 data_service = DataService()
@@ -75,8 +75,18 @@ def get_reservations_on_date(
     return [Reservation(**x) for x in reservations.to_dict(orient="records")]
 
 
-@app.post("/reservations/add_new_rental")
+@app.post("/rentals/add_new_rental")
 @auto_process_database_errors
 def add_new_rental(new_rental: NewRental):
     """Start a new rental"""
     return data_service.add_new_rental(new_rental=new_rental)
+
+
+@app.get("/rentals/get_rentals_on_date")
+@auto_process_database_errors
+def get_rentals_on_date(date: str, device_type: DeviceType = None) -> List[RentalBase]:
+    """Get the rentals on a specific date"""
+    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    rentals = data_service.get_rentals_on_date(date=date, device_type=device_type)
+    rentals["items_left_behind"] = rentals["items_left_behind"].apply(lambda x: [] if x == "{}" else x[1:-1].split(","))
+    return [RentalBase(**x) for x in rentals.to_dict(orient="records")]

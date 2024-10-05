@@ -7,7 +7,7 @@ from PIL import Image
 from pydantic import ValidationError
 from streamlit_drawable_canvas import st_canvas
 
-from common.constants import DeviceType, ItemLeftBehind, Location, PaymentMethod, WALK_IN_RESERVATION_ID
+from common.constants import DeviceType, HoldItem, Location, PaymentMethod, WALK_IN_RESERVATION_ID
 from common.data_models.rental import NewRental
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
@@ -186,7 +186,7 @@ col1, col2 = st.columns(2)
 rental_info['staff_name'] = col1.text_input("Staff Name")
 rental_info['items_left_behind'] = col2.multiselect(
     "Items Left Behind by Renter",
-    options=ItemLeftBehind,
+    options=HoldItem,
     key="rental_form_items_left_behind",
 )
 
