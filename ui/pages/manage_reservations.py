@@ -8,7 +8,7 @@ from ui.src.data_service import DataService
 from ui.src.utils import display_reservations
 
 st.set_page_config(layout="wide")
-st.header("Reservations")
+st.header("Manage Reservations")
 
 # initialize data service
 data_service = DataService()
@@ -23,14 +23,14 @@ date = col1.date_input(
     max_value=all_dates[-1],
 )
 reservations = data_service.get_reservations_on_date(date=date)
+if reservations.empty:
+    st.warning(f"**No Reservations Today**: There are no reservations for {date.strftime('%b %d, %Y')}.")
+    st.stop()
+
 scooter_reservations, wheelchair_reservations = (
     reservations[reservations["device_type"] == DeviceType.SCOOTER],
     reservations[reservations["device_type"] == DeviceType.WHEELCHAIR],
 )
-
-if reservations.empty:
-    st.warning(f"**No Reservations Today**: There are no reservations for {date.strftime('%b %d, %Y')}.")
-    st.stop()
 st.subheader(f"{DeviceType.SCOOTER} Reservations")
 display_reservations(scooter_reservations, device_type=DeviceType.SCOOTER, admin_mode=True)
 st.subheader(f"{DeviceType.WHEELCHAIR} Reservations")
