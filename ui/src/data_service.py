@@ -6,7 +6,15 @@ import pandas as pd
 import requests
 
 from common.constants import DeviceType, Location
-from common.data_models import Device, NewRental, NewReservation, RentalSummary, Reservation, CompletedRental
+from common.data_models import (
+    ChangeDeviceInfo,
+    CompletedRental,
+    Device,
+    NewRental,
+    NewReservation,
+    RentalSummary,
+    Reservation,
+)
 
 DEFAULT_TIMEOUT = 5
 
@@ -123,6 +131,15 @@ class DataService:
         response = requests.post(
             f"http://{self.api_host}:{self.api_port}/rentals/add_new_rental",
             json=new_rental.model_dump(mode="json"),
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.json()
+
+    def change_rental_device(self, change_device_info: ChangeDeviceInfo):
+        """Change the device of a rental using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/rentals/change_device",
+            json=change_device_info.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()

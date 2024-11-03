@@ -11,7 +11,7 @@ from psycopg.types.enum import EnumInfo, register_enum
 
 from api.src.constants import Table
 from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus
-from common.data_models import Device, CompletedRental, NewRental, NewReservation
+from common.data_models import ChangeDeviceInfo, CompletedRental, Device, NewRental, NewReservation
 
 
 class DataService:
@@ -351,6 +351,45 @@ class DataService:
                     },
                 )
         return rental_id
+
+    def change_device_for_rental(self, change_device_info: ChangeDeviceInfo):
+        """Change the device for a rental in the database."""
+
+        self.update_devices(
+            devices=[
+                Device(
+                    id=change_device_info.new_device_id,
+                    type=change_device_info.device_type,
+                    status=DeviceStatus.RENTED,
+                    location=change_device_info.location
+                ),
+                Device(
+                    id=change_device_info.old_device_id,
+                    type=change_device_info.device_type,
+                    status=DeviceStatus.AVAILABLE,
+                    location=change_device_info.location,
+                )
+            ]
+        )
+
+        update_rental_device_query = sql.SQL(
+            self._load_query_by_name(query_name="update_rental_device")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RENTALS),
+            rental_id=sql.Placeholder(name="rental_id"),
+            device_id=sql.Placeholder(name="new_device_id"),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    update_rental_device_query,
+                    {
+                        "rental_id": change_device_info.rental_id,
+                        "new_device_id": change_device_info.new_device_id,
+                    },
+                )
 
     def complete_rental(self, completed_rental: CompletedRental):
         """Complete a rental in the database."""

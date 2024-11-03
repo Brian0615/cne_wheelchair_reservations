@@ -69,3 +69,13 @@ class CompletedRental(RentalBase):
     return_time: Optional[AwareDatetime] = Field(title="Return Time", default=None)
     return_staff_name: constr(min_length=5) = Field(title="Return Staff Name")
     return_signature: bytes = Field(title="Return Signature")
+
+
+class ChangeDeviceInfo(BaseModel):
+    """Data model for changing device info"""
+    rental_id: constr(to_upper=True, pattern=RENTAL_ID_PATTERN) = Field(title="Rental ID")
+    device_type: DeviceType = Field(title="Device Type")
+    location: Location = Field(title="Location")
+    old_device_id: constr(to_upper=True, pattern=DEVICE_ID_PATTERN) = Field(title="Old Device ID")
+    new_device_id: constr(to_upper=True, pattern=DEVICE_ID_PATTERN) = Field(title="New Device ID")
+    staff_name: constr(min_length=5) = Field(title="Staff Name")

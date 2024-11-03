@@ -8,7 +8,15 @@ from api.src.data_service import DataService
 from api.src.exceptions import UniqueViolation
 from api.src.utils import auto_process_database_errors
 from common.constants import DeviceType, Location, DEVICE_ID_PATTERN, RESERVATION_ID_PATTERN
-from common.data_models import CompletedRental, Device, NewRental, NewReservation, RentalSummary, Reservation
+from common.data_models import (
+    ChangeDeviceInfo,
+    CompletedRental,
+    Device,
+    NewRental,
+    NewReservation,
+    RentalSummary,
+    Reservation,
+)
 
 app = FastAPI()
 data_service = DataService()
@@ -80,6 +88,13 @@ def get_reservations_on_date(
 def add_new_rental(new_rental: NewRental):
     """Start a new rental"""
     return data_service.add_new_rental(new_rental=new_rental)
+
+
+@app.post("/rentals/change_device")
+@auto_process_database_errors
+def change_device(change_device_info: ChangeDeviceInfo):
+    """Change the device of a rental"""
+    return data_service.change_device_for_rental(change_device_info=change_device_info)
 
 
 @app.post("/rentals/complete_rental")
