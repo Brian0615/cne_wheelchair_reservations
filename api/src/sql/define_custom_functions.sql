@@ -46,6 +46,26 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+CREATE OR REPLACE FUNCTION check_if_rental_exists(rental_id TEXT)
+    RETURNS VOID AS
+$$
+DECLARE
+    rental_status TEXT;
+BEGIN
+    -- Check the status of the rental
+    SELECT status
+    INTO rental_status
+    FROM {schema}.{rentals_table}
+    WHERE id = rental_id;
+
+    -- if rental doesn't exist, raise error
+    IF rental_status IS NULL THEN
+        PERFORM raise_custom_error(p_error_code := 'E3001', details := rental_id);
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
 CREATE OR REPLACE FUNCTION check_if_reservation_exists(reservation_id TEXT)
     RETURNS VOID AS
 $$

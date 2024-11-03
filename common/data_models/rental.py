@@ -1,7 +1,8 @@
 import datetime
 from typing import List, Optional
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, conint, constr, Field
+import pandas as pd
+from pydantic import AwareDatetime, BaseModel, ConfigDict, conint, constr, Field, field_validator
 
 from common.constants import (
     DeviceType,
@@ -15,10 +16,16 @@ from common.constants import (
 
 
 class RentalBase(BaseModel):
-    """Data model for a base rental"""
+    """Base Data Model for Rentals"""
+
     model_config = ConfigDict(extra="forbid", ser_json_bytes="utf8")
 
     id: constr(to_upper=True, pattern=RENTAL_ID_PATTERN) = Field(title="Rental ID")
+
+
+class RentalSummary(RentalBase):
+    """Data model for a base rental"""
+
     date: datetime.date = Field(title="Rental Date")
     name: constr(min_length=3) = Field(title="Name")
     phone_number: constr(min_length=5) = Field(title="Phone Number")
@@ -33,10 +40,18 @@ class RentalBase(BaseModel):
     items_left_behind: List[HoldItem] = Field(title="Items Left Behind", default=[])
     notes: Optional[str] = Field(title="Notes", default="N/A")
 
+    # validator to convert pandas NaT to None
+    @field_validator("return_time", mode="before")
+    @classmethod
+    def convert_nat_to_none(cls, value):
+        return None if pd.isnull(value) else value
 
-class Rental(RentalBase):
+
+class NewRental(RentalSummary):
     """Data model for a rental."""
 
+    id: Optional[constr(to_upper=True, pattern=RENTAL_ID_PATTERN)] = Field(title="Rental ID", default=None)
+    reservation_id: Optional[constr(pattern=RESERVATION_ID_PATTERN)] = Field(title="Reservation ID", default=None)
     address: constr(min_length=5, strip_whitespace=True) = Field(title="Address")
     city: constr(min_length=5) = Field(title="City")
     province: constr(min_length=2) = Field(title="Province")
@@ -49,8 +64,8 @@ class Rental(RentalBase):
     signature: bytes = Field(title="Signature")
 
 
-class NewRental(Rental):
-    """Data model for a new rental."""
-
-    id: Optional[constr(to_upper=True, pattern=RENTAL_ID_PATTERN)] = Field(title="Rental ID", default=None)
-    reservation_id: Optional[constr(pattern=RESERVATION_ID_PATTERN)] = Field(title="Reservation ID", default=None)
+class CompletedRental(RentalBase):
+    return_location: Optional[Location] = Field(title="Return Location", default=None)
+    return_time: Optional[AwareDatetime] = Field(title="Return Time", default=None)
+    return_staff_name: constr(min_length=5) = Field(title="Return Staff Name")
+    return_signature: bytes = Field(title="Return Signature")

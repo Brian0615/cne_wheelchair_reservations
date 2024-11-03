@@ -11,7 +11,7 @@ from psycopg.types.enum import EnumInfo, register_enum
 
 from api.src.constants import Table
 from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus
-from common.data_models import Device, NewRental, NewReservation
+from common.data_models import Device, CompletedRental, NewRental, NewReservation
 
 
 class DataService:
@@ -65,6 +65,7 @@ class DataService:
             schema=sql.Identifier(self.schema),
             custom_exceptions_table=sql.Identifier(Table.CUSTOM_EXCEPTIONS),
             devices_table=sql.Identifier(Table.DEVICES),
+            rentals_table=sql.Identifier(Table.RENTALS),
             reservations_table=sql.Identifier(Table.RESERVATIONS),
         )
         with self._initialize_connection() as conn:
@@ -206,6 +207,7 @@ class DataService:
             self,
             date: datetime.date,
             device_type: Optional[DeviceType] = None,
+            in_progress_rentals_only: bool = False,
     ):
         """Get all rentals on a given date."""
 
@@ -216,11 +218,12 @@ class DataService:
             table=sql.Identifier(Table.RENTALS),
             date=sql.Placeholder(),
             device_type=sql.Placeholder(),
+            in_progress_only=sql.Placeholder(),
         )
 
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.execute(select_query, (date, device_type, device_type))
+                cursor.execute(select_query, (date, device_type, device_type, in_progress_rentals_only))
                 return self._fetch_result_data_as_dataframe(cursor)
 
     def get_reservations_on_date(
@@ -348,6 +351,49 @@ class DataService:
                     },
                 )
         return rental_id
+
+    def complete_rental(self, completed_rental: CompletedRental):
+        """Complete a rental in the database."""
+
+        update_rental_query = sql.SQL(
+            self._load_query_by_name(query_name="update_rental_on_return")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RENTALS),
+            rental_id=sql.Placeholder(name="rental_id"),
+            return_location=sql.Placeholder(name="return_location"),
+            return_time=sql.Placeholder(name="return_time"),
+            return_staff_name=sql.Placeholder(name="return_staff_name"),
+            return_signature=sql.Placeholder(name="return_signature"),
+        )
+
+        update_reservation_query = sql.SQL(
+            self._load_query_by_name(query_name="update_reservation_on_rental_return")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            rental_id=sql.Placeholder(name="rental_id"),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    update_rental_query,
+                    {
+                        "rental_id": completed_rental.id,
+                        "return_location": completed_rental.return_location,
+                        "return_time": completed_rental.return_time,
+                        "return_staff_name": completed_rental.return_staff_name,
+                        "return_signature": completed_rental.return_signature,
+                    },
+                )
+
+                cursor.execute(
+                    update_reservation_query,
+                    {
+                        "rental_id": completed_rental.id,
+                    },
+                )
 
     def update_devices_location(self, device_ids: List[str], location: Location):
         """Update the location of devices in the database."""

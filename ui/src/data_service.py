@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 
 from common.constants import DeviceType, Location
-from common.data_models import Device, NewRental, NewReservation, RentalBase, Reservation
+from common.data_models import Device, NewRental, NewReservation, RentalSummary, Reservation, CompletedRental
 
 DEFAULT_TIMEOUT = 5
 
@@ -79,15 +79,22 @@ class DataService:
             self,
             date: datetime.date,
             device_type: Optional[DeviceType] = None,
+            in_progress_rentals_only: bool = False,
     ):
         """Get the rentals on a specific date using the API."""
         response = requests.get(
             f"http://{self.api_host}:{self.api_port}/rentals/get_rentals_on_date",
-            params={"date": date.strftime("%Y-%m-%d"), "device_type": device_type},
+            params={
+                "date": date.strftime("%Y-%m-%d"),
+                "device_type": device_type,
+                "in_progress_rentals_only": in_progress_rentals_only,
+            },
             timeout=DEFAULT_TIMEOUT,
         )
         rentals = response.json()
-        rentals = pd.DataFrame([RentalBase(**rental).model_dump() for rental in rentals])
+        rentals = pd.DataFrame([RentalSummary(**rental).model_dump() for rental in rentals])
+        if rentals.empty:
+            return rentals
         return rentals.sort_values(by="id")
 
     def get_reservations_on_date(
@@ -116,6 +123,15 @@ class DataService:
         response = requests.post(
             f"http://{self.api_host}:{self.api_port}/rentals/add_new_rental",
             json=new_rental.model_dump(mode="json"),
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.json()
+
+    def complete_rental(self, completed_rental: CompletedRental):
+        """Complete a rental using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/rentals/complete_rental",
+            json=completed_rental.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()
