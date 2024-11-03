@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from enum import StrEnum, auto
 from typing import List, Optional, Tuple
 
 
@@ -31,3 +32,8 @@ class CNEDates:
         """Get the default reservation date for the reservation form."""
         all_dates = cls.get_cne_date_list(year=datetime.today().year)
         return min(max(all_dates), max(min(all_dates), datetime.today().date() + timedelta(days=1)))
+
+
+class Page(StrEnum):
+    VIEW_RENTALS = auto()
+    VIEW_RESERVATIONS = auto()

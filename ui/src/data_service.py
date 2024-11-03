@@ -15,6 +15,7 @@ from common.data_models import (
     RentalSummary,
     Reservation,
 )
+from ui.src.constants import CNEDates
 
 DEFAULT_TIMEOUT = 5
 
@@ -105,6 +106,13 @@ class DataService:
             return rentals
         return rentals.sort_values(by="id")
 
+    def get_all_rentals(self):
+        """Get all rentals for the current year."""
+        return {
+            date: self.get_rentals_on_date(date)
+            for date in CNEDates.get_cne_date_list(year=datetime.datetime.today().year)
+        }
+
     def get_reservations_on_date(
             self,
             date: datetime.date,
@@ -125,6 +133,13 @@ class DataService:
         reservations = response.json()
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
         return reservations
+
+    def get_all_reservations(self):
+        """Get all reservations for the current year."""
+        return {
+            date: self.get_reservations_on_date(date)
+            for date in CNEDates.get_cne_date_list(year=datetime.datetime.today().year)
+        }
 
     def add_new_rental(self, new_rental: NewRental):
         """Add a new rental using the API."""

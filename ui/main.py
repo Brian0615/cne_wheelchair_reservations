@@ -26,12 +26,12 @@ card_info = [
     },
     {
         "asset_path": "assets/modify_rental.png",
-        "page_link": "pages/reservation_form.py",
+        "page_link": "pages/manage_rental.py",
         "key": "card3",
     },
     {
         "asset_path": "assets/complete_rental.png",
-        "page_link": "pages/reservation_form.py",
+        "page_link": "pages/manage_rental.py",
         "key": "card4",
     },
     {
