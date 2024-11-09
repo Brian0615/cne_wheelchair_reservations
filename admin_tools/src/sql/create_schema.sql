@@ -56,4 +56,18 @@ CREATE SCHEMA {schema_name}
         error_code    varchar NOT NULL,
         error_message varchar NOT NULL,
         CONSTRAINT custom_exceptions_pk PRIMARY KEY (error_code)
-    );
+    )
+
+    -- grant default permissions to cne_read_write and cne_read_only
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {schema_name} TO cne_read_write;
+GRANT SELECT ON ALL TABLES IN SCHEMA {schema_name} TO cne_read_only;
+GRANT USAGE ON SCHEMA {schema_name} TO cne_read_write;
+GRANT USAGE ON SCHEMA {schema_name} TO cne_read_only;
+GRANT SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA {schema_name} TO cne_read_write;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA {schema_name} TO cne_read_only;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA {schema_name} TO cne_read_write;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA {schema_name} TO cne_read_only;
+GRANT EXECUTE ON ALL PROCEDURES IN SCHEMA {schema_name} TO cne_read_write;
+GRANT EXECUTE ON ALL PROCEDURES IN SCHEMA {schema_name} TO cne_read_only;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA {schema_name} TO cne_read_write;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA {schema_name} TO cne_read_only;

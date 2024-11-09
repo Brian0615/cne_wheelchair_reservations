@@ -46,6 +46,12 @@ def create_schema(schema_name: str):
             dbname=os.environ["POSTGRES_DB_NAME"],
     ) as conn:
         with conn.cursor() as cursor:
+            print(
+                f"Connected to PostgreSQL at {os.environ['POSTGRES_HOST']} "
+                f"as user {os.environ['POSTGRES_USERNAME']}"
+            )
             cursor.execute(create_schema_query)
             cursor.executemany(insert_custom_exception_query, custom_exceptions.to_dict(orient="records"))
             conn.commit()
+
+    print(f"Schema {schema_name} created successfully")
