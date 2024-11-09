@@ -86,19 +86,36 @@ with wheelchair_col:
     transfer_col.button(label="Transfer Wheelchairs", use_container_width=True, on_click=transfer_wheelchairs)
 
 with scooter_col:
-    updated_scooter_inventory = display_inventory(
-        device_type=DeviceType.SCOOTER,
-        inventory=st.session_state["admin_scooter_inventory"],
-        admin_mode=True,
-    )
-    if not st.session_state["admin_scooter_inventory"].equals(updated_scooter_inventory):
-        update_inventory(new_inventory=updated_scooter_inventory, device_type=DeviceType.SCOOTER)
+    if st.session_state["admin_scooter_inventory"].empty:
+        st.warning(
+            """
+            **No Scooters in Inventory**:
+            
+            There are no scooters in the inventory. Add some using the button above.
+            """
+        )
+    else:
+        updated_scooter_inventory = display_inventory(
+            device_type=DeviceType.SCOOTER,
+            inventory=st.session_state["admin_scooter_inventory"],
+            admin_mode=True,
+        )
+        if not st.session_state["admin_scooter_inventory"].equals(updated_scooter_inventory):
+            update_inventory(new_inventory=updated_scooter_inventory, device_type=DeviceType.SCOOTER)
 
 with wheelchair_col:
-    updated_wheelchair_inventory = display_inventory(
-        device_type=DeviceType.WHEELCHAIR,
-        inventory=st.session_state["admin_wheelchair_inventory"],
-        admin_mode=True,
-    )
-    if not st.session_state["admin_wheelchair_inventory"].equals(updated_wheelchair_inventory):
-        update_inventory(new_inventory=updated_wheelchair_inventory, device_type=DeviceType.WHEELCHAIR)
+    if st.session_state["admin_wheelchair_inventory"].empty:
+        st.warning("""
+            **No Wheelchairs in Inventory**:
+            
+            There are no wheelchairs in the inventory. Add some using the button above.
+            """
+                   )
+    else:
+        updated_wheelchair_inventory = display_inventory(
+            device_type=DeviceType.WHEELCHAIR,
+            inventory=st.session_state["admin_wheelchair_inventory"],
+            admin_mode=True,
+        )
+        if not st.session_state["admin_wheelchair_inventory"].equals(updated_wheelchair_inventory):
+            update_inventory(new_inventory=updated_wheelchair_inventory, device_type=DeviceType.WHEELCHAIR)
