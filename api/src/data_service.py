@@ -9,8 +9,7 @@ import psycopg
 from psycopg import sql, Connection
 from psycopg.types.enum import EnumInfo, register_enum
 
-from api.src.constants import Table
-from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus
+from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus, Table
 from common.data_models import ChangeDeviceInfo, CompletedRental, Device, NewRental, NewReservation
 
 
@@ -83,7 +82,7 @@ class DataService:
             ("reservation_status", ReservationStatus),
         ]:
             with self._initialize_connection() as conn:
-                enum_info = EnumInfo.fetch(conn, f"{self.schema}.{psql_enum_name}")
+                enum_info = EnumInfo.fetch(conn, psql_enum_name)
                 register_enum(enum_info, conn, python_enum_class)
 
     def __form_select_all_query(self, table_name: Table) -> sql.Composed:

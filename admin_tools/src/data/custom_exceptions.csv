@@ -1,0 +1,6 @@
+error_code,error_message
+E1001,Device not found
+E1002,Device already rented out
+E1003,Device is out of service
+E2001,Reservation not found
+E3001,Rental not found

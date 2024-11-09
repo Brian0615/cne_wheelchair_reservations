@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import StrEnum, auto
 
 DEVICE_ID_PATTERN = r"[S|W][0-9]{2}"
 RENTAL_ID_PATTERN = r"[S|W]0[8-9][0-9]{2}[0-9]{3}"
@@ -118,3 +118,12 @@ class ReservationStatus(StrEnum):
                 return cls.RESERVED
             case _:
                 raise ValueError(f"Unrecognized device type {device_type}")
+
+
+class Table(StrEnum):
+    """Database tables"""
+
+    CUSTOM_EXCEPTIONS = auto()
+    DEVICES = auto()
+    RENTALS = auto()
+    RESERVATIONS = auto()
