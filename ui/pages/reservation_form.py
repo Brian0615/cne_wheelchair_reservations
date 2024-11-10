@@ -14,6 +14,13 @@ st.set_page_config(layout="wide")
 data_service = DataService()
 
 
+def initialize_reservation_form():
+    if "reservation_form_date" not in st.session_state:
+        st.session_state["reservation_form_date"] = CNEDates.get_default_new_reservation_date()
+    if "reservation_form_reservation_time" not in st.session_state:
+        st.session_state["reservation_form_reservation_time"] = time(hour=10)
+
+
 def clear_reservation_form():
     for key in st.session_state.keys():
         if key.startswith("reservation_form_"):
@@ -62,6 +69,7 @@ def submit_form(new_reservation: dict):
 
 
 st.header("Create a New Reservation")
+initialize_reservation_form()
 reservation_info = {}
 
 # first row of form
@@ -102,7 +110,6 @@ reservation_info["location"] = col1.selectbox(
 reservation_info["reservation_time"] = col2.time_input(
     label=NewReservation.model_fields["reservation_time"].title,
     step=timedelta(minutes=30),
-    value=time(hour=10),
     key="reservation_form_reservation_time",
 )
 
