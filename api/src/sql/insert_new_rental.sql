@@ -1,5 +1,5 @@
 WITH check_prequesities
-         AS (SELECT check_new_rental_prerequisites({device_id}, {reservation_id})),
+         AS (SELECT {schema}.check_new_rental_prerequisites({device_id}, {reservation_id})),
      new_rental_id
          AS (SELECT {device_type_prefix} || to_char({date}, 'MMDD') ||
                     (select lpad((1 + count(id))::text, 3, '0')) AS rental_id

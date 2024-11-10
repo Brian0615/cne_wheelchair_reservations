@@ -1,4 +1,4 @@
-WITH check_rental AS (SELECT check_if_rental_exists({rental_id}))
+WITH check_rental AS (SELECT {schema}.check_if_rental_exists({rental_id}))
 
 UPDATE {schema}.{table}
 SET return_location   = {return_location},

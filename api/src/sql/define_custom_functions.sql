@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION raise_custom_error(p_error_code TEXT, details TEXT DEFAULT NULL)
+CREATE OR REPLACE FUNCTION {schema}.raise_custom_error(p_error_code TEXT, details TEXT DEFAULT NULL)
     RETURNS VOID AS
 $$
 DECLARE
@@ -22,7 +22,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION check_if_device_available(device_id TEXT)
+CREATE OR REPLACE FUNCTION {schema}.check_if_device_available(device_id TEXT)
     RETURNS VOID AS
 $$
 DECLARE
@@ -36,17 +36,17 @@ BEGIN
 
     -- if device doesn't exist, raise error
     IF device_status IS NULL THEN
-        PERFORM raise_custom_error(p_error_code := 'E1001', details := device_id);
-    ELSIF device_status::wheelchairs.device_status = 'Rented'::wheelchairs.device_status THEN
-        PERFORM raise_custom_error(p_error_code := 'E1002', details := device_id);
-    ELSIF device_status::wheelchairs.device_status = 'Out of Service'::wheelchairs.device_status THEN
-        PERFORM raise_custom_error(p_error_code := 'E1003', details := device_id);
+        PERFORM {schema}.raise_custom_error(p_error_code := 'E1001', details := device_id);
+    ELSIF device_status::device_status = 'Rented'::device_status THEN
+        PERFORM {schema}.raise_custom_error(p_error_code := 'E1002', details := device_id);
+    ELSIF device_status::device_status = 'Out of Service'::device_status THEN
+        PERFORM {schema}.raise_custom_error(p_error_code := 'E1003', details := device_id);
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION check_if_rental_exists(rental_id TEXT)
+CREATE OR REPLACE FUNCTION {schema}.check_if_rental_exists(rental_id TEXT)
     RETURNS VOID AS
 $$
 DECLARE
@@ -60,13 +60,13 @@ BEGIN
 
     -- if rental doesn't exist, raise error
     IF rental_status IS NULL THEN
-        PERFORM raise_custom_error(p_error_code := 'E3001', details := rental_id);
+        PERFORM {schema}.raise_custom_error(p_error_code := 'E3001', details := rental_id);
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION check_if_reservation_exists(reservation_id TEXT)
+CREATE OR REPLACE FUNCTION {schema}.check_if_reservation_exists(reservation_id TEXT)
     RETURNS VOID AS
 $$
 DECLARE
@@ -81,26 +81,26 @@ BEGIN
     -- return result
     -- if reservation doesn't exist, raise error
     IF reservation_status IS NULL THEN
-        PERFORM raise_custom_error(p_error_code := 'E2001', details := reservation_id);
+        PERFORM {schema}.raise_custom_error(p_error_code := 'E2001', details := reservation_id);
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION check_new_rental_prerequisites(device_id TEXT, reservation_id TEXT)
+CREATE OR REPLACE FUNCTION {schema}.check_new_rental_prerequisites(device_id TEXT, reservation_id TEXT)
     RETURNS VOID AS
 $$
 BEGIN
-    PERFORM check_if_device_available(device_id);
+    PERFORM {schema}.check_if_device_available(device_id);
 
     IF reservation_id::text IS NOT NULL THEN
-        PERFORM check_if_reservation_exists(reservation_id);
+        PERFORM {schema}.check_if_reservation_exists(reservation_id);
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION check_if_device_exists(device_id TEXT)
+CREATE OR REPLACE FUNCTION {schema}.check_if_device_exists(device_id TEXT)
     RETURNS VOID AS
 $$
 DECLARE
@@ -114,7 +114,7 @@ BEGIN
 
     -- if device doesn't exist, raise error
     IF NOT device_id_exists THEN
-        PERFORM raise_custom_error(p_error_code := 'E1001', details := device_id);
+        PERFORM {schema}.raise_custom_error(p_error_code := 'E1001', details := device_id);
     END IF;
 END;
 $$ LANGUAGE plpgsql;

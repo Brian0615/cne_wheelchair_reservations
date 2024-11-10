@@ -1,4 +1,4 @@
-WITH validate_device AS (SELECT check_if_device_exists({id}))
+WITH validate_device AS (SELECT {schema}.check_if_device_exists({id}))
 
 UPDATE {schema}.{table}
 SET location = {location},
