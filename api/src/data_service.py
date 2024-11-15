@@ -2,6 +2,7 @@
 
 import datetime
 import os
+from pathlib import Path
 from typing import List, Optional, LiteralString
 
 import pandas as pd
@@ -20,21 +21,33 @@ class DataService:
     def __init__(
             self,
             host: str = os.environ["POSTGRES_HOST"],
-            port: int = os.environ["POSTGRES_PORT"],
+            port: str = os.environ["POSTGRES_PORT"],
             username: str = os.environ["POSTGRES_USERNAME"],
             password: str = os.environ["POSTGRES_PASSWORD"],
-            db_name: str = os.environ["POSTGRES_DB_NAME"],
+            db_name: str = os.environ["POSTGRES_DATABASE"],
             schema: str = os.environ["POSTGRES_SCHEMA"],
     ):
-        self.host = host
-        self.port = port
-        self.username = username
-        self.password = password
+
+        # try reading secrets from file (if valid path) else use values as secrets
+        self.host = self._read_secret(host)
+        self.port = self._read_secret(port)
+        self.username = self._read_secret(username)
+        self.password = self._read_secret(password)
         self.db_name = db_name
         self.schema = schema
 
         self._initialize_enums()
         self._initialize_custom_functions()
+
+    @staticmethod
+    def _read_secret(secret_or_secret_path: str):
+        """Read secret (if given value is a filepath, read that file; otherwise, use value as secret)"""
+        try:
+            # value is path to secret
+            return Path(secret_or_secret_path).read_text().strip()
+        except FileNotFoundError:
+            # value is secret itself, not path to secret
+            return secret_or_secret_path
 
     @staticmethod
     def _load_query_by_name(query_name: str) -> LiteralString:

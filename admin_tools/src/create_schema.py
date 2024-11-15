@@ -43,7 +43,7 @@ def create_schema(schema_name: str):
             port=os.environ["POSTGRES_PORT"],
             user=os.environ["POSTGRES_USERNAME"],
             password=os.environ["POSTGRES_PASSWORD"],
-            dbname=os.environ["POSTGRES_DB_NAME"],
+            dbname=os.environ["POSTGRES_DATABASE"],
     ) as conn:
         with conn.cursor() as cursor:
             print(
