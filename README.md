@@ -5,8 +5,15 @@
 ### Building the Containers
 
 ```bash
-docker build -t cne_api api.Dockerfile .
-docker build -t cne_ui ui.Dockerfile .
+docker build -t brianlammm/cne_api -f api.Dockerfile .
+docker build -t brianlammm/cne_ui -f ui.Dockerfile .
+```
+
+### Pushing the Containers to Docker Hub
+
+```bash
+docker push brianlammm/cne_api
+docker push brianlammm/cne_ui
 ```
 
 ### Running the Containers
