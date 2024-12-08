@@ -2,7 +2,7 @@ services:
   api:
     image: brianlammm/cne_api
     environment:
-      POSTGRES_DATABASE: docker
+      POSTGRES_DATABASE: cne
       POSTGRES_HOST: /run/secrets/postgres_host
       POSTGRES_PORT: /run/secrets/postgres_port
       POSTGRES_USERNAME: /run/secrets/postgres_username
