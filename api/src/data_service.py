@@ -67,6 +67,7 @@ class DataService:
             user=self.username,
             password=self.password,
             dbname=self.db_name,
+            connect_timeout=10,
         )
 
     def _initialize_custom_functions(self):
