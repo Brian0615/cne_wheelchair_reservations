@@ -3,10 +3,11 @@ import streamlit as st
 
 from common.constants import DeviceType
 from common.data_models.device import Device
+from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
 from ui.src.utils import display_inventory, add_devices, transfer_devices
 
-st.set_page_config(layout="wide")
+initialize_page(page_header="Manage Inventory")
 data_service = DataService()
 
 
@@ -66,7 +67,6 @@ if st.session_state.get("transfer_devices_toast_msg"):
     st.toast(st.session_state["transfer_devices_toast_msg"])
     del st.session_state["transfer_devices_toast_msg"]
 
-st.header("Manage Inventory")
 (
     st.session_state["admin_scooter_inventory"],
     st.session_state["admin_wheelchair_inventory"],

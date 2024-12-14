@@ -11,5 +11,6 @@ pydantic-extra-types>=2.8,<3
 pypdf>=4.2,<5
 seaborn>=0.13,<1
 streamlit>=1.40
+streamlit-authenticator>=0.4,<0.5
 streamlit-drawable-canvas
 streamlit-extras

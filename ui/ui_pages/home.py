@@ -1,15 +1,16 @@
 import base64
-import os.path
+import os
 
 import streamlit as st
 from streamlit_card import card
 
 from common.constants import DeviceType
+from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import display_rentals, display_reservations
 
-st.set_page_config(layout="wide")
+initialize_page()
 data_service = DataService()
 
 cols = st.columns(5, gap="small")

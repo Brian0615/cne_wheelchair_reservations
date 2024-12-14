@@ -10,11 +10,12 @@ from streamlit_drawable_canvas import st_canvas
 
 from common.constants import Location
 from common.data_models import ChangeDeviceInfo, CompletedRental
+from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import display_validation_errors, encode_signature_base64
 
-st.set_page_config(layout="wide")
+initialize_page(page_header="Manage Rental")
 data_service = DataService()
 
 
@@ -112,7 +113,6 @@ def change_rental_device(change_device_info: dict):
         st.session_state["change_device_errors"] = exc.errors()
 
 
-st.header("Manage Rental")
 completed_rental_info = {}
 
 # retrieve a particular rental

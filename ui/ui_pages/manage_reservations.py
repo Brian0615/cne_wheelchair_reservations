@@ -3,12 +3,12 @@ from datetime import datetime
 import streamlit as st
 
 from common.constants import DeviceType
+from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import display_reservations
 
-st.set_page_config(layout="wide")
-st.header("Manage Reservations")
+initialize_page(page_header="Manage Reservations")
 
 # initialize data service
 data_service = DataService()

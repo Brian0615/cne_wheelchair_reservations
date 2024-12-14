@@ -9,11 +9,12 @@ from streamlit_drawable_canvas import st_canvas
 
 from common.constants import DeviceType, HoldItem, Location, PaymentMethod, WALK_IN_RESERVATION_ID
 from common.data_models.rental import NewRental
+from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import display_validation_errors, encode_signature_base64
 
-st.set_page_config(layout="wide")
+initialize_page(page_header="New Rental")
 data_service = DataService()
 
 
@@ -72,7 +73,6 @@ def submit_form(new_rental: dict, signature: np.array):
         st.session_state["rental_form_errors"] = exc.errors()
 
 
-st.header("Start a New Rental")
 rental_info = {}
 
 # first row of intro section of form

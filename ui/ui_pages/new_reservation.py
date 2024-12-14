@@ -6,11 +6,12 @@ from pydantic import ValidationError
 
 from common.constants import DeviceType, Location
 from common.data_models.reservation import NewReservation
+from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import display_validation_errors
 
-st.set_page_config(layout="wide")
+initialize_page(page_header="New Reservation")
 data_service = DataService()
 
 
@@ -68,7 +69,6 @@ def submit_form(new_reservation: dict):
         st.session_state["reservation_form_errors"] = exc.errors()
 
 
-st.header("Create a New Reservation")
 initialize_reservation_form()
 reservation_info = {}
 
