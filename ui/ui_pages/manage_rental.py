@@ -13,7 +13,7 @@ from common.data_models import ChangeDeviceInfo, CompletedRental
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import display_validation_errors, encode_signature_base64
+from ui.src.utils import display_validation_errors, encode_signature_base64, get_date_input
 
 initialize_page(page_header="Manage Rental")
 data_service = DataService()
@@ -116,18 +116,14 @@ def change_rental_device(change_device_info: dict):
 completed_rental_info = {}
 
 # retrieve a particular rental
-col1, col2, col3, _ = st.columns(4)
-date = col1.date_input(
-    label="Rental Date",
-    value=CNEDates.get_default_date(),
-    min_value=CNEDates.get_cne_date_list(year=datetime.today().year)[0],
-    max_value=CNEDates.get_cne_date_list(year=datetime.today().year)[-1],
-)
+col1, col2, _, _ = st.columns(4)
+date = get_date_input(label="View Rentals for:")
+
 rentals = data_service.get_rentals_on_date(date=date, in_progress_rentals_only=True)
 if rentals.empty:
     st.warning(f"**No Rentals Today**: There are no rentals on {date.strftime('%b %d, %Y')}.")
     st.stop()
-rental_id = col2.selectbox(
+rental_id = col1.selectbox(
     label="Select a Rental",
     options=sorted(rentals["device_id"] + " - " + rentals["name"] + " (Rental ID: " + rentals["id"] + ")"),
     index=None,
@@ -136,7 +132,7 @@ rental_id = rental_id.split("Rental ID: ")[1][:-1] if rental_id else None
 if not rental_id:
     st.stop()
 rental = rentals.loc[rentals["id"] == rental_id].to_dict(orient="records")[0]
-option = col3.selectbox(
+option = col2.selectbox(
     label="Choose an Option",
     options=ManageRentalOptions,
     index=None,

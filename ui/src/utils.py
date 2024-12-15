@@ -2,7 +2,7 @@ import base64
 import io
 import math
 from datetime import datetime, time, date as datetime_date
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
 import pandas as pd
 import pytz
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from common.constants import DeviceStatus, DeviceType, Location, PaymentMethod, ReservationStatus
 from common.data_models.device import Device
-from ui.src.constants import Page
+from ui.src.constants import CNEDates, Page
 from ui.src.data_service import DataService
 
 
@@ -211,7 +211,7 @@ def display_reservations(
 
     # filter for reservations of the right type
     if reservations.empty:
-        st.warning(f"**No {device_type} Reservations Today**: There are no reservations for {device_type.value}s.")
+        st.warning(f"**No {device_type} Reservations**: There are no reservations for {device_type.value}s.")
         return None
 
     # turn times into naive timestamps
@@ -262,7 +262,7 @@ def display_reservations(
 def display_rentals(rentals: pd.DataFrame, device_type: DeviceType):
     """Display the rentals on the UI."""
     if rentals.empty:
-        st.warning(f"**No {device_type} Rentals Today**: There are no rentals for {device_type.value}s.")
+        st.warning(f"**No {device_type} Rentals**: There are no rentals for {device_type.value}s.")
         return
 
     # turn times into naive timestamps
@@ -322,9 +322,21 @@ def transfer_devices(data_service: DataService, device_type: DeviceType, device_
             st.error(result)
 
 
-def display_rentals_or_reservations(
-        dates_list: List[Union[datetime_date, str]],
-        all_rentals_or_reservations: Dict[datetime_date, pd.DataFrame],
+def get_date_input(label: str):
+    """Get a date input with the default date set to today."""
+    all_dates = CNEDates.get_cne_date_list(year=datetime.today().year)
+    col1, _, _, _ = st.columns(4)
+    return col1.date_input(
+        label=label,
+        value=CNEDates.get_default_date(),
+        min_value=all_dates[0],
+        max_value=all_dates[-1],
+    )
+
+
+def display_rentals_or_reservations_on_date(
+        view_date: datetime_date,
+        rentals_or_reservations: pd.DataFrame,
         page: Page,
 ):
     """Display rentals or reservations for a given page."""
@@ -333,24 +345,18 @@ def display_rentals_or_reservations(
     page_description_str = page.lstrip("view_")
     display_func = display_rentals if page == Page.VIEW_RENTALS else display_reservations
 
-    tabs = st.tabs([date.strftime("%a %b %d") if isinstance(date, datetime_date) else date for date in dates_list])
-    for date, tab in zip(dates_list, tabs):
-        if not isinstance(date, datetime_date):
-            continue
-        rentals_or_reservations = all_rentals_or_reservations.get(date, pd.DataFrame())
+    if rentals_or_reservations.empty:
+        st.warning(
+            f"**No {page_description_str.title()}**: "
+            f"There are no {page_description_str} for {view_date.strftime('%b %d, %Y')}."
+        )
+        return
 
-        with tab:
-            if rentals_or_reservations.empty:
-                st.warning(
-                    f"**No {page_description_str.title()} Today**: "
-                    f"There are no {page_description_str} for {date.strftime('%b %d, %Y')}."
-                )
-                continue
-            scooter_rentals_or_reservations, wheelchair_rentals_or_reservations = (
-                rentals_or_reservations[rentals_or_reservations["device_type"] == DeviceType.SCOOTER],
-                rentals_or_reservations[rentals_or_reservations["device_type"] == DeviceType.WHEELCHAIR],
-            )
-            st.subheader(f"{DeviceType.SCOOTER} {page_description_str.title()}")
-            display_func(scooter_rentals_or_reservations, device_type=DeviceType.SCOOTER)
-            st.subheader(f"{DeviceType.WHEELCHAIR} {page_description_str.title()}")
-            display_func(wheelchair_rentals_or_reservations, device_type=DeviceType.WHEELCHAIR)
+    scooter_rentals_or_reservations, wheelchair_rentals_or_reservations = (
+        rentals_or_reservations[rentals_or_reservations["device_type"] == DeviceType.SCOOTER],
+        rentals_or_reservations[rentals_or_reservations["device_type"] == DeviceType.WHEELCHAIR],
+    )
+    st.subheader(f"{DeviceType.SCOOTER} {page_description_str.title()}")
+    display_func(scooter_rentals_or_reservations, device_type=DeviceType.SCOOTER)
+    st.subheader(f"{DeviceType.WHEELCHAIR} {page_description_str.title()}")
+    display_func(wheelchair_rentals_or_reservations, device_type=DeviceType.WHEELCHAIR)
