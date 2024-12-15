@@ -17,14 +17,19 @@ def load_auth_config():
 
 
 def initialize_authenticator() -> st_auth.Authenticate:
+    if "authenticator" in st.session_state:
+        return st.session_state["authenticator"]
+
     auth_config = load_auth_config()
-    return st_auth.Authenticate(
+    authenticator = st_auth.Authenticate(
         credentials=os.environ["AUTH_CONFIG_PATH"],
         cookie_name=auth_config['cookie']['name'],
         cookie_key=auth_config['cookie']['key'],
         cookie_expiry_days=auth_config['cookie']['expiry_days'],
         auto_hash=True,
     )
+    st.session_state["authenticator"] = authenticator
+    return authenticator
 
 
 def login(rendered: bool = False):
@@ -42,7 +47,7 @@ def login(rendered: bool = False):
 
     if st.session_state["authentication_status"] is True:
         st.sidebar.write(f"Welcome, **{st.session_state['username']}**!")
-        authenticator.logout(button_name=":material/logout: Logout", location="sidebar", callback=logout)
+        authenticator.logout(button_name=":material/logout: Logout", location="sidebar")
         if rendered:  # only on login page, rerun to redirect to home page
             st.rerun()
     elif st.session_state["authentication_status"] is False:
@@ -54,10 +59,6 @@ def login(rendered: bool = False):
         else:
             st.warning('Please enter your username and password')
         st.stop()
-
-
-def logout(_):
-    st.rerun()
 
 
 def initialize_page(page_header: Optional[str] = None):
