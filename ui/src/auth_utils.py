@@ -34,7 +34,6 @@ def login(rendered: bool = False):
     authenticator = initialize_authenticator()
     try:
         authenticator.login(
-            single_session=True,
             location="main" if rendered else "unrendered",
             max_login_attempts=5,
         )
@@ -43,9 +42,9 @@ def login(rendered: bool = False):
 
     if st.session_state["authentication_status"] is True:
         st.sidebar.write(f"Welcome, **{st.session_state['username']}**!")
-        authenticator.logout(button_name=":material/logout: Logout", location="sidebar")
-        if rendered:  # only on login page, redirect to home page
-            st.switch_page("ui_pages/home.py")
+        authenticator.logout(button_name=":material/logout: Logout", location="sidebar", callback=logout)
+        if rendered:  # only on login page, rerun to redirect to home page
+            st.rerun()
     elif st.session_state["authentication_status"] is False:
         st.error('Username/password is incorrect')
         st.stop()
@@ -55,6 +54,10 @@ def login(rendered: bool = False):
         else:
             st.warning('Please enter your username and password')
         st.stop()
+
+
+def logout(_):
+    st.rerun()
 
 
 def initialize_page(page_header: Optional[str] = None):

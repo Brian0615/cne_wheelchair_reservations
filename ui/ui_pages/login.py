@@ -2,6 +2,8 @@ import streamlit as st
 
 from ui.src.auth_utils import login
 
+st.set_page_config(layout="centered")
+
 # check if already logged in
 if st.session_state.get("authentication_status", None) is True:
     st.success(
