@@ -121,7 +121,10 @@ reservations_df = data_service.get_reservations_on_date(
     device_type=rental_info["device_type"],
     exclude_picked_up_reservations=True,
 )
-reservations_list = reservations_df["name"] + " (" + reservations_df["id"] + ")"
+if reservations_df.empty:
+    reservations_list = []
+else:
+    reservations_list = reservations_df["name"] + " (" + reservations_df["id"] + ")"
 col1, col2, _, _ = st.columns(4)
 rental_info["reservation_id"] = col1.selectbox(
     label="Reservation Name/ID",
