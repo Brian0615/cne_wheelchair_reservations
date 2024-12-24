@@ -13,6 +13,7 @@ from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import display_validation_errors, encode_signature_base64
+from ui.src.wheelchair_form import WheelchairForm
 
 initialize_page(page_header="New Rental")
 data_service = DataService()
@@ -41,6 +42,15 @@ def display_success_dialog(rental_id: str, new_rental: NewRental):
         * **Rental ID**: {rental_id}
         """
     )
+    if new_rental.device_type == DeviceType.WHEELCHAIR:
+        form_path = WheelchairForm().fill_form(rental_data=new_rental, rental_id=rental_id)
+        with open(form_path, "rb") as file:
+            st.download_button(
+                label="Download Rental Form",
+                data=file,
+                icon=":material/download:",
+                file_name=f"rental_form_{rental_id}.pdf",
+            )
     if st.button("Close"):
         clear_rental_form()  # clear rental form for next rental
         st.rerun()
@@ -82,7 +92,6 @@ rental_info["date"] = col1.date_input(
     label="Rental Date",
     min_value=min(all_dates),
     max_value=max(all_dates),
-    value=CNEDates.get_default_date(),
     key="rental_form_date",
 )
 rental_info["pickup_time"] = col2.time_input(label="Pickup Time", value="now", key="rental_form_pickup_time")
