@@ -26,7 +26,7 @@ def clear_reservation_form():
     for key in st.session_state.keys():
         if key.startswith("reservation_form_"):
             if key.endswith("date"):
-                st.session_state[key] = CNEDates.get_default_new_reservation_date(),
+                st.session_state[key] = CNEDates.get_default_new_reservation_date()
             elif key.endswith("reservation_time"):
                 st.session_state[key] = time(hour=10)
             else:
