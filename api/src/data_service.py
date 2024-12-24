@@ -451,11 +451,19 @@ class DataService:
             rental_id=sql.Placeholder(name="rental_id"),
         )
 
+        update_device_query = sql.SQL(
+            self._load_query_by_name(query_name="update_device_on_rental_return")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+            device_id=sql.Placeholder(name="device_id"),
+        )
+
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(
                     update_rental_query,
-                    {
+                    params={
                         "rental_id": completed_rental.id,
                         "return_location": completed_rental.return_location,
                         "return_time": completed_rental.return_time,
@@ -463,11 +471,16 @@ class DataService:
                         "return_signature": completed_rental.return_signature,
                     },
                 )
-
                 cursor.execute(
                     update_reservation_query,
-                    {
+                    params={
                         "rental_id": completed_rental.id,
+                    },
+                )
+                cursor.execute(
+                    update_device_query,
+                    params={
+                        "device_id": completed_rental.device_id,
                     },
                 )
 
