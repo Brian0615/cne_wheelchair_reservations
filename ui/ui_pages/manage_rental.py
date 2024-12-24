@@ -116,13 +116,14 @@ def change_rental_device(change_device_info: dict):
 completed_rental_info = {}
 
 # retrieve a particular rental
-col1, col2, _, _ = st.columns(4)
 date = get_date_input(label="View Rentals for:")
 
 rentals = data_service.get_rentals_on_date(date=date, in_progress_rentals_only=True)
 if rentals.empty:
     st.warning(f"**No Rentals Today**: There are no rentals on {date.strftime('%b %d, %Y')}.")
     st.stop()
+
+col1, col2, _, _ = st.columns(4)
 rental_id = col1.selectbox(
     label="Select a Rental",
     options=sorted(rentals["device_id"] + " - " + rentals["name"] + " (Rental ID: " + rentals["id"] + ")"),
