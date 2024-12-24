@@ -113,6 +113,24 @@ class DataService:
             for date in CNEDates.get_cne_date_list(year=datetime.datetime.today().year)
         }
 
+    def get_number_of_reservations_on_date(
+            self,
+            date: datetime.date,
+            device_type: DeviceType,
+            location: Location,
+    ):
+        """Get the number of reservations on a specific date using the API."""
+        response = requests.get(
+            f"http://{self.api_host}:{self.api_port}/reservations/get_number_of_reservations_on_date",
+            params={
+                "date": date.strftime("%Y-%m-%d"),
+                "device_type": device_type,
+                "location": location,
+            },
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.json()
+
     def get_reservations_on_date(
             self,
             date: datetime.date,

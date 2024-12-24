@@ -66,6 +66,15 @@ def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True,
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
+@app.get("/reservations/get_number_of_reservations_on_date")
+@auto_process_database_errors
+def get_number_of_reservations_on_date(date: str, device_type: DeviceType, location: Location) -> int:
+    """Get the number of reservations on a specific date"""
+    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    result = data_service.get_number_of_reservations_on_date(date=date, device_type=device_type, location=location)
+    return result.iloc[0]["number_of_reservations"] if not result.empty else 0
+
+
 @app.get("/reservations/get_reservations_on_date")
 @auto_process_database_errors
 def get_reservations_on_date(

@@ -40,7 +40,7 @@ def display_success_dialog(reservation_id: str, new_reservation: NewReservation)
         The following **{new_reservation.device_type}** reservation was created successfully:
         
         * **Name**: {new_reservation.name}
-        * **Date**: {new_reservation.date.strftime('%b %d')}
+        * **Date**: {new_reservation.date.strftime('%b %d, %Y')}
         * **Time**: {new_reservation.reservation_time.strftime('%I:%M %p')}
         * **Location**: {new_reservation.location}
         * **Reservation ID**: {reservation_id}
@@ -66,14 +66,13 @@ def submit_form(new_reservation: dict):
             display_success_dialog(reservation_id=result, new_reservation=new_reservation)
 
     except ValidationError as exc:
-        st.session_state["reservation_form_errors"] = exc.errors()
+        display_validation_errors(exc.errors(), NewReservation)
 
 
 initialize_reservation_form()
 reservation_info = {}
 
-# first row of form
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 all_dates = CNEDates.get_cne_date_list(year=datetime.today().year)
 reservation_info["date"] = col1.date_input(
     label=NewReservation.model_fields["date"].title,
@@ -87,45 +86,52 @@ reservation_info["device_type"] = col2.selectbox(
     index=None,
     key="reservation_form_device_type",
 )
-
-# second row of form
-col1, col2 = st.columns(2)
-reservation_info["name"] = col1.text_input(
-    label=NewReservation.model_fields["name"].title,
-    key="reservation_form_name",
-)
-reservation_info["phone_number"] = col2.text_input(
-    label=NewReservation.model_fields["phone_number"].title,
-    key="reservation_form_phone_number",
-)
-
-# third row of form
-col1, col2 = st.columns(2)
-reservation_info["location"] = col1.selectbox(
+reservation_info["location"] = col3.selectbox(
     label=NewReservation.model_fields["location"].title,
     options=Location,
     index=None,
     key="reservation_form_location",
 )
-reservation_info["reservation_time"] = col2.time_input(
-    label=NewReservation.model_fields["reservation_time"].title,
-    step=timedelta(minutes=30),
-    key="reservation_form_reservation_time",
-)
+if reservation_info["date"] and reservation_info["device_type"] and reservation_info["location"]:
+    number_of_existing_reservations = data_service.get_number_of_reservations_on_date(
+        date=reservation_info["date"],
+        device_type=reservation_info["device_type"],
+        location=reservation_info["location"],
+    )
+    match number_of_existing_reservations:
+        case 0:
+            quantifiers = "are", "s"
+        case 1:
+            quantifiers = "is", ""
+        case _:
+            quantifiers = "are", "s"
+    st.info(
+        f"**Note:** There {quantifiers[0]} {number_of_existing_reservations} existing "
+        f"{reservation_info['device_type']} reservation{quantifiers[1]} on {reservation_info['date']} "
+        f"at {reservation_info['location']}."
+    )
 
-# fourth row of form
-reservation_info["notes"] = st.text_input(
-    label=NewReservation.model_fields["notes"].title + " (optional)",
-    key="reservation_form_notes",
-)
+    with st.form(key="reservation_form"):
+        col1, col2, col3 = st.columns(3)
+        reservation_info["name"] = col1.text_input(
+            label=NewReservation.model_fields["name"].title,
+            key="reservation_form_name",
+        )
+        reservation_info["phone_number"] = col2.text_input(
+            label=NewReservation.model_fields["phone_number"].title,
+            key="reservation_form_phone_number",
+        )
+        reservation_info["reservation_time"] = col3.time_input(
+            label=NewReservation.model_fields["reservation_time"].title,
+            step=timedelta(minutes=30),
+            key="reservation_form_reservation_time",
+        )
 
-# display any errors from the last form submission
-errors = st.session_state.get("reservation_form_errors")
-if errors:
-    display_validation_errors(errors, NewReservation)
+        reservation_info["notes"] = st.text_input(
+            label=NewReservation.model_fields["notes"].title + " (optional)",
+            key="reservation_form_notes",
+        )
+        submit = st.form_submit_button(label="Submit")
 
-submit = st.button(
-    label="Submit",
-    on_click=submit_form,
-    args=(reservation_info,)
-)
+    if submit:
+        submit_form(reservation_info)

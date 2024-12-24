@@ -239,6 +239,30 @@ class DataService:
                 cursor.execute(select_query, (date, device_type, device_type, in_progress_rentals_only))
                 return self._fetch_result_data_as_dataframe(cursor)
 
+    def get_number_of_reservations_on_date(
+            self,
+            date: datetime.date,
+            device_type: DeviceType,
+            location: Location,
+    ) -> pd.DataFrame:
+        """Get the number of reservations on a given date."""
+
+        select_query = sql.SQL(
+            self._load_query_by_name(query_name="get_number_of_reservations_on_date")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            date=sql.Placeholder(),
+            device_type=sql.Placeholder(),
+            location=sql.Placeholder(),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(select_query, (date, device_type, location))
+                return self._fetch_result_data_as_dataframe(cursor)
+
+
     def get_reservations_on_date(
             self,
             date: datetime.date,
