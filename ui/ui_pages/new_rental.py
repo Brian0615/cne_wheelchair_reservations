@@ -52,7 +52,7 @@ def submit_form(new_rental: dict, signature: np.array):
     try:
         # process signature
         signature = Image.fromarray(signature)
-        new_rental.signature = encode_signature_base64(signature)
+        new_rental["signature"] = encode_signature_base64(signature)
 
         # update pickup time
         new_rental["pickup_time"] = datetime.combine(
