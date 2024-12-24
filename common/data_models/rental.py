@@ -65,6 +65,8 @@ class NewRental(RentalSummary):
 
 
 class CompletedRental(RentalBase):
+    name: constr(min_length=3) = Field(title="Name")
+    device_id: constr(to_upper=True, pattern=DEVICE_ID_PATTERN) = Field(title="Device ID")
     return_location: Optional[Location] = Field(title="Return Location", default=None)
     return_time: Optional[AwareDatetime] = Field(title="Return Time", default=None)
     return_staff_name: constr(min_length=5) = Field(title="Return Staff Name")

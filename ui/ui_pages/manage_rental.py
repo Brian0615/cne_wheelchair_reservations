@@ -75,6 +75,14 @@ def complete_rental(rental_completion_info: dict, signature: np.array):
         status_code, result = data_service.complete_rental(completed_rental)
         if status_code == 200:
             display_complete_rental_success_dialog(completed_rental)
+        else:
+            st.error(
+                f"""
+                **API Error**
+                * Error Code: {status_code}
+                * Error Message: {result}
+                """
+            )
 
     except ValidationError as exc:
         st.session_state["complete_rental_errors"] = exc.errors()
@@ -148,6 +156,8 @@ if ManageRentalOptions(option) == ManageRentalOptions.COMPLETE_RENTAL:
     completed_rental_info = {
         "id": rental_id,
         "date": date,
+        "name": rental["name"],
+        "device_id": rental["device_id"],
         "return_location": col1.selectbox(
             label="Return Location",
             options=Location,
@@ -166,7 +176,9 @@ if ManageRentalOptions(option) == ManageRentalOptions.COMPLETE_RENTAL:
     }
 
     st.write(
-        f"**By checking the box(es) and signing below I, {rental['name']}, confirm that the following have been returned to me:**")
+        f"**By checking the box(es) and signing below I, {rental['name']}, "
+        f"confirm that the following have been returned to me:**"
+    )
 
     check_items = True
     if rental["items_left_behind"]:
