@@ -12,7 +12,7 @@ from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import display_validation_errors, encode_signature_base64
+from ui.src.utils import display_validation_errors, encode_signature_base64, get_rental_selection
 
 initialize_page(page_header="Complete Rental")
 data_service = DataService()
@@ -86,36 +86,15 @@ def complete_rental(rental_completion_info: dict, signature: np.array):
 
 
 # retrieve a particular rental
-col1, col2 = st.columns([1, 2])
-all_dates = CNEDates.get_cne_date_list(year=datetime.today().year)
-date = col1.date_input(
-    label="Rental Date",
-    value=CNEDates.get_default_date(),
-    min_value=all_dates[0],
-    max_value=all_dates[-1],
-)
-rentals = data_service.get_rentals_on_date(date=date, in_progress_rentals_only=True)
-if rentals.empty:
-    st.warning(f"**No Rentals**: There are no rentals on {date.strftime('%b %d, %Y')}.")
-    st.stop()
-
-rental_id = col2.selectbox(
-    label="Select a Rental",
-    options=sorted(rentals["device_id"] + " - " + rentals["name"] + " (Rental ID: " + rentals["id"] + ")"),
-    index=None,
-)
-rental_id = rental_id.split("Rental ID: ")[1][:-1] if rental_id else None
-if not rental_id:
-    st.stop()
-rental = rentals.loc[rentals["id"] == rental_id].to_dict(orient="records")[0]
+date, rental_id, rental_data = get_rental_selection(data_service=data_service, in_progress_rentals_only=True)
 
 # rental completion form
 col1, col2, col3 = st.columns(3)
 completed_rental_info = {
     "id": rental_id,
     "date": date,
-    "name": rental["name"],
-    "device_id": rental["device_id"],
+    "name": rental_data["name"],
+    "device_id": rental_data["device_id"],
     "return_time": col1.time_input(
         label="Return Time",
         value=datetime.now(get_default_timezone()).time(),
@@ -134,14 +113,14 @@ completed_rental_info = {
 }
 
 st.write(
-    f"**By checking the box(es) and signing below I, {rental['name']}, "
+    f"**By checking the box(es) and signing below I, {rental_data['name']}, "
     f"confirm that the following have been returned to me:**"
 )
 
 check_items = True  # pylint: disable=invalid-name
-if rental["items_left_behind"]:
-    check_items = st.checkbox("Items Left Behind during Rental: " + ", ".join(rental["items_left_behind"]))
-check_deposit = st.checkbox(f"{rental['deposit_payment_method']} Deposit of $50")
+if rental_data["items_left_behind"]:
+    check_items = st.checkbox("Items Left Behind during Rental: " + ", ".join(rental_data["items_left_behind"]))
+check_deposit = st.checkbox(f"{rental_data['deposit_payment_method']} Deposit of $50")
 st.write("Signature")
 canvas_signature = st_canvas(
     stroke_width=2,

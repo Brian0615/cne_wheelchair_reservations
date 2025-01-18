@@ -30,9 +30,10 @@ if st.session_state.get("authentication_status", None) is True:  # already authe
             st.Page("ui_pages/manage_inventory.py", title="Manage Inventory", icon=":material/settings:")
         )
     if "editor" in st.session_state.get("roles", []):
-        pages["Rentals"].append(
-            st.Page("ui_pages/new_rental.py", title="New Rental", icon=":material/add_circle:")
-        )
+        pages["Rentals"] += [
+            st.Page("ui_pages/new_rental.py", title="New Rental", icon=":material/add_circle:"),
+            st.Page("ui_pages/complete_rental.py", title="Complete Rental", icon=":material/check_circle:"),
+        ]
         pages["Reservations"].append(
             st.Page("ui_pages/new_reservation.py", title="New Reservation", icon=":material/add_circle:")
         )
