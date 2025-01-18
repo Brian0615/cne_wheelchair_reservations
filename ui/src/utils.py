@@ -5,7 +5,6 @@ from datetime import datetime, time, date as datetime_date
 from typing import List, Optional
 
 import pandas as pd
-import pytz
 import streamlit as st
 from PIL import Image
 from plotly import graph_objects as go
@@ -13,6 +12,7 @@ from pydantic import BaseModel
 
 from common.constants import DeviceStatus, DeviceType, Location, PaymentMethod, ReservationStatus
 from common.data_models.device import Device
+from common.utils import get_default_timezone
 from ui.src.constants import CNEDates, Page
 from ui.src.data_service import DataService
 
@@ -254,7 +254,7 @@ def display_reservations(
         use_container_width=True,
     )
     updated_reservations["reservation_time"] = (
-        updated_reservations["reservation_time"].dt.tz_localize(pytz.timezone("America/Toronto"))
+        updated_reservations["reservation_time"].dt.tz_localize(get_default_timezone())
     )
     return updated_reservations
 
@@ -265,10 +265,12 @@ def display_rentals(rentals: pd.DataFrame, device_type: DeviceType):
         st.warning(f"**No {device_type} Rentals**: There are no rentals for {device_type.value}s.")
         return
 
-    # localize timestamps to America/New_York then change into naive timestamps
+    # localize timestamps to default timezone then change into naive timestamps
     for time_col in ["pickup_time", "return_time"]:
         rentals[time_col] = pd.to_datetime(rentals[time_col], errors="coerce", utc=True)
-        rentals[time_col] = rentals[time_col].dt.tz_convert(pytz.timezone("America/New_York")).dt.tz_localize(None)
+        rentals[time_col] = rentals[time_col].dt.tz_convert(get_default_timezone()).dt.tz_localize(None)
+
+    device_id_label = f"{DeviceType.get_short_label(device_type)} ID"
 
     # display rentals
     st.dataframe(
@@ -279,7 +281,7 @@ def display_rentals(rentals: pd.DataFrame, device_type: DeviceType):
             "device_type": None,
             "name": st.column_config.TextColumn(label="Name", width="medium"),
             "phone_number": st.column_config.TextColumn(label="Phone Number"),
-            "device_id": st.column_config.TextColumn(label=f"Chair ID", width="small"),
+            "device_id": st.column_config.TextColumn(label=device_id_label, width="small"),
             "pickup_location": st.column_config.SelectboxColumn(label="Pickup Location", options=Location),
             "pickup_time": st.column_config.TimeColumn(label="Pickup Time", format="hh:mm a"),
             "deposit_payment_method": st.column_config.SelectboxColumn(label="Deposit Method", options=PaymentMethod),

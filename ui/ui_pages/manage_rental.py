@@ -2,7 +2,6 @@ from datetime import datetime
 from enum import StrEnum
 
 import numpy as np
-import pytz
 import streamlit as st
 from PIL import Image
 from pydantic import ValidationError
@@ -10,6 +9,7 @@ from streamlit_drawable_canvas import st_canvas
 
 from common.constants import Location
 from common.data_models import ChangeDeviceInfo, CompletedRental
+from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
@@ -64,7 +64,7 @@ def complete_rental(rental_completion_info: dict, signature: np.array):
         rental_completion_info["return_time"] = datetime.combine(
             date=rental_completion_info["date"],
             time=rental_completion_info["return_time"],
-            tzinfo=pytz.timezone("America/Toronto"),
+            tzinfo=get_default_timezone(),
         )
         rental_completion_info.pop("date")
 

@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta, time
 
-import pytz
 import streamlit as st
 from pydantic import ValidationError
 
 from common.constants import DeviceType, Location
 from common.data_models.reservation import NewReservation
+from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
@@ -58,7 +58,7 @@ def submit_form(new_reservation: dict):
         new_reservation['reservation_time'] = datetime.combine(
             new_reservation['date'],
             new_reservation['reservation_time']
-        ).astimezone(pytz.timezone("America/Toronto"))
+        ).astimezone(get_default_timezone())
 
         new_reservation = NewReservation(**new_reservation)
         status_code, result = data_service.add_new_reservation(reservation=new_reservation)
