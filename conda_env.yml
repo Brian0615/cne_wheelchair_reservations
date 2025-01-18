@@ -17,7 +17,7 @@ dependencies:
   - psycopg[version='>=3.2,<3.3']
   - pydantic[version='>=2.8','<3']
   - pydantic-extra-types[version='>=2.8','<3']
-  - pypdf[version='>=4.2,<5']
+  - pymupdf[version='>=1.25','<2']
   - python[version='>=3.12.7,<3.13']
   - seaborn[version='>=0.13,<1']
   - streamlit[version='>=1.40']

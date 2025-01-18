@@ -25,11 +25,11 @@ class DataService:
 
     def __init__(
             self,
-            api_host: str = os.environ["API_HOST"],
-            api_port: str = os.environ["API_PORT"],
+            api_host: Optional[str] = None,
+            api_port: Optional[str] = None,
     ):
-        self.api_host = api_host
-        self.api_port = api_port
+        self.api_host = api_host if api_host is not None else os.environ["API_HOST"]
+        self.api_port = api_port if api_port is not None else os.environ["API_PORT"]
 
     def get_available_devices(self, device_type: DeviceType, location: Location):
         """Get the available devices of a specific type at a specific location using the API."""
