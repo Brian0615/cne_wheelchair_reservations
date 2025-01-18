@@ -2,6 +2,8 @@ from datetime import date, datetime, timedelta
 from enum import StrEnum, auto
 from typing import List, Optional, Tuple
 
+from common.utils import get_default_timezone
+
 
 class CNEDates:
     """Class for determining dates of the CNE"""
@@ -23,15 +25,21 @@ class CNEDates:
 
     @classmethod
     def get_default_date(cls):
-        """Get the default date for displaying reservations."""
+        """Get the default date for displaying reservations - today's date bounded by CNE dates"""
         all_dates = cls.get_cne_date_list(year=datetime.today().year)
-        return min(max(all_dates), max(min(all_dates), datetime.today().date()))
+        return min(
+            max(all_dates),
+            max(min(all_dates), datetime.now(tz=get_default_timezone()).date()),
+        )
 
     @classmethod
     def get_default_new_reservation_date(cls):
-        """Get the default reservation date for the reservation form."""
+        """Get the default reservation date for the reservation form - tomorrow's date bounded by CNE dates"""
         all_dates = cls.get_cne_date_list(year=datetime.today().year)
-        return min(max(all_dates), max(min(all_dates), datetime.today().date() + timedelta(days=1)))
+        return min(
+            max(all_dates),
+            max(min(all_dates), datetime.now(tz=get_default_timezone()).date() + timedelta(days=1))
+        )
 
 
 class Page(StrEnum):

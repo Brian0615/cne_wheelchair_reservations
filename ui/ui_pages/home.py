@@ -1,5 +1,6 @@
 import base64
 import os
+from functools import partial
 
 import streamlit as st
 from streamlit_card import card
@@ -71,7 +72,7 @@ for col, info in zip(cols, card_info):
             },
             image=data,
             key=info["key"],
-            on_click=lambda: st.switch_page(info["page_link"]),
+            on_click=partial(st.switch_page, page=info["page_link"]),
         )
 
 reservations_tab, rentals_tab = st.tabs(["Reservations", "Rentals"])

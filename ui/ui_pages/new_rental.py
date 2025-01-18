@@ -12,27 +12,16 @@ from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import display_validation_errors, encode_signature_base64
+from ui.src.utils import clear_session_state_for_form, display_validation_errors, encode_signature_base64
 from ui.src.wheelchair_form import WheelchairForm
 
 initialize_page(page_header="New Rental")
 data_service = DataService()
 
 
-def clear_rental_form() -> None:
-    """Clear session state data with a given key prefix"""
-    for key in st.session_state.keys():
-        if key.startswith("rental_form_"):
-            if key.endswith("date"):
-                st.session_state[key] = CNEDates.get_default_date()
-            elif key.endswith("pickup_time"):
-                st.session_state[key] = datetime.now(tz=get_default_timezone()).time()
-            else:
-                st.session_state[key] = None
-
-
 @st.dialog("Success!")
 def display_success_dialog(rental_id: str, new_rental: NewRental):
+    """Display the success dialog upon creating a new rental"""
     st.success(
         f"""
         The following rental was created successfully:
@@ -52,11 +41,12 @@ def display_success_dialog(rental_id: str, new_rental: NewRental):
                 file_name=f"rental_form_{rental_id}.pdf",
             )
     if st.button("Close"):
-        clear_rental_form()  # clear rental form for next rental
+        clear_session_state_for_form(clear_prefixes=["rental_form_"])
         st.rerun()
 
 
 def submit_form(new_rental: dict, signature: np.array):
+    """Submit the new rental form"""
     # clear previous errors
     st.session_state["rental_form_errors"] = None
     try:
@@ -207,15 +197,15 @@ st.subheader("Terms and Conditions")
 st.markdown("insert bunch of conditions here...")
 
 st.markdown("By signing below, I agree to the terms and conditions above.")
+# pylint: disable=invalid-name
 canvas_signature = st_canvas(
     stroke_width=2,
     stroke_color="#1E90FF",
     height=100,
     key="rental_form_signature",
-)
+).image_data
 
 # quick validation of renter agreement
-canvas_signature = canvas_signature.image_data
 allow_submission = all([
     np.count_nonzero(np.max(canvas_signature, axis=-1)) > 500,
     id_verified,

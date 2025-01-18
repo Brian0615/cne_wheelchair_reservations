@@ -23,6 +23,7 @@ class TestCNEDates(unittest.TestCase):
             self.assertEqual(datetime(2021, 9, 6), end_date)
 
     def test_get_new_default_reservation_date(self):
+        """Test the get_default_new_reservation_date method."""
         # make datetime.today return a date in 2021
         with patch.object(constants, "datetime") as mock_datetime:
             mock_datetime.today.return_value = datetime(2021, 12, 11)

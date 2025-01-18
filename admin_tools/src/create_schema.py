@@ -40,6 +40,7 @@ def create_schema(schema_name: str):
     )
     custom_exceptions = pd.read_csv(os.path.join(os.path.dirname(__file__), "data/custom_exceptions.csv"))
 
+    # pylint: disable=not-context-manager
     with psycopg.connect(
             host=os.environ["POSTGRES_HOST"],
             port=os.environ["POSTGRES_PORT"],

@@ -294,6 +294,7 @@ def display_rentals(rentals: pd.DataFrame, device_type: DeviceType):
 
 
 def transfer_devices(data_service: DataService, device_type: DeviceType, device_ids: List[str]):
+    """Transfer devices to a new location."""
     devices_to_transfer = st.multiselect(
         f"{device_type}s to Transfer",
         options=sorted(device_ids),
@@ -385,3 +386,21 @@ def display_rentals_or_reservations_on_date(
     display_func(scooter_rentals_or_reservations, device_type=DeviceType.SCOOTER)
     st.subheader(f"{DeviceType.WHEELCHAIR} {page_description_str.title()}")
     display_func(wheelchair_rentals_or_reservations, device_type=DeviceType.WHEELCHAIR)
+
+
+def clear_session_state_for_form(
+        clear_prefixes: List[str],
+        default_date: Optional[datetime_date] = None,
+        default_time: Optional[time] = None
+):
+    """Clear session state data with a given list of prefixes"""
+    for key in st.session_state.keys():
+        if any(key.startswith(prefix) for prefix in clear_prefixes):
+            if key.endswith("date"):
+                st.session_state[key] = default_date if default_date is not None else CNEDates.get_default_date()
+            elif key.endswith("time"):
+                st.session_state[key] = (
+                    default_time if default_time is not None else datetime.now(tz=get_default_timezone()).time()
+                )
+            else:
+                st.session_state[key] = None

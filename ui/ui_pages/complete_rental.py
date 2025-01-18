@@ -10,24 +10,16 @@ from common.constants import Location
 from common.data_models import CompletedRental
 from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
-from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import display_validation_errors, encode_signature_base64, get_rental_selection
+from ui.src.utils import (
+    clear_session_state_for_form,
+    display_validation_errors,
+    encode_signature_base64,
+    get_rental_selection
+)
 
 initialize_page(page_header="Complete Rental")
 data_service = DataService()
-
-
-def clear_complete_rental_form():
-    """Clear session state data with a given key prefix"""
-    for key in st.session_state.keys():
-        if key.startswith("complete_rental_"):
-            if key.endswith("date"):
-                st.session_state[key] = CNEDates.get_default_date()
-            elif key.endswith("time"):
-                st.session_state[key] = datetime.now().time()
-            else:
-                st.session_state[key] = None
 
 
 @st.dialog("Success!")
@@ -43,7 +35,7 @@ def display_success_dialog(completed_rental: CompletedRental):
         """
     )
     if st.button("Close"):
-        clear_complete_rental_form()
+        clear_session_state_for_form(clear_prefixes=["complete_rental_"])
         st.rerun()
 
 
@@ -122,19 +114,20 @@ if rental_data["items_left_behind"]:
     check_items = st.checkbox("Items Left Behind during Rental: " + ", ".join(rental_data["items_left_behind"]))
 check_deposit = st.checkbox(f"{rental_data['deposit_payment_method']} Deposit of $50")
 st.write("Signature")
+# pylint: disable=invalid-name
 canvas_signature = st_canvas(
     stroke_width=2,
     stroke_color="#1E90FF",
     height=100,
     key="complete_rental_signature",
-)
+).image_data
 
 # form submission or errors
 errors = st.session_state.get("complete_rental_errors")
 if errors:
     display_validation_errors(errors, CompletedRental)
 allow_submission = all([
-    np.count_nonzero(np.max(canvas_signature.image_data, axis=-1)) > 500,
+    np.count_nonzero(np.max(canvas_signature, axis=-1)) > 500,
     completed_rental_info["return_location"],
     completed_rental_info["return_time"],
     completed_rental_info["return_staff_name"],
@@ -144,6 +137,6 @@ allow_submission = all([
 st.button(
     label="Complete Rental",
     on_click=complete_rental,
-    args=(completed_rental_info, canvas_signature.image_data),
+    args=(completed_rental_info, canvas_signature),
     disabled=not allow_submission,
 )

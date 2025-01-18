@@ -44,11 +44,12 @@ class RentalSummary(RentalBase):
     @field_validator("return_time", mode="before")
     @classmethod
     def convert_nat_to_none(cls, value):
+        """Convert pandas NaT to None"""
         return None if pd.isnull(value) else value
 
 
 class NewRental(RentalSummary):
-    """Data model for a rental."""
+    """Data model for a new rental."""
 
     id: Optional[constr(to_upper=True, pattern=RENTAL_ID_PATTERN)] = Field(title="Rental ID", default=None)
     reservation_id: Optional[constr(pattern=RESERVATION_ID_PATTERN)] = Field(title="Reservation ID", default=None)
@@ -65,6 +66,7 @@ class NewRental(RentalSummary):
 
 
 class CompletedRental(RentalBase):
+    """Data model for a completed rental"""
     name: constr(min_length=3) = Field(title="Name")
     device_id: constr(to_upper=True, pattern=DEVICE_ID_PATTERN) = Field(title="Device ID")
     return_location: Optional[Location] = Field(title="Return Location", default=None)

@@ -9,32 +9,23 @@ from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import display_validation_errors
+from ui.src.utils import clear_session_state_for_form, display_validation_errors
 
 initialize_page(page_header="New Reservation")
 data_service = DataService()
 
 
 def initialize_reservation_form():
+    """Initialize the reservation form with default values"""
     if "reservation_form_date" not in st.session_state:
         st.session_state["reservation_form_date"] = CNEDates.get_default_new_reservation_date()
     if "reservation_form_reservation_time" not in st.session_state:
         st.session_state["reservation_form_reservation_time"] = time(hour=10)
 
 
-def clear_reservation_form():
-    for key in st.session_state.keys():
-        if key.startswith("reservation_form_"):
-            if key.endswith("date"):
-                st.session_state[key] = CNEDates.get_default_new_reservation_date()
-            elif key.endswith("reservation_time"):
-                st.session_state[key] = time(hour=10)
-            else:
-                st.session_state[key] = None
-
-
 @st.dialog("Success!")
 def display_success_dialog(reservation_id: str, new_reservation: NewReservation):
+    """Display the success dialog upon creating a new reservation"""
     st.success(
         f"""
         The following **{new_reservation.device_type}** reservation was created successfully:
@@ -47,11 +38,16 @@ def display_success_dialog(reservation_id: str, new_reservation: NewReservation)
         """
     )
     if st.button("Close"):
-        clear_reservation_form()  # clear the reservation form for the next reservation
+        clear_session_state_for_form(
+            clear_prefixes=["reservation_form_"],
+            default_date=CNEDates.get_default_new_reservation_date(),
+            default_time=time(hour=10),
+        )
         st.rerun()
 
 
 def submit_form(new_reservation: dict):
+    """Submit the reservation form"""
     # clear previous errors
     st.session_state["reservation_form_errors"] = None
     try:

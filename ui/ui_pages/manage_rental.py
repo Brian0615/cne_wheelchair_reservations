@@ -1,4 +1,3 @@
-from datetime import datetime
 from enum import StrEnum
 
 import streamlit as st
@@ -7,9 +6,8 @@ from pydantic import ValidationError
 from common.constants import Location
 from common.data_models import ChangeDeviceInfo
 from ui.src.auth_utils import initialize_page
-from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import display_validation_errors, get_rental_selection
+from ui.src.utils import clear_session_state_for_form, display_validation_errors, get_rental_selection
 
 initialize_page(page_header="Manage Rental")
 data_service = DataService()
@@ -19,18 +17,6 @@ class ManageRentalOptions(StrEnum):
     """Options for managing a rental"""
     COMPLETE_RENTAL = "Complete Rental"
     CHANGE_WHEELCHAIR_OR_SCOOTER = "Change Wheelchair or Scooter"
-
-
-def clear_manage_rental_form():
-    """Clear session state data with a given key prefix"""
-    for key in st.session_state.keys():
-        if key.startswith("manage_rental_") or key.startswith("change_device_"):
-            if key.endswith("date"):
-                st.session_state[key] = CNEDates.get_default_date()
-            elif key.endswith("time"):
-                st.session_state[key] = datetime.now().time()
-            else:
-                st.session_state[key] = None
 
 
 @st.dialog("Success!")
@@ -46,7 +32,7 @@ def display_change_device_success_dialog(change_data: ChangeDeviceInfo):
         """
     )
     if st.button("Close"):
-        clear_manage_rental_form()
+        clear_session_state_for_form(clear_prefixes=["manage_rental_", "change_device_"])
         st.rerun()
 
 
@@ -60,7 +46,7 @@ def change_rental_device(change_data: dict):
         change_data = ChangeDeviceInfo(**change_data)
 
         # change device
-        status_code, result = data_service.change_rental_device(change_data)
+        status_code, _ = data_service.change_rental_device(change_data)
         if status_code == 200:
             display_change_device_success_dialog(change_data)
 
