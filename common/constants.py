@@ -61,9 +61,18 @@ class DeviceType(StrEnum):
             case _:
                 raise ValueError(f"Unrecognized device {device}")
 
-    def get_device_prefix(self):
+    def get_prefix(self):
         """Get the prefix for a device (for IDs)"""
         return self.value[0]
+
+    @classmethod
+    def get_short_label(cls, device):
+        """Get a short label for display purposes"""
+        match device:
+            case cls.SCOOTER:
+                return "Scooter"
+            case cls.WHEELCHAIR:
+                return "Chair"
 
 
 class HoldItem(StrEnum):

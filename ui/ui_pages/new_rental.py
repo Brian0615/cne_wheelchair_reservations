@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import numpy as np
-import pytz
 import streamlit as st
 from PIL import Image
 from pydantic import ValidationError
@@ -9,6 +8,7 @@ from streamlit_drawable_canvas import st_canvas
 
 from common.constants import DeviceType, HoldItem, Location, PaymentMethod, WALK_IN_RESERVATION_ID
 from common.data_models.rental import NewRental
+from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
@@ -26,7 +26,7 @@ def clear_rental_form() -> None:
             if key.endswith("date"):
                 st.session_state[key] = CNEDates.get_default_date()
             elif key.endswith("pickup_time"):
-                st.session_state[key] = datetime.now(tz=pytz.timezone("America/Toronto")).time()
+                st.session_state[key] = datetime.now(tz=get_default_timezone()).time()
             else:
                 st.session_state[key] = None
 
@@ -68,7 +68,7 @@ def submit_form(new_rental: dict, signature: np.array):
         new_rental["pickup_time"] = datetime.combine(
             date=new_rental["date"],
             time=new_rental["pickup_time"],
-            tzinfo=pytz.timezone("America/Toronto"),
+            tzinfo=get_default_timezone(),
         )
 
         # validate rental data

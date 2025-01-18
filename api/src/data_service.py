@@ -203,7 +203,7 @@ class DataService:
                 cursor.execute(
                     insert_query,
                     {
-                        "device_type_prefix": reservation.device_type.get_device_prefix(),
+                        "device_type_prefix": reservation.device_type.get_prefix(),
                         "date": reservation.date,
                         "device_type": reservation.device_type,
                         "name": reservation.name,
@@ -346,7 +346,7 @@ class DataService:
                     {
                         "device_id": new_rental.device_id,
                         "reservation_id": new_rental.reservation_id,
-                        "device_type_prefix": new_rental.device_type.get_device_prefix(),
+                        "device_type_prefix": new_rental.device_type.get_prefix(),
                         "date": new_rental.date,
                         "device_type": new_rental.device_type,
                         "pickup_location": new_rental.pickup_location,
