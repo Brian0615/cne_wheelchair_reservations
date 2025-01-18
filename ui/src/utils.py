@@ -265,9 +265,10 @@ def display_rentals(rentals: pd.DataFrame, device_type: DeviceType):
         st.warning(f"**No {device_type} Rentals**: There are no rentals for {device_type.value}s.")
         return
 
-    # turn times into naive timestamps
-    rentals["pickup_time"] = rentals["pickup_time"].dt.tz_localize(None)
-    rentals["return_time"] = pd.to_datetime(rentals["return_time"]).dt.tz_localize(None)
+    # localize timestamps to America/New_York then change into naive timestamps
+    for time_col in ["pickup_time", "return_time"]:
+        rentals[time_col] = pd.to_datetime(rentals[time_col], errors="coerce", utc=True)
+        rentals[time_col] = rentals[time_col].dt.tz_convert(pytz.timezone("America/New_York")).dt.tz_localize(None)
 
     # display rentals
     st.dataframe(
