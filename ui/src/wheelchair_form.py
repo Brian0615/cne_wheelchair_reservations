@@ -7,7 +7,10 @@ from common.data_models.rental import NewRental
 from ui.src.utils import decode_signature_base64
 
 
+# pylint: disable=too-few-public-methods
 class WheelchairForm:
+    """Class to fill out the wheelchair form with rental data"""
+
     __DEFAULT_FORM_FOLDER = "completed_forms"
     __FILLABLE_FORM_PATH = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),

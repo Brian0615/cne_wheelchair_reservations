@@ -25,15 +25,18 @@ def add_wheelchairs():
 
 @st.dialog("Transfer Scooters")
 def transfer_scooters():
+    """Transfer scooters to another location."""
     transfer_devices(data_service, DeviceType.SCOOTER, st.session_state["admin_scooter_inventory"]["id"].tolist())
 
 
 @st.dialog("Transfer Wheelchairs")
 def transfer_wheelchairs():
+    """Transfer wheelchairs to another location."""
     transfer_devices(data_service, DeviceType.WHEELCHAIR, st.session_state["admin_wheelchair_inventory"]["id"].tolist())
 
 
 def update_inventory(new_inventory: pd.DataFrame, device_type: DeviceType):
+    """Update the inventory with the new data."""
     # find changed rows
     new_inventory = new_inventory.merge(
         right=st.session_state[f"admin_{device_type.lower()}_inventory"],

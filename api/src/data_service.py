@@ -44,7 +44,7 @@ class DataService:
         """Read secret (if given value is a filepath, read that file; otherwise, use value as secret)"""
         try:
             # value is path to secret
-            return Path(secret_or_secret_path).read_text().strip()
+            return Path(secret_or_secret_path).read_text(encoding="utf-8").strip()
         except FileNotFoundError:
             # value is secret itself, not path to secret
             return secret_or_secret_path

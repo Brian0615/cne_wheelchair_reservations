@@ -19,6 +19,8 @@ def load_query_by_name(query_name: str) -> LiteralString:
 
 
 def create_schema(schema_name: str):
+    """Create a new schema in the database."""
+
     create_schema_query = sql.SQL(
         load_query_by_name("create_schema")
     ).format(

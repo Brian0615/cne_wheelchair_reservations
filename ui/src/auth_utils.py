@@ -7,16 +7,21 @@ import yaml
 
 
 def load_auth_config():
+    """Load the authentication config file for the UI"""
     try:
-        with open(os.environ["AUTH_CONFIG_PATH"], "r") as config_file:
+        with open(os.environ["AUTH_CONFIG_PATH"], "r", encoding="utf-8") as config_file:
             return yaml.safe_load(config_file)
     except KeyError:
         st.error("**Authentication Error**: Authentication config filepath not provided.")
+        raise
     except FileNotFoundError:
         st.error("**Authentication Error**: Authentication config file not found.")
+        raise
 
 
 def initialize_authenticator() -> st_auth.Authenticate:
+    """Initialize the Streamlit authenticator"""
+
     if "authenticator" in st.session_state:
         return st.session_state["authenticator"]
 
@@ -33,7 +38,9 @@ def initialize_authenticator() -> st_auth.Authenticate:
 
 
 def login(rendered: bool = False):
-    if os.getenv("DEV_MODE", default=False) in [True, 'True', 'true']:
+    """Render the login module"""
+
+    if os.getenv("DEV_MODE", default="False") in [True, 'True', 'true']:
         with st.expander("Session State"):
             st.write(st.session_state)
     authenticator = initialize_authenticator()
@@ -42,7 +49,7 @@ def login(rendered: bool = False):
             location="main" if rendered else "unrendered",
             max_login_attempts=5,
         )
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         st.error(e)
 
     if st.session_state["authentication_status"] is True:
@@ -62,6 +69,8 @@ def login(rendered: bool = False):
 
 
 def initialize_page(page_header: Optional[str] = None):
+    """Initialize a Streamlit page with login module and header"""
+
     st.set_page_config(layout="wide")
     login()
     if page_header:

@@ -32,6 +32,8 @@ def clear_complete_rental_form():
 
 @st.dialog("Success!")
 def display_success_dialog(completed_rental: CompletedRental):
+    """Display the success dialog upon completing a rental"""
+
     st.success(
         f"""
         The following rental was completed successfully:
@@ -46,6 +48,8 @@ def display_success_dialog(completed_rental: CompletedRental):
 
 
 def complete_rental(rental_completion_info: dict, signature: np.array):
+    """Complete a rental"""
+
     # clear previous errors
     st.session_state["complete_rental_errors"] = None
     try:
@@ -134,7 +138,7 @@ st.write(
     f"confirm that the following have been returned to me:**"
 )
 
-check_items = True
+check_items = True  # pylint: disable=invalid-name
 if rental["items_left_behind"]:
     check_items = st.checkbox("Items Left Behind during Rental: " + ", ".join(rental["items_left_behind"]))
 check_deposit = st.checkbox(f"{rental['deposit_payment_method']} Deposit of $50")
@@ -145,14 +149,13 @@ canvas_signature = st_canvas(
     height=100,
     key="complete_rental_signature",
 )
-canvas_signature = canvas_signature.image_data
 
 # form submission or errors
 errors = st.session_state.get("complete_rental_errors")
 if errors:
     display_validation_errors(errors, CompletedRental)
 allow_submission = all([
-    np.count_nonzero(np.max(canvas_signature, axis=-1)) > 500,
+    np.count_nonzero(np.max(canvas_signature.image_data, axis=-1)) > 500,
     completed_rental_info["return_location"],
     completed_rental_info["return_time"],
     completed_rental_info["return_staff_name"],
@@ -162,6 +165,6 @@ allow_submission = all([
 st.button(
     label="Complete Rental",
     on_click=complete_rental,
-    args=(completed_rental_info, canvas_signature),
+    args=(completed_rental_info, canvas_signature.image_data),
     disabled=not allow_submission,
 )

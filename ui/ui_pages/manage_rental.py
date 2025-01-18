@@ -39,6 +39,7 @@ def clear_manage_rental_form():
 
 @st.dialog("Success!")
 def display_complete_rental_success_dialog(completed_rental: CompletedRental):
+    """Display the success dialog upon completing a rental"""
     st.success(
         f"""
         The following rental was completed successfully:
@@ -53,6 +54,7 @@ def display_complete_rental_success_dialog(completed_rental: CompletedRental):
 
 
 def complete_rental(rental_completion_info: dict, signature: np.array):
+    """Complete a rental"""
     # clear previous errors
     st.session_state["complete_rental_errors"] = None
     try:
@@ -90,6 +92,7 @@ def complete_rental(rental_completion_info: dict, signature: np.array):
 
 @st.dialog("Success!")
 def display_change_device_success_dialog(change_device_info: ChangeDeviceInfo):
+    """Display the success dialog upon changing a device"""
     st.success(
         f"""
         The following rental was updated successfully:

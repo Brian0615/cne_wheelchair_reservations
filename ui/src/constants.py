@@ -35,5 +35,6 @@ class CNEDates:
 
 
 class Page(StrEnum):
+    """Page Name"""
     VIEW_RENTALS = auto()
     VIEW_RESERVATIONS = auto()
