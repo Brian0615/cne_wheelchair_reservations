@@ -24,7 +24,7 @@ def clear_rental_form() -> None:
     for key in st.session_state.keys():
         if key.startswith("rental_form_"):
             if key.endswith("date"):
-                st.session_state[key] = CNEDates.get_default_date(),
+                st.session_state[key] = CNEDates.get_default_date()
             elif key.endswith("pickup_time"):
                 st.session_state[key] = datetime.now(tz=pytz.timezone("America/Toronto")).time()
             else:
@@ -149,7 +149,7 @@ if rental_info["reservation_id"]:
 
 rental_info["device_id"] = col2.selectbox(
     "Assigned Chair/Scooter",
-    options=available_devices,
+    options=sorted(available_devices),
     index=None,
     key="rental_form_device_id",
 )
