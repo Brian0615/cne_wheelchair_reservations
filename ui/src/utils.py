@@ -328,7 +328,7 @@ def transfer_devices(data_service: DataService, device_type: DeviceType, device_
 
 def get_date_input(label: str, col=None):
     """Get a date input with the default date set to today."""
-    all_dates = CNEDates.get_cne_date_list(year=datetime.today().year)
+    all_dates = CNEDates.get_cne_date_list()
     if col is None:
         col, _ = st.columns([1, 3])
     return col.date_input(

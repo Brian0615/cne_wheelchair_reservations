@@ -69,7 +69,7 @@ initialize_reservation_form()
 reservation_info = {}
 
 col1, col2, col3 = st.columns(3)
-all_dates = CNEDates.get_cne_date_list(year=datetime.today().year)
+all_dates = CNEDates.get_cne_date_list()
 reservation_info["date"] = col1.date_input(
     label=NewReservation.model_fields["date"].title,
     min_value=min(all_dates),

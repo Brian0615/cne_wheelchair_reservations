@@ -110,7 +110,7 @@ class DataService:
         """Get all rentals for the current year."""
         return {
             date: self.get_rentals_on_date(date)
-            for date in CNEDates.get_cne_date_list(year=datetime.datetime.today().year)
+            for date in CNEDates.get_cne_date_list()
         }
 
     def get_number_of_reservations_on_date(
@@ -156,7 +156,7 @@ class DataService:
         """Get all reservations for the current year."""
         return {
             date: self.get_reservations_on_date(date)
-            for date in CNEDates.get_cne_date_list(year=datetime.datetime.today().year)
+            for date in CNEDates.get_cne_date_list()
         }
 
     def add_new_rental(self, new_rental: NewRental):

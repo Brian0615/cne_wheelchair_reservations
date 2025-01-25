@@ -77,7 +77,7 @@ rental_info = {}
 
 # first row of intro section of form
 col1, col2, col3, col4 = st.columns(4)
-all_dates = CNEDates.get_cne_date_list(year=datetime.today().year)
+all_dates = CNEDates.get_cne_date_list()
 rental_info["date"] = col1.date_input(
     label="Rental Date",
     min_value=min(all_dates),

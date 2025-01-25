@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch
 
+from common.utils import get_default_timezone
 from ui.src import constants
 from ui.src.constants import CNEDates
 
@@ -13,7 +14,7 @@ class TestCNEDates(unittest.TestCase):
         """Test the get_cne_start_end_dates method."""
         # make datetime.today return a date in 2021
         with patch.object(constants, "datetime") as mock_datetime:
-            mock_datetime.today.return_value = datetime(2021, 1, 1)
+            mock_datetime.now.return_value = datetime(2021, 12, 11, tzinfo=get_default_timezone())
             mock_datetime.side_effect = datetime
 
             # call the function
@@ -26,7 +27,7 @@ class TestCNEDates(unittest.TestCase):
         """Test the get_default_new_reservation_date method."""
         # make datetime.today return a date in 2021
         with patch.object(constants, "datetime") as mock_datetime:
-            mock_datetime.today.return_value = datetime(2021, 12, 11)
+            mock_datetime.now.return_value = datetime(2021, 12, 11, tzinfo=get_default_timezone())
             mock_datetime.side_effect = datetime
 
             # call the function
