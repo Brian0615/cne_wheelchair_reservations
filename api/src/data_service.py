@@ -8,6 +8,7 @@ from typing import List, Optional, LiteralString
 import pandas as pd
 import psycopg
 from psycopg import sql, Connection
+from psycopg.errors import ConnectionTimeout, OperationalError
 from psycopg.types.enum import EnumInfo, register_enum
 
 from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus, Table
@@ -61,14 +62,25 @@ class DataService:
 
     def _initialize_connection(self) -> Connection:
         """Initialize a connection to the database."""
-        return psycopg.connect(
-            host=self.host,
-            port=self.port,
-            user=self.username,
-            password=self.password,
-            dbname=self.db_name,
-            connect_timeout=10,
-        )
+        try:
+            return psycopg.connect(
+                host=self.host,
+                port=self.port,
+                user=self.username,
+                password=self.password,
+                dbname=self.db_name,
+                connect_timeout=5,
+            )
+        except ConnectionTimeout as exc:
+            raise ConnectionTimeout(
+                f"Timed out trying to connect to the {self.db_name} database at "
+                f"{self.host}:{self.port} with the {self.username} user"
+            ) from exc
+        except OperationalError as exc:
+            raise OperationalError(
+                f"Timed out trying to connect to the {self.db_name} database at "
+                f"{self.host}:{self.port} with the {self.username} user"
+            ) from exc
 
     def _initialize_custom_functions(self):
         """Initialize custom functions in the database."""
