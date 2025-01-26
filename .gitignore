@@ -163,3 +163,6 @@ cython_debug/
 
 # authentication config
 /auth_config.yml
+
+# bash scripts
+*.sh
