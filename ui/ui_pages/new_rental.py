@@ -20,7 +20,7 @@ data_service = DataService()
 
 
 @st.dialog("Success!")
-def display_success_dialog(rental_id: str, new_rental: NewRental):
+def display_success_dialog(rental_id: str, new_rental: NewRental, form_data: bytes):
     """Display the success dialog upon creating a new rental"""
     st.success(
         f"""
@@ -32,14 +32,12 @@ def display_success_dialog(rental_id: str, new_rental: NewRental):
         """
     )
     if new_rental.device_type == DeviceType.WHEELCHAIR:
-        form_path = WheelchairForm().fill_form(rental_data=new_rental, rental_id=rental_id)
-        with open(form_path, "rb") as file:
-            st.download_button(
-                label="Download Rental Form",
-                data=file,
-                icon=":material/download:",
-                file_name=f"rental_form_{rental_id}.pdf",
-            )
+        st.download_button(
+            label="Download Rental Form",
+            data=form_data,
+            icon=":material/download:",
+            file_name=f"rental_form_{rental_id}.pdf",
+        )
     if st.button("Close"):
         clear_session_state_for_form(clear_prefixes=["rental_form_"])
         st.rerun()
@@ -65,9 +63,14 @@ def submit_form(new_rental: dict, signature: np.array):
         new_rental = NewRental(**new_rental)
 
         # try to add the new rental
-        status_code, result = data_service.add_new_rental(new_rental)
+        status_code, rental_id = data_service.add_new_rental(new_rental)
+        if new_rental.device_type == DeviceType.WHEELCHAIR:
+            form_data = WheelchairForm(rental_data=new_rental, rental_id=rental_id).export_form_to_bytes()
+            status_code, _ = data_service.upload_rental_form(pdf_bytes=form_data, rental_id=rental_id)
+        else:
+            form_data = None
         if status_code == 200:
-            display_success_dialog(rental_id=result, new_rental=new_rental)
+            display_success_dialog(rental_id=rental_id, new_rental=new_rental, form_data=form_data)
 
     except ValidationError as exc:
         st.session_state["rental_form_errors"] = exc.errors()

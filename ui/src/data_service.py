@@ -195,3 +195,13 @@ class DataService:
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()
+
+    def upload_rental_form(self, pdf_bytes: bytes, rental_id: str):
+        """Upload a rental form to S3 using the API."""
+        response = requests.put(
+            f"http://{self.api_host}:{self.api_port}/forms/upload_rental_form",
+            params={"rental_id": rental_id},
+            files={"pdf_bytes": pdf_bytes},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.json()

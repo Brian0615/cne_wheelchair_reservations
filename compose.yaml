@@ -2,11 +2,12 @@ services:
   api:
     image: brianlammm/cne_api
     environment:
+      CNE_YEAR: ${CNE_YEAR}
       POSTGRES_DATABASE: cne
       POSTGRES_HOST: /run/secrets/postgres_host
       POSTGRES_PORT: /run/secrets/postgres_port
       POSTGRES_USERNAME: /run/secrets/postgres_username
-      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA}
+      S3_BUCKET: ${S3_BUCKET}
     ports:
       - "8595:8595"   # left side is the host port (external), right side is the container port (internal, used by UI)
     secrets:
@@ -20,7 +21,9 @@ services:
     environment:
       API_HOST: api
       API_PORT: 8595
+      AUTH_CONFIG_PATH: ${AUTH_CONFIG_PATH}
       CNE_YEAR: ${CNE_YEAR}
+      PDF_PASSWORD: /run/secrets/pdf_password
     depends_on:
       api:
         condition: service_started
@@ -33,3 +36,5 @@ secrets:
     environment: POSTGRES_PORT
   postgres_username:
     environment: POSTGRES_USERNAME
+  pdf_password:
+    environment: PDF_PASSWORD

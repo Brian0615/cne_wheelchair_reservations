@@ -41,5 +41,7 @@ class TestWheelchairForm(unittest.TestCase):
             staff_name="Jane Doe",
             signature=encode_signature_base64(signature),
         )
-
-        WheelchairForm.fill_form(rental_data, "test_rental_id")
+        form = WheelchairForm(rental_data=rental_data, rental_id="test_rental_id")
+        pdf_bytes = form.export_form_to_bytes()
+        with open("test_wheelchair_form.pdf", "wb") as f:
+            f.write(pdf_bytes)

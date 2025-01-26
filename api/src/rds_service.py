@@ -2,7 +2,6 @@
 
 import datetime
 import os
-from pathlib import Path
 from typing import List, Optional, LiteralString
 
 import boto3
@@ -14,9 +13,10 @@ from psycopg.types.enum import EnumInfo, register_enum
 
 from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus, Table
 from common.data_models import ChangeDeviceInfo, CompletedRental, Device, NewRental, NewReservation
+from common.utils import read_secret
 
 
-class DataService:
+class RDSService:
     """Service class to interact with the PostgreSQL database."""
 
     # pylint: disable=too-many-arguments
@@ -27,29 +27,18 @@ class DataService:
             username: str = os.environ["POSTGRES_USERNAME"],
             password: Optional[str] = os.getenv("POSTGRES_PASSWORD"),
             db_name: str = os.environ["POSTGRES_DATABASE"],
-            schema: str = os.environ["POSTGRES_SCHEMA"],
     ):
 
         # try reading secrets from file (if valid path) else use values as secrets
-        self.host = self._read_secret(host)
-        self.port = self._read_secret(port)
-        self.username = self._read_secret(username)
-        self.password = self._read_secret(password) if password is not None else None
+        self.host = read_secret(host)
+        self.port = read_secret(port)
+        self.username = read_secret(username)
+        self.password = read_secret(password) if password is not None else None
         self.db_name = db_name
-        self.schema = schema
+        self.schema = f'cne_{os.environ["CNE_YEAR"]}'
 
         self._initialize_enums()
         self._initialize_custom_functions()
-
-    @staticmethod
-    def _read_secret(secret_or_secret_path: str):
-        """Read secret (if given value is a filepath, read that file; otherwise, use value as secret)"""
-        try:
-            # value is path to secret
-            return Path(secret_or_secret_path).read_text(encoding="utf-8").strip()
-        except FileNotFoundError:
-            # value is secret itself, not path to secret
-            return secret_or_secret_path
 
     @staticmethod
     def _load_query_by_name(query_name: str) -> LiteralString:
