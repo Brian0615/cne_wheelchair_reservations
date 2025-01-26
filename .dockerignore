@@ -1,3 +1,6 @@
 **/.git
 **/.idea
 **/.pytest_cache
+*.env
+*.yml
+*.yaml

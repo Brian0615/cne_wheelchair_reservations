@@ -52,7 +52,11 @@ class RDSService:
 
     def _generate_auth_token(self):
         """Generate an authentication token to connect to the database (for IAM)"""
-        rds_client = boto3.client("rds")
+        rds_client = boto3.client(
+            service_name="rds",
+            aws_access_key_id=read_secret(os.getenv("AWS_ACCESS_KEY_ID")),
+            aws_secret_access_key=read_secret(os.getenv("AWS_SECRET_ACCESS_KEY")),
+        )
         return rds_client.generate_db_auth_token(
             DBHostname=self.host,
             Port=self.port,
@@ -68,7 +72,7 @@ class RDSService:
                 user=self.username,
                 password=self.password if self.password is not None else self._generate_auth_token(),
                 dbname=self.db_name,
-                connect_timeout=5,
+                connect_timeout=15,
             )
         except ConnectionTimeout as exc:
             raise ConnectionTimeout(

@@ -1,7 +1,12 @@
+name: cne_wheelchair_reservations
+
 services:
   api:
     image: brianlammm/cne_api
     environment:
+      AWS_ACCESS_KEY_ID: /run/secrets/aws_access_key_id
+      AWS_SECRET_ACCESS_KEY: /run/secrets/aws_secret_access_key
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
       CNE_YEAR: ${CNE_YEAR}
       POSTGRES_DATABASE: cne
       POSTGRES_HOST: /run/secrets/postgres_host
@@ -11,6 +16,8 @@ services:
     ports:
       - "8595:8595"   # left side is the host port (external), right side is the container port (internal, used by UI)
     secrets:
+      - aws_access_key_id
+      - aws_secret_access_key
       - postgres_host
       - postgres_port
       - postgres_username
@@ -21,15 +28,29 @@ services:
     environment:
       API_HOST: api
       API_PORT: 8595
-      AUTH_CONFIG_PATH: ${AUTH_CONFIG_PATH}
+      AUTH_CONFIG_PATH: /auth_config.yml
       CNE_YEAR: ${CNE_YEAR}
       PDF_PASSWORD: /run/secrets/pdf_password
     depends_on:
       api:
         condition: service_started
+    volumes:
+      - type: bind
+        source: ${AUTH_CONFIG_PATH}
+        target: /auth_config.yml
+    secrets:
+      - pdf_password
+
+volumes:
+  auth_config:
+
 
 # noinspection ComposeUnknownKeys
 secrets:
+  aws_access_key_id:
+    environment: AWS_ACCESS_KEY_ID
+  aws_secret_access_key:
+    environment: AWS_SECRET_ACCESS_KEY
   postgres_host:
     environment: POSTGRES_HOST
   postgres_port:

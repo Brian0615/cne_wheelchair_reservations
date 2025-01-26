@@ -18,25 +18,44 @@ docker push brianlammm/cne_ui
 
 ### Running the Containers
 
+**Using Docker Compose**
 ```bash
 docker compose up
+```
+
+**Running an Individual Container**
+
+```bash
+docker run --env-file api.env brianlammm/cne_api
 ```
 
 ### Required Environment Variables
 
 #### API
 
-| Variable            | Description                                                   |
-|:--------------------|:--------------------------------------------------------------|
-| `CNE_YEAR`          | The year of the CNE (used for PostgreSQL schema and S3 paths) |
-| `POSTGRES_DATABASE` | The name of the database to connect to                        |
-| `POSTGRES_HOST`     | The host of the database                                      |
-| `POSTGRES_PORT`     | The port of the database                                      |
-| `POSTGRES_USERNAME` | The user to connect to the database with                      |
-| `POSTGRES_PASSWORD` | The password to connect to the database with (Optional)       |
-| `S3_BUCKET`         | The name of the S3 bucket to connect to                       |
+| Variable                | Description                                                   |
+|:------------------------|:--------------------------------------------------------------|
+| `AWS_ACCESS_KEY_ID`     | The access key ID for the AWS account (optional)              |
+| `AWS_DEFAULT_REGION`    | The default region for the AWS account (optional)             |
+| `AWS_SECRET_ACCESS_KEY` | The secret access key for the AWS account (optional)          |
+| `CNE_YEAR`              | The year of the CNE (used for PostgreSQL schema and S3 paths) |
+| `POSTGRES_DATABASE`     | The name of the database to connect to                        |
+| `POSTGRES_HOST`         | The host of the database                                      |
+| `POSTGRES_PORT`         | The port of the database                                      |
+| `POSTGRES_USERNAME`     | The user to connect to the database with                      |
+| `POSTGRES_PASSWORD`     | The password to connect to the database with (Optional)       |
+| `S3_BUCKET`             | The name of the S3 bucket to connect to                       |
 
-**Note**: If `POSTGRES_PASSWORD` is not provided, the database connection will be attempted using IAM.
+**Authentication Methods for PostgreSQL**
+
+* **Explicit Username/Password**: provided by `POSTGRES_USERNAME` and `POSTGRES_PASSWORD`
+* **AWS IAM Access Key**: provided by `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_DEFAULT_REGION`
+* **AWS IAM Role**: provided by the IAM role attached to the local / EC2 instance
+
+**Authentication Methods for S3**
+
+* **AWS IAM Access Key**: provided by `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, and `AWS_DEFAULT_REGION`
+* **AWS IAM Role**: provided by the IAM role attached to the local / EC2 instance
 
 #### UI
 
