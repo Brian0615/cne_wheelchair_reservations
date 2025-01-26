@@ -2,7 +2,6 @@ from datetime import datetime
 
 import numpy as np
 import streamlit as st
-from PIL import Image
 from pydantic import ValidationError
 from streamlit_drawable_canvas import st_canvas
 
@@ -11,10 +10,10 @@ from common.data_models import CompletedRental
 from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
+from ui.src.signature import Signature
 from ui.src.utils import (
     clear_session_state_for_form,
     display_validation_errors,
-    encode_signature_base64,
     get_rental_selection
 )
 
@@ -39,15 +38,14 @@ def display_success_dialog(completed_rental: CompletedRental):
         st.rerun()
 
 
-def complete_rental(rental_completion_info: dict, signature: np.array):
+def complete_rental(rental_completion_info: dict, signature_data: np.array):
     """Complete a rental"""
 
     # clear previous errors
     st.session_state["complete_rental_errors"] = None
     try:
         # process signature
-        signature = Image.fromarray(signature)
-        rental_completion_info["return_signature"] = encode_signature_base64(signature)
+        rental_completion_info["return_signature"] = Signature(signature_data=signature_data).encode_as_base64()
 
         # update return time
         rental_completion_info["return_time"] = datetime.combine(

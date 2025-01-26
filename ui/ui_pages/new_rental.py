@@ -4,7 +4,6 @@ from typing import List
 import numpy as np
 import pandas as pd
 import streamlit as st
-from PIL import Image
 from pydantic import ValidationError
 from streamlit_drawable_canvas import st_canvas
 
@@ -14,7 +13,8 @@ from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import clear_session_state_for_form, display_validation_errors, encode_signature_base64
+from ui.src.signature import Signature
+from ui.src.utils import clear_session_state_for_form, display_validation_errors
 from ui.src.wheelchair_form import WheelchairForm
 
 initialize_page(page_header="New Rental")
@@ -45,14 +45,13 @@ def display_success_dialog(rental_id: str, new_rental: NewRental, form_data: byt
         st.rerun()
 
 
-def submit_form(new_rental: dict, signature: np.array):
+def submit_form(new_rental: dict, signature_data: np.array):
     """Submit the new rental form"""
     # clear previous errors
     st.session_state["rental_form_errors"] = None
     try:
         # process signature
-        signature = Image.fromarray(signature)
-        new_rental["signature"] = encode_signature_base64(signature)
+        new_rental["signature"] = Signature(signature_data=signature_data).encode_as_base64()
 
         # update pickup time
         new_rental["pickup_time"] = datetime.combine(

@@ -3,11 +3,10 @@ import unittest
 from datetime import datetime
 
 import pytz
-from PIL import Image
 
 from common.constants import PaymentMethod, DeviceType, Location
 from common.data_models.rental import NewRental
-from ui.src.utils import encode_signature_base64
+from ui.src.signature import Signature
 from ui.src.wheelchair_form import WheelchairForm
 
 
@@ -18,7 +17,7 @@ class TestWheelchairForm(unittest.TestCase):
         """Test the fill_form method with a signature."""
 
         # load test signature
-        signature = Image.open(os.path.join(os.path.dirname(__file__), "assets/test_signature.png"))
+        signature = Signature.load_from_file(os.path.join(os.path.dirname(__file__), "assets/test_signature.png"))
 
         # create fake rental data
         rental_data = NewRental(
@@ -39,7 +38,7 @@ class TestWheelchairForm(unittest.TestCase):
             deposit_payment_amount=100,
             deposit_payment_method=PaymentMethod.CREDIT_CARD,
             staff_name="Jane Doe",
-            signature=encode_signature_base64(signature),
+            signature=signature.encode_as_base64(),
         )
         form = WheelchairForm(rental_data=rental_data, rental_id="test_rental_id")
         pdf_bytes = form.export_form_to_bytes()
