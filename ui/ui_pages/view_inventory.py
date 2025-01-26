@@ -8,6 +8,16 @@ from ui.src.utils import create_inventory_chart
 
 initialize_page(page_header="Inventory")
 
+
+def display_no_device_available_message(device_type: DeviceType):
+    st.warning(
+        f"""
+        **No {device_type.title()}s Available**:
+        
+        There are no {device_type}s in the inventory. You can add some in the Manage Inventory page.
+        """
+    )
+
 # load inventory
 data_service = DataService()
 full_inventory = data_service.get_full_inventory()
@@ -17,57 +27,30 @@ if full_inventory is None:
 scooter_inventory, wheelchair_inventory = full_inventory
 
 # generate and display summary charts
-st.subheader("Scooter Summary")
-if scooter_inventory.empty:
-    st.warning(
-        """
-        **No Scooters Available**:
-        
-        There are no scooters in the inventory. Add some in the Manage Inventory page.
-        """
-    )
-else:
-    scooter_inventory_chart = create_inventory_chart(scooter_inventory)
-    st.plotly_chart(scooter_inventory_chart, use_container_width=True, config={'displayModeBar': False})
-st.subheader("Wheelchair Summary")
-if wheelchair_inventory.empty:
-    st.warning(
-        """
-        **No Wheelchairs Available**:
-        
-        There are no wheelchairs in the inventory. Add some in the Manage Inventory page.
-        """
-    )
-else:
-    wheelchair_inventory_chart = create_inventory_chart(wheelchair_inventory)
-    st.plotly_chart(wheelchair_inventory_chart, use_container_width=True, config={'displayModeBar': False})
+for device_type, inventory in zip(
+        [DeviceType.SCOOTER, DeviceType.WHEELCHAIR],
+        [scooter_inventory, wheelchair_inventory]
+):
+    st.subheader(f"{device_type.title()} Summary")
+    if inventory.empty:
+        display_no_device_available_message(device_type)
+    else:
+        inventory_chart = create_inventory_chart(inventory)
+        st.plotly_chart(inventory_chart, use_container_width=True, config={'displayModeBar': False})
 
 # divider
 st.divider()
 
 # display inventory details
 scooter_col, wheelchair_col = st.columns(2)
-with scooter_col:
-    st.subheader("Scooter Details")
-    if scooter_inventory.empty:
-        st.warning(
-            """
-            **No Scooters Available**:
-
-            There are no scooters in the inventory. Add some in the Manage Inventory page.
-            """
-        )
-    else:
-        display_inventory_table(DeviceType.SCOOTER, scooter_inventory)
-with wheelchair_col:
-    st.subheader("Wheelchair Details")
-    if wheelchair_inventory.empty:
-        st.warning(
-            """
-            **No Wheelchairs Available**:
-
-            There are no wheelchairs in the inventory. Add some in the Manage Inventory page.
-            """
-        )
-    else:
-        display_inventory_table(DeviceType.WHEELCHAIR, wheelchair_inventory)
+for device_type, col, inventory in zip(
+        [DeviceType.SCOOTER, DeviceType.WHEELCHAIR],
+        [scooter_col, wheelchair_col],
+        [scooter_inventory, wheelchair_inventory]
+):
+    with col:
+        st.subheader(f"{device_type.title()} Details")
+        if inventory.empty:
+            display_no_device_available_message(device_type)
+        else:
+            display_inventory_table(device_type, inventory)
