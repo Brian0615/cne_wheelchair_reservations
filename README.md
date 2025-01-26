@@ -26,14 +26,16 @@ docker compose up
 
 #### API
 
-| Variable            | Description                                  |
-|:--------------------|:---------------------------------------------|
-| `POSTGRES_DATABASE` | The name of the database to connect to       |
-| `POSTGRES_HOST`     | The host of the database                     |
-| `POSTGRES_PORT`     | The port of the database                     |
-| `POSTGRES_USERNAME` | The user to connect to the database with     |
-| `POSTGRES_PASSWORD` | The password to connect to the database with |
-| `POSTGRES_SCHEMA`   | The schema to use in the database            |
+| Variable            | Description                                             |
+|:--------------------|:--------------------------------------------------------|
+| `POSTGRES_DATABASE` | The name of the database to connect to                  |
+| `POSTGRES_HOST`     | The host of the database                                |
+| `POSTGRES_PORT`     | The port of the database                                |
+| `POSTGRES_USERNAME` | The user to connect to the database with                |
+| `POSTGRES_PASSWORD` | The password to connect to the database with (Optional) |
+| `POSTGRES_SCHEMA`   | The schema to use in the database                       |
+
+**Note**: If `POSTGRES_PASSWORD` is not provided, the database connection will be attempted using IAM.
 
 #### UI
 

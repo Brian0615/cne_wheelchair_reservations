@@ -6,7 +6,6 @@ services:
       POSTGRES_HOST: /run/secrets/postgres_host
       POSTGRES_PORT: /run/secrets/postgres_port
       POSTGRES_USERNAME: /run/secrets/postgres_username
-      POSTGRES_PASSWORD: /run/secrets/postgres_password
       POSTGRES_SCHEMA: ${POSTGRES_SCHEMA}
     ports:
       - "8595:8595"   # left side is the host port (external), right side is the container port (internal, used by UI)
@@ -14,7 +13,6 @@ services:
       - postgres_host
       - postgres_port
       - postgres_username
-      - postgres_password
   ui:
     image: brianlammm/cne_ui
     ports:
@@ -35,5 +33,3 @@ secrets:
     environment: POSTGRES_PORT
   postgres_username:
     environment: POSTGRES_USERNAME
-  postgres_password:
-    environment: POSTGRES_PASSWORD

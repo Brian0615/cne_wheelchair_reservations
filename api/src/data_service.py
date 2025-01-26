@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import List, Optional, LiteralString
 
+import boto3
 import pandas as pd
 import psycopg
 from psycopg import sql, Connection
@@ -24,7 +25,7 @@ class DataService:
             host: str = os.environ["POSTGRES_HOST"],
             port: str = os.environ["POSTGRES_PORT"],
             username: str = os.environ["POSTGRES_USERNAME"],
-            password: str = os.environ["POSTGRES_PASSWORD"],
+            password: Optional[str] = os.getenv("POSTGRES_PASSWORD"),
             db_name: str = os.environ["POSTGRES_DATABASE"],
             schema: str = os.environ["POSTGRES_SCHEMA"],
     ):
@@ -33,7 +34,7 @@ class DataService:
         self.host = self._read_secret(host)
         self.port = self._read_secret(port)
         self.username = self._read_secret(username)
-        self.password = self._read_secret(password)
+        self.password = self._read_secret(password) if password is not None else None
         self.db_name = db_name
         self.schema = schema
 
@@ -60,6 +61,15 @@ class DataService:
         ) as query_file:
             return query_file.read()
 
+    def _generate_auth_token(self):
+        """Generate an authentication token to connect to the database (for IAM)"""
+        rds_client = boto3.client("rds")
+        return rds_client.generate_db_auth_token(
+            DBHostname=self.host,
+            Port=self.port,
+            DBUsername=self.username,
+        )
+
     def _initialize_connection(self) -> Connection:
         """Initialize a connection to the database."""
         try:
@@ -67,7 +77,7 @@ class DataService:
                 host=self.host,
                 port=self.port,
                 user=self.username,
-                password=self.password,
+                password=self.password if self.password is not None else self._generate_auth_token(),
                 dbname=self.db_name,
                 connect_timeout=5,
             )
