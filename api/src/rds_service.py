@@ -1,7 +1,9 @@
 # pylint: disable=not-context-manager
 
 import datetime
+import logging
 import os
+import sys
 from typing import List, Optional, LiteralString
 
 import boto3
@@ -14,6 +16,13 @@ from psycopg.types.enum import EnumInfo, register_enum
 from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus, Table
 from common.data_models import ChangeDeviceInfo, CompletedRental, Device, NewRental, NewReservation
 from common.utils import read_secret
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
 
 
 class RDSService:
@@ -66,7 +75,7 @@ class RDSService:
     def _initialize_connection(self) -> Connection:
         """Initialize a connection to the database."""
         try:
-            return psycopg.connect(
+            connection = psycopg.connect(
                 host=self.host,
                 port=self.port,
                 user=self.username,
@@ -74,6 +83,8 @@ class RDSService:
                 dbname=self.db_name,
                 connect_timeout=15,
             )
+            logger.info(f"Connected to {self.host}:{self.port} with the {self.username} user")
+            return connection
         except ConnectionTimeout as exc:
             raise ConnectionTimeout(
                 f"Timed out trying to connect to the {self.db_name} database at "
