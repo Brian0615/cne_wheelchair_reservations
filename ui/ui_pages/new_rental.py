@@ -1,6 +1,8 @@
 from datetime import datetime
+from typing import List
 
 import numpy as np
+import pandas as pd
 import streamlit as st
 from PIL import Image
 from pydantic import ValidationError
@@ -76,6 +78,29 @@ def submit_form(new_rental: dict, signature: np.array):
         st.session_state["rental_form_errors"] = exc.errors()
 
 
+@st.cache_data(ttl=30, show_spinner=False)
+def get_available_devices(
+        device_type: DeviceType,
+        location: Location,
+) -> List[str]:
+    """Helper function for caching purposes"""
+    return data_service.get_available_devices(device_type=device_type, location=location)
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def get_reservations_on_date(
+        reservation_date: datetime.date,
+        device_type: DeviceType,
+        exclude_picked_up_reservations: bool,
+) -> pd.DataFrame:
+    """Helper function for caching purposes"""
+    return data_service.get_reservations_on_date(
+        date=reservation_date,
+        device_type=device_type,
+        exclude_picked_up_reservations=exclude_picked_up_reservations,
+    )
+
+
 rental_info = {}
 
 # first row of intro section of form
@@ -105,7 +130,7 @@ if not all(rental_info.get(x) for x in ["date", "pickup_time", "pickup_location"
     st.stop()
 
 # check whether there are available devices
-available_devices = data_service.get_available_devices(
+available_devices = get_available_devices(
     device_type=rental_info["device_type"],
     location=rental_info["pickup_location"],
 )
@@ -118,8 +143,8 @@ if not available_devices:
     st.stop()
 
 # second row of intro section of form
-reservations_df = data_service.get_reservations_on_date(
-    date=rental_info["date"],
+reservations_df = get_reservations_on_date(
+    reservation_date=rental_info["date"],
     device_type=rental_info["device_type"],
     exclude_picked_up_reservations=True,
 )
@@ -164,9 +189,7 @@ rental_info['country'] = col3.text_input(label="Country", value="Canada", key="r
 
 id_verified = st.checkbox("ID Verified?")
 
-if not id_verified:
-    st.stop()
-
+# payment information section of form
 st.divider()
 st.subheader("Payment Information")
 col1, col2 = st.columns(2)
@@ -185,6 +208,7 @@ rental_info['deposit_payment_method'] = col2.selectbox(
     key="rental_form_deposit_payment_method",
 )
 
+# additional information section of form
 st.divider()
 st.subheader("Additional Information")
 col1, col2 = st.columns(2)

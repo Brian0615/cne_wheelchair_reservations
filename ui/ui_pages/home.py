@@ -9,7 +9,7 @@ from common.constants import DeviceType
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import display_rentals, display_reservations
+from ui.src.display_utils import display_reservations_table, display_rentals_table
 
 initialize_page()
 data_service = DataService()
@@ -90,9 +90,9 @@ with reservations_tab:
             reservations[reservations["device_type"] == DeviceType.WHEELCHAIR],
         )
         st.subheader(f"Today's {DeviceType.SCOOTER} Reservations")
-        display_reservations(scooter_reservations, device_type=DeviceType.SCOOTER)
+        display_reservations_table(scooter_reservations, device_type=DeviceType.SCOOTER)
         st.subheader(f"Today's {DeviceType.WHEELCHAIR} Reservations")
-        display_reservations(wheelchair_reservations, device_type=DeviceType.WHEELCHAIR)
+        display_reservations_table(wheelchair_reservations, device_type=DeviceType.WHEELCHAIR)
 
 with rentals_tab:
     rentals = data_service.get_rentals_on_date(CNEDates.get_default_date())
@@ -107,6 +107,6 @@ with rentals_tab:
             rentals[rentals["device_type"] == DeviceType.WHEELCHAIR],
         )
         st.subheader(f"Today's {DeviceType.SCOOTER} Rentals")
-        display_rentals(scooter_rentals, device_type=DeviceType.SCOOTER)
+        display_rentals_table(scooter_rentals, device_type=DeviceType.SCOOTER)
         st.subheader(f"Today's {DeviceType.WHEELCHAIR} Rentals")
-        display_rentals(wheelchair_rentals, device_type=DeviceType.WHEELCHAIR)
+        display_rentals_table(wheelchair_rentals, device_type=DeviceType.WHEELCHAIR)

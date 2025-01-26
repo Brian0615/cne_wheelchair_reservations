@@ -23,11 +23,7 @@ DEFAULT_TIMEOUT = 5
 class DataService:
     """Service class to interact with the API."""
 
-    def __init__(
-            self,
-            api_host: Optional[str] = None,
-            api_port: Optional[str] = None,
-    ):
+    def __init__(self, api_host: Optional[str] = None, api_port: Optional[str] = None):
         self.api_host = api_host if api_host is not None else os.environ["API_HOST"]
         self.api_port = api_port if api_port is not None else os.environ["API_PORT"]
 
@@ -42,7 +38,6 @@ class DataService:
 
     def get_full_inventory(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Get the full inventory of devices using the API."""
-
         response = requests.get(
             url=f"http://{self.api_host}:{self.api_port}/devices/get_full_inventory",
             timeout=DEFAULT_TIMEOUT,
@@ -86,7 +81,7 @@ class DataService:
 
     def get_rentals_on_date(
             self,
-            date: datetime.date,
+            rental_date: datetime.date,
             device_type: Optional[DeviceType] = None,
             in_progress_rentals_only: bool = False,
     ):
@@ -94,7 +89,7 @@ class DataService:
         response = requests.get(
             f"http://{self.api_host}:{self.api_port}/rentals/get_rentals_on_date",
             params={
-                "date": date.strftime("%Y-%m-%d"),
+                "date": rental_date.strftime("%Y-%m-%d"),
                 "device_type": device_type,
                 "in_progress_rentals_only": in_progress_rentals_only,
             },

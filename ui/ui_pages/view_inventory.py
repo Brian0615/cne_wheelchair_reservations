@@ -3,7 +3,8 @@ import streamlit as st
 from common.constants import DeviceType
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
-from ui.src.utils import display_inventory, create_inventory_chart
+from ui.src.display_utils import display_inventory_table
+from ui.src.utils import create_inventory_chart
 
 initialize_page(page_header="Inventory")
 
@@ -53,7 +54,7 @@ with scooter_col:
             """
         )
     else:
-        display_inventory(DeviceType.SCOOTER, scooter_inventory)
+        display_inventory_table(DeviceType.SCOOTER, scooter_inventory)
 with wheelchair_col:
     st.subheader("Wheelchair Details")
     if wheelchair_inventory.empty:
@@ -65,4 +66,4 @@ with wheelchair_col:
             """
         )
     else:
-        display_inventory(DeviceType.WHEELCHAIR, wheelchair_inventory)
+        display_inventory_table(DeviceType.WHEELCHAIR, wheelchair_inventory)

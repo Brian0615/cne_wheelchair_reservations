@@ -5,7 +5,8 @@ from common.constants import DeviceType
 from common.data_models.device import Device
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
-from ui.src.utils import display_inventory, add_devices, transfer_devices
+from ui.src.display_utils import display_inventory_table
+from ui.src.utils import add_devices, transfer_devices
 
 initialize_page(page_header="Manage Inventory")
 data_service = DataService()
@@ -98,7 +99,7 @@ with scooter_col:
             """
         )
     else:
-        updated_scooter_inventory = display_inventory(
+        updated_scooter_inventory = display_inventory_table(
             device_type=DeviceType.SCOOTER,
             inventory=st.session_state["admin_scooter_inventory"],
             admin_mode=True,
@@ -115,7 +116,7 @@ with wheelchair_col:
             """
                    )
     else:
-        updated_wheelchair_inventory = display_inventory(
+        updated_wheelchair_inventory = display_inventory_table(
             device_type=DeviceType.WHEELCHAIR,
             inventory=st.session_state["admin_wheelchair_inventory"],
             admin_mode=True,
