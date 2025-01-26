@@ -167,7 +167,7 @@ def display_rentals_or_reservations_on_date(
     page_description_str = page.lstrip("view_")
     display_func = display_rentals_table if page == Page.VIEW_RENTALS else display_reservations_table
 
-    if rentals_or_reservations.empty:
+    if rentals_or_reservations is None or rentals_or_reservations.empty:
         st.warning(
             f"**No {page_description_str.title()}**: "
             f"There are no {page_description_str} for {view_date.strftime('%b %d, %Y')}."

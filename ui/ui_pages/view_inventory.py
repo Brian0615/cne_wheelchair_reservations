@@ -10,7 +10,11 @@ initialize_page(page_header="Inventory")
 
 # load inventory
 data_service = DataService()
-scooter_inventory, wheelchair_inventory = data_service.get_full_inventory()
+full_inventory = data_service.get_full_inventory()
+if full_inventory is None:
+    st.error("**Error**: Unable to load inventory. Please try again later.")
+    st.stop()
+scooter_inventory, wheelchair_inventory = full_inventory
 
 # generate and display summary charts
 st.subheader("Scooter Summary")

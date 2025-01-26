@@ -58,6 +58,8 @@ completed_rental_info = {}
 
 # retrieve a particular rental
 date, rental_id, rental_data = get_rental_selection(data_service=data_service, in_progress_rentals_only=True)
+if rental_id is None:
+    st.stop()
 
 st.subheader(f"Change {rental_data['device_type'].value}")
 change_device_info = {

@@ -94,6 +94,9 @@ if reservation_info["date"] and reservation_info["device_type"] and reservation_
         device_type=reservation_info["device_type"],
         location=reservation_info["location"],
     )
+    if number_of_existing_reservations is None:  # there was an error
+        st.error("**Note**: Reservations cannot be created currently as there is an error.")
+        st.stop()
     match number_of_existing_reservations:
         case 0:
             quantifiers = "are", "s"

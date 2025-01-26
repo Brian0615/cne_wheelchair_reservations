@@ -1,9 +1,12 @@
 import datetime
 import os
+from functools import wraps
 from typing import List, Optional, Tuple
 
 import pandas as pd
 import requests
+import streamlit as st
+from requests import ConnectionError
 
 from common.constants import DeviceType, Location
 from common.data_models import (
@@ -15,9 +18,32 @@ from common.data_models import (
     RentalSummary,
     Reservation,
 )
-from ui.src.constants import CNEDates
 
 DEFAULT_TIMEOUT = 5
+
+
+def auto_process_api_errors(func):
+    """Automatically process API errors and raise appropriate exceptions."""
+
+    @wraps(func)
+    def wrapper(data_service, *args, **kwargs):
+        """Wrap the function and process API errors."""
+        try:
+            return func(data_service, *args, **kwargs)
+        except ConnectionError as exc:
+            st.error(
+                f"""
+                **API Connection Error**: Unable to connect to the API. Please verify the API is running and accessible.
+                 * Host: {data_service.api_host}
+                 * Port: {data_service.api_port}
+                """
+            )
+            with st.expander(label="Full Error Traceback"):
+                st.write(exc)
+        except Exception as exc:
+            raise st.error(f"API Error: {exc}")
+
+    return wrapper
 
 
 class DataService:
@@ -27,6 +53,7 @@ class DataService:
         self.api_host = api_host if api_host is not None else os.environ["API_HOST"]
         self.api_port = api_port if api_port is not None else os.environ["API_PORT"]
 
+    @auto_process_api_errors
     def get_available_devices(self, device_type: DeviceType, location: Location):
         """Get the available devices of a specific type at a specific location using the API."""
         response = requests.get(
@@ -36,6 +63,7 @@ class DataService:
         )
         return response.json()
 
+    @auto_process_api_errors
     def get_full_inventory(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Get the full inventory of devices using the API."""
         response = requests.get(
@@ -52,6 +80,7 @@ class DataService:
             inventory[inventory["type"] == DeviceType.WHEELCHAIR],
         )
 
+    @auto_process_api_errors
     def add_to_inventory(self, devices: List[Device]):
         """Add devices to the inventory using the API."""
         response = requests.post(
@@ -61,6 +90,7 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    @auto_process_api_errors
     def update_inventory(self, inventory: List[Device]):
         """Set the full inventory of devices using the API."""
         response = requests.post(
@@ -70,6 +100,7 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    @auto_process_api_errors
     def add_new_reservation(self, reservation: NewReservation):
         """Add a new reservation using the API."""
         response = requests.post(
@@ -79,6 +110,7 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    @auto_process_api_errors
     def get_rentals_on_date(
             self,
             rental_date: datetime.date,
@@ -101,13 +133,7 @@ class DataService:
             return rentals
         return rentals.sort_values(by="id")
 
-    def get_all_rentals(self):
-        """Get all rentals for the current year."""
-        return {
-            date: self.get_rentals_on_date(date)
-            for date in CNEDates.get_cne_date_list()
-        }
-
+    @auto_process_api_errors
     def get_number_of_reservations_on_date(
             self,
             date: datetime.date,
@@ -126,6 +152,7 @@ class DataService:
         )
         return response.json()
 
+    @auto_process_api_errors
     def get_reservations_on_date(
             self,
             date: datetime.date,
@@ -147,13 +174,7 @@ class DataService:
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
         return reservations
 
-    def get_all_reservations(self):
-        """Get all reservations for the current year."""
-        return {
-            date: self.get_reservations_on_date(date)
-            for date in CNEDates.get_cne_date_list()
-        }
-
+    @auto_process_api_errors
     def add_new_rental(self, new_rental: NewRental):
         """Add a new rental using the API."""
         response = requests.post(
@@ -163,6 +184,7 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    @auto_process_api_errors
     def change_rental_device(self, change_device_info: ChangeDeviceInfo):
         """Change the device of a rental using the API."""
         response = requests.post(
@@ -172,6 +194,7 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    @auto_process_api_errors
     def complete_rental(self, completed_rental: CompletedRental):
         """Complete a rental using the API."""
         response = requests.post(
@@ -181,6 +204,7 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    @auto_process_api_errors
     def update_devices_location(self, device_ids: List[str], location: Location):
         """Update the location of devices using the API."""
         response = requests.post(
@@ -191,6 +215,7 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    @auto_process_api_errors
     def upload_rental_form(self, pdf_bytes: bytes, rental_id: str):
         """Upload a rental form to S3 using the API."""
         response = requests.put(

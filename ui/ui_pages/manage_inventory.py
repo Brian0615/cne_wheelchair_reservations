@@ -71,10 +71,14 @@ if st.session_state.get("transfer_devices_toast_msg"):
     st.toast(st.session_state["transfer_devices_toast_msg"])
     del st.session_state["transfer_devices_toast_msg"]
 
+full_inventory = data_service.get_full_inventory()
+if full_inventory is None:
+    st.error("**Error**: Unable to load inventory. Please try again later.")
+    st.stop()
 (
     st.session_state["admin_scooter_inventory"],
     st.session_state["admin_wheelchair_inventory"],
-) = data_service.get_full_inventory()
+) = full_inventory
 
 scooter_col, wheelchair_col = st.columns(2)
 with scooter_col:

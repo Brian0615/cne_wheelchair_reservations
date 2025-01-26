@@ -79,7 +79,7 @@ reservations_tab, rentals_tab = st.tabs(["Reservations", "Rentals"])
 
 with reservations_tab:
     reservations = data_service.get_reservations_on_date(CNEDates.get_default_date())
-    if reservations.empty:
+    if reservations is None or reservations.empty:
         st.warning(
             f"**No Reservations Today**: There are no reservations for "
             f"{CNEDates.get_default_date().strftime('%b %d, %Y')}."
@@ -96,7 +96,7 @@ with reservations_tab:
 
 with rentals_tab:
     rentals = data_service.get_rentals_on_date(CNEDates.get_default_date())
-    if rentals.empty:
+    if rentals is None or rentals.empty:
         st.warning(
             f"**No Rentals Today**: There are no rentals for "
             f"{CNEDates.get_default_date().strftime('%b %d, %Y')}."

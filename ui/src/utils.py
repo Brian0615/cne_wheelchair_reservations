@@ -1,6 +1,6 @@
 import math
 from datetime import datetime, time, date
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 import streamlit as st
@@ -161,7 +161,10 @@ def get_date_input(label: str, col=None):
     )
 
 
-def get_rental_selection(data_service: DataService, in_progress_rentals_only: bool):
+def get_rental_selection(
+        data_service: DataService,
+        in_progress_rentals_only: bool,
+) -> Tuple[date, Optional[str], Optional[dict]]:
     """Render rental retrival options and return the selected rental."""
 
     # noinspection PyShadowingNames
@@ -176,9 +179,9 @@ def get_rental_selection(data_service: DataService, in_progress_rentals_only: bo
     col1, col2 = st.columns([1, 2])
     rental_date = get_date_input(label="Rental Date", col=col1)
     rentals = get_rentals_on_date_helper(rental_date=rental_date, in_progress_rentals_only=in_progress_rentals_only)
-    if rentals.empty:
+    if rentals is None or rentals.empty:
         st.warning(f"**No Rentals Today**: There are no rentals on {rental_date.strftime('%b %d, %Y')}.")
-        st.stop()
+        return rental_date, None, None
 
     rental_id = col2.selectbox(
         label="Select a Rental",
@@ -187,7 +190,7 @@ def get_rental_selection(data_service: DataService, in_progress_rentals_only: bo
     )
     rental_id = rental_id.split("Rental ID: ")[1][:-1] if rental_id else None
     if not rental_id:
-        st.stop()
+        return rental_date, None, None
     return rental_date, rental_id, rentals.loc[rentals["id"] == rental_id].to_dict(orient="records")[0]
 
 

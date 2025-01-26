@@ -77,6 +77,8 @@ def complete_rental(rental_completion_info: dict, signature_data: np.array):
 
 # retrieve a particular rental
 date, rental_id, rental_data = get_rental_selection(data_service=data_service, in_progress_rentals_only=True)
+if rental_id is None:
+    st.stop()
 
 # rental completion form
 col1, col2, col3 = st.columns(3)
