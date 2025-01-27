@@ -83,7 +83,7 @@ class RDSService:
                 dbname=self.db_name,
                 connect_timeout=15,
             )
-            logger.info(f"Connected to {self.host}:{self.port} with the {self.username} user")
+            logger.debug(f"Connected to {self.host}:{self.port} with the {self.username} user")
             return connection
         except ConnectionTimeout as exc:
             raise ConnectionTimeout(
@@ -110,20 +110,23 @@ class RDSService:
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(query)
+        logger.info("Successfully defined custom functions in the database")
 
     def _initialize_enums(self):
 
-        for psql_enum_name, python_enum_class in [
-            ("device_status", DeviceStatus),
-            ("device_type", DeviceType),
-            ("hold_item", HoldItem),
-            ("location", Location),
-            ("payment_method", PaymentMethod),
-            ("reservation_status", ReservationStatus),
-        ]:
-            with self._initialize_connection() as conn:
+        with self._initialize_connection() as conn:
+            for psql_enum_name, python_enum_class in [
+                ("device_status", DeviceStatus),
+                ("device_type", DeviceType),
+                ("hold_item", HoldItem),
+                ("location", Location),
+                ("payment_method", PaymentMethod),
+                ("reservation_status", ReservationStatus),
+            ]:
                 enum_info = EnumInfo.fetch(conn, psql_enum_name)
                 register_enum(enum_info, conn, python_enum_class)
+                logger.debug("Successfully registered %s enum in the database", psql_enum_name)
+        logger.info("Successfully registered enums in the database")
 
     def __form_select_all_query(self, table_name: Table) -> sql.Composed:
         """Form a query to select all rows from a table in the database"""
