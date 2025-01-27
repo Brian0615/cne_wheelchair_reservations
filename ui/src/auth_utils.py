@@ -38,7 +38,15 @@ def initialize_authenticator() -> st_auth.Authenticate:
 
 
 def login(rendered: bool = False):
-    """Render the login module"""
+    """
+    Login Helper
+     - If rendered is True, the login widget will be rendered
+     - rendered should be False for all other pages, in which case the user will be redirected to the login page
+       if not authenticated
+
+    Args:
+        rendered (bool, optional): Whether the login page is rendered. Defaults to False.
+    """
 
     if os.getenv("DEV_MODE", default="False") in [True, 'True', 'true']:
         with st.expander("Session State"):
@@ -52,20 +60,22 @@ def login(rendered: bool = False):
     except Exception as e:  # pylint: disable=broad-exception-caught
         st.error(e)
 
-    if st.session_state["authentication_status"] is True:
-        st.sidebar.write(f"Welcome, **{st.session_state['username']}**!")
-        authenticator.logout(button_name=":material/logout: Logout", location="sidebar")
-        if rendered:  # only on login page, rerun to redirect to home page
-            st.rerun()
-    elif st.session_state["authentication_status"] is False:
-        st.error('Username/password is incorrect')
-        st.stop()
-    elif st.session_state["authentication_status"] is None:
-        if not rendered:  # redirect to login page if not on login page
-            st.switch_page("ui_pages/login.py")
-        else:
-            st.warning('Please enter your username and password')
-        st.stop()
+    authentication_status = st.session_state.get("authentication_status", None)
+    match authentication_status:
+        case True:
+            st.sidebar.write(f"Welcome, **{st.session_state['username']}**!")
+            authenticator.logout(button_name=":material/logout: Logout", location="sidebar")
+            if rendered:  # only on login page, rerun to redirect to home page
+                st.rerun()
+        case False:
+            st.error('Username/password is incorrect')
+            st.stop()
+        case _:
+            if not rendered:  # redirect to login page if not on login page
+                st.switch_page("ui/ui_pages/login.py")
+            else:
+                st.warning('Please enter your username and password')
+            st.stop()
 
 
 def initialize_page(page_header: Optional[str] = None):
