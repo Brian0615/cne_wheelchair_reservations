@@ -41,7 +41,8 @@ def auto_process_api_errors(func):
             with st.expander(label="Full Error Traceback"):
                 st.write(exc)
         except Exception as exc:
-            raise st.error(f"API Error: {exc}")
+            st.error(f"**API Error**: {exc}")
+            raise
 
     return wrapper
 
