@@ -1,0 +1,52 @@
+[
+  {
+    "id": "S0830001",
+    "date": "2024-08-30",
+    "name": "Clara Duran",
+    "phone_number": "5498751622",
+    "device_type": "Scooter",
+    "device_id": "S01",
+    "pickup_location": "BLC",
+    "pickup_time": "2024-08-30T10:00:00-04:00",
+    "deposit_payment_method": "Credit Card",
+    "return_location": null,
+    "return_time": null,
+    "items_left_behind": [],
+    "notes": ""
+  },
+  {
+    "id": "S0830002",
+    "date": "2024-08-30",
+    "name": "Hari Phillips",
+    "phone_number": "9875461324",
+    "device_type": "Scooter",
+    "device_id": "S02",
+    "pickup_location": "BLC",
+    "pickup_time": "2024-08-30T12:00:00-04:00",
+    "deposit_payment_method": "Credit Card",
+    "return_location": "PG",
+    "return_time": "2024-08-30T14:00:00-04:00",
+    "items_left_behind": [
+      "Walker"
+    ],
+    "notes": ""
+  },
+  {
+    "id": "S0830003",
+    "date": "2024-08-30",
+    "name": "Cyrus Finley",
+    "phone_number": "5498751622",
+    "device_type": "Scooter",
+    "device_id": "S03",
+    "pickup_location": "BLC",
+    "pickup_time": "2024-08-30T10:30:00-04:00",
+    "deposit_payment_method": "Credit Card",
+    "return_location": null,
+    "return_time": null,
+    "items_left_behind": [
+      "Walker",
+      "Stroller"
+    ],
+    "notes": ""
+  }
+]

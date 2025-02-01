@@ -148,7 +148,7 @@ def transfer_devices(data_service: DataService, device_type: DeviceType, device_
             st.error(result)
 
 
-def get_date_input(label: str, col=None):
+def get_date_input(label: str, key_prefix: str, col=None):
     """Get a date input with the default date set to today."""
     all_dates = CNEDates.get_cne_date_list()
     if col is None:
@@ -158,12 +158,14 @@ def get_date_input(label: str, col=None):
         value=CNEDates.get_default_date(),
         min_value=all_dates[0],
         max_value=all_dates[-1],
+        key=f"{key_prefix}_date",
     )
 
 
 def get_rental_selection(
         data_service: DataService,
         in_progress_rentals_only: bool,
+        key_prefix: str,
 ) -> Tuple[date, Optional[str], Optional[dict]]:
     """Render rental retrival options and return the selected rental."""
 
@@ -177,7 +179,7 @@ def get_rental_selection(
         )
 
     col1, col2 = st.columns([1, 2])
-    rental_date = get_date_input(label="Rental Date", col=col1)
+    rental_date = get_date_input(label="Rental Date", col=col1, key_prefix=key_prefix)
     rentals = get_rentals_on_date_helper(rental_date=rental_date, in_progress_rentals_only=in_progress_rentals_only)
     if rentals is None or rentals.empty:
         st.warning(f"**No Rentals Today**: There are no rentals on {rental_date.strftime('%b %d, %Y')}.")
@@ -187,6 +189,7 @@ def get_rental_selection(
         label="Select a Rental",
         options=sorted(rentals["device_id"] + " - " + rentals["name"] + " (Rental ID: " + rentals["id"] + ")"),
         index=None,
+        key=f"{key_prefix}_rental_selection",
     )
     rental_id = rental_id.split("Rental ID: ")[1][:-1] if rental_id else None
     if not rental_id:

@@ -29,6 +29,7 @@ def display_success_dialog(completed_rental: CompletedRental):
         f"""
         The following rental was completed successfully:
 
+        * **Rental ID**: {completed_rental.id}
         * **Name**: {completed_rental.name}
         * **Returned Chair/Scooter**: {completed_rental.device_id}
         """
@@ -48,12 +49,9 @@ def complete_rental(rental_completion_info: dict, signature_data: np.array):
         rental_completion_info["return_signature"] = Signature(signature_data=signature_data).encode_as_base64()
 
         # update return time
-        rental_completion_info["return_time"] = datetime.combine(
-            date=rental_completion_info["date"],
-            time=rental_completion_info["return_time"],
-            tzinfo=get_default_timezone(),
+        rental_completion_info["return_time"] = get_default_timezone().localize(
+            datetime.combine(date=rental_completion_info.pop("date"), time=rental_completion_info["return_time"])
         )
-        rental_completion_info.pop("date")
 
         # validate rental completion data
         completed_rental = CompletedRental(**rental_completion_info)
@@ -76,7 +74,11 @@ def complete_rental(rental_completion_info: dict, signature_data: np.array):
 
 
 # retrieve a particular rental
-date, rental_id, rental_data = get_rental_selection(data_service=data_service, in_progress_rentals_only=True)
+date, rental_id, rental_data = get_rental_selection(
+    data_service=data_service,
+    in_progress_rentals_only=True,
+    key_prefix="complete_rental",
+)
 if rental_id is None:
     st.stop()
 
@@ -139,4 +141,5 @@ st.button(
     on_click=complete_rental,
     args=(completed_rental_info, canvas_signature),
     disabled=not allow_submission,
+    key="complete_rental_submit"
 )

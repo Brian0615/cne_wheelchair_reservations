@@ -83,7 +83,7 @@ class RDSService:
                 dbname=self.db_name,
                 connect_timeout=15,
             )
-            logger.debug(f"Connected to {self.host}:{self.port} with the {self.username} user")
+            logger.debug("Connected to %s:%s with the %s user", self.host, self.port, self.username)
             return connection
         except ConnectionTimeout as exc:
             raise ConnectionTimeout(

@@ -20,6 +20,7 @@ class TestWheelchairForm(unittest.TestCase):
         signature = Signature.load_from_file(os.path.join(os.path.dirname(__file__), "assets/test_signature.png"))
 
         # create fake rental data
+        # pylint: disable=no-value-for-parameter
         rental_data = NewRental(
             date=datetime(2021, 8, 1),
             name="John Doe",
@@ -27,7 +28,7 @@ class TestWheelchairForm(unittest.TestCase):
             device_type=DeviceType.WHEELCHAIR,
             device_id="W123",
             pickup_location=Location.BLC,
-            pickup_time=datetime(2021, 8, 1, 12, 0, tzinfo=pytz.UTC),
+            pickup_time=pytz.UTC.localize(datetime(2021, 8, 1, 12, 0)),
             address="123 Fake St",
             city="Toronto",
             province="Ontario",

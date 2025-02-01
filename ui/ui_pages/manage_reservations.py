@@ -11,7 +11,7 @@ initialize_page(page_header="Manage Reservations")
 # initialize data service
 data_service = DataService()
 
-view_date = get_date_input(label="View Reservations for:")
+view_date = get_date_input(label="View Reservations for:", key_prefix="manage_reservations")
 reservations = data_service.get_reservations_on_date(date=view_date)
 if reservations is None or reservations.empty:
     st.warning(f"**No Reservations**: There are no reservations for {view_date.strftime('%b %d, %Y')}.")

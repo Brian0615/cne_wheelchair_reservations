@@ -6,10 +6,14 @@ from streamlit.testing.v1 import AppTest
 
 
 class TestMain(unittest.TestCase):
+    """Test the main.py file."""
+
     __APP_PATH = "ui/main.py"
 
     @staticmethod
     def test_main_unauthenticated():
+        """Test the main page when the user is unauthenticated."""
+
         # mock the navigation method so we can check the pages
         st.navigation = Mock()
 
@@ -33,6 +37,8 @@ class TestMain(unittest.TestCase):
 
     @staticmethod
     def test_main_authenticated():
+        """Test the main page when the user is authenticated."""
+
         # mock the navigation method so we can check the pages
         st.navigation = Mock()
 

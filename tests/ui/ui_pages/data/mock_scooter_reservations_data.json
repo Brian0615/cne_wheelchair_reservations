@@ -1,0 +1,24 @@
+[
+  {
+    "id": "S0830001",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Teresa Austin",
+    "phone_number": "1234567890",
+    "location": "BLC",
+    "reservation_time": "2024-08-30T10:00:00-04:00",
+    "status": "Reserved",
+    "notes": ""
+  },
+  {
+    "id": "S0830002",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Denise Mccarty",
+    "phone_number": "1239041023",
+    "location": "PG",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Reserved",
+    "notes": ""
+  }
+]

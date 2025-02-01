@@ -6,7 +6,7 @@ from ui.src.utils import get_date_input
 
 initialize_page(page_header="Reservations")
 
-view_date = get_date_input(label="View Reservations for:")
+view_date = get_date_input(label="View Reservations for:", key_prefix="view_reservations")
 reservations = DataService().get_reservations_on_date(date=view_date)
 
 display_rentals_or_reservations_on_date(

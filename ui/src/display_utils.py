@@ -77,8 +77,9 @@ def display_reservations_table(
         st.warning(f"**No {device_type} Reservations**: There are no reservations for {device_type.value}s.")
         return None
 
-    # turn times into naive timestamps
-    reservations["reservation_time"] = reservations["reservation_time"].dt.tz_localize(None)
+    # Note: utc=True to force tz-aware timestamps
+    reservations["reservation_time"] = pd.to_datetime(reservations["reservation_time"], errors="coerce", utc=True)
+    reservations["reservation_time"] = reservations["reservation_time"].dt.tz_convert(get_default_timezone())
 
     # display reservations
     updated_reservations = st.data_editor(
@@ -96,7 +97,7 @@ def display_reservations_table(
                 required=True,
                 disabled=not admin_mode,
             ),
-            "reservation_time": st.column_config.TimeColumn(
+            "reservation_time": st.column_config.DatetimeColumn(
                 label="Time",
                 width="small",
                 format="hh:mm a",
@@ -117,7 +118,7 @@ def display_reservations_table(
         use_container_width=True,
     )
     updated_reservations["reservation_time"] = (
-        updated_reservations["reservation_time"].dt.tz_localize(get_default_timezone())
+        updated_reservations["reservation_time"].dt.tz_convert(get_default_timezone())
     )
     return updated_reservations
 
@@ -128,10 +129,10 @@ def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
         st.warning(f"**No {device_type} Rentals**: There are no rentals for {device_type.value}s.")
         return
 
-    # localize timestamps to default timezone then change into naive timestamps
+    # Note: utc=True to force tz-aware timestamps
     for time_col in ["pickup_time", "return_time"]:
-        rentals[time_col] = pd.to_datetime(rentals[time_col], errors="coerce", utc=True)
-        rentals[time_col] = rentals[time_col].dt.tz_convert(get_default_timezone()).dt.tz_localize(None)
+        rentals[time_col] = pd.to_datetime(rentals[time_col], errors="coerce", utc=True)  # utc=True to force tz-aware
+        rentals[time_col] = rentals[time_col].dt.tz_convert(get_default_timezone())
 
     device_id_label = f"{DeviceType.get_short_label(device_type)} ID"
 

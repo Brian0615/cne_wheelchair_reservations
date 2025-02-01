@@ -57,7 +57,11 @@ def change_rental_device(change_data: dict):
 completed_rental_info = {}
 
 # retrieve a particular rental
-date, rental_id, rental_data = get_rental_selection(data_service=data_service, in_progress_rentals_only=True)
+date, rental_id, rental_data = get_rental_selection(
+    data_service=data_service,
+    in_progress_rentals_only=True,
+    key_prefix="manage_rental",
+)
 if rental_id is None:
     st.stop()
 

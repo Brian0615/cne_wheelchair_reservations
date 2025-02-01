@@ -6,7 +6,6 @@ from typing import List, Optional, Tuple
 import pandas as pd
 import requests
 import streamlit as st
-from requests import ConnectionError
 
 from common.constants import DeviceType, Location
 from common.data_models import (
@@ -30,7 +29,7 @@ def auto_process_api_errors(func):
         """Wrap the function and process API errors."""
         try:
             return func(data_service, *args, **kwargs)
-        except ConnectionError as exc:
+        except requests.ConnectionError as exc:
             st.error(
                 f"""
                 **API Connection Error**: Unable to connect to the API. Please verify the API is running and accessible.
@@ -40,6 +39,7 @@ def auto_process_api_errors(func):
             )
             with st.expander(label="Full Error Traceback"):
                 st.write(exc)
+            st.stop()
         except Exception as exc:
             st.error(f"**API Error**: {exc}")
             raise
@@ -117,7 +117,7 @@ class DataService:
             rental_date: datetime.date,
             device_type: Optional[DeviceType] = None,
             in_progress_rentals_only: bool = False,
-    ):
+    ) -> pd.DataFrame:
         """Get the rentals on a specific date using the API."""
         response = requests.get(
             f"http://{self.api_host}:{self.api_port}/rentals/get_rentals_on_date",
