@@ -8,7 +8,7 @@ import requests
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
-from common.constants import DeviceType
+from common.constants import DeviceType, DeviceStatus, Location
 from common.utils import get_default_timezone
 from tests.mock_requests import MockRequests
 from ui.src import auth_utils
@@ -158,7 +158,7 @@ class BaseTestCases:
             )
             self.assertEqual(0, len(at.dataframe), "No dataframes should be displayed as there is no data")
 
-        def _test_single_device_inventory_only(self, device_type: DeviceType):
+        def _subtest_single_device_inventory_only(self, device_type: DeviceType):
             """Check the UI content for when there are only devices of one type in the inventory"""
             data = self._load_mock_data_from_json(device_type=device_type, data_type="inventory")
             mock_requests = MockRequests(mock_inventory_data=data)
@@ -179,3 +179,33 @@ class BaseTestCases:
 
             # one dataframe should be displayed for the inventory
             self.assertEqual(1, len(at.dataframe), f"Missing dataframe for {device_type.value.lower()} inventory")
+
+        def _subtest_filter_inventory(
+                self,
+                device_type: DeviceType,
+                status: Optional[DeviceStatus] = None,
+                location: Optional[Location] = None
+        ):
+            data = self._load_mock_data_from_json(device_type=device_type, data_type="inventory")
+            mock_requests = MockRequests(mock_inventory_data=data)
+            at = self._run_app_test_with_mock_requests(mock_requests=mock_requests)
+
+            if status is not None:
+                at.selectbox(key=f"{device_type.value.lower()}_status_filter").select(status)
+                at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+            if location is not None:
+                at.selectbox(key=f"{device_type.value.lower()}_location_filter").select(location)
+                at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+
+            expected_results = [
+                device for device in data if (
+                        (device["status"] == status or status is None)
+                        and (device["location"] == location or location is None)
+                )
+            ]
+            self.assertTrue(at.dataframe.len == 1, "No inventory displayed")
+            self.assertEqual(
+                len(expected_results),
+                len(at.dataframe[0].value),
+                "Incorrect number of devices displayed"
+            )
