@@ -9,11 +9,11 @@ from ui.src.utils import create_inventory_chart
 initialize_page(page_header="Inventory")
 
 
-def display_no_device_available_message(device_type: DeviceType):
+def display_no_device_in_inventory_message(device_type: DeviceType):
     """Display a message when there are no devices available."""
     st.warning(
         f"""
-        **No {device_type.title()}s Available**:
+        **No {device_type.title()}s in Inventory**:
         
         There are no {device_type}s in the inventory. You can add some in the Manage Inventory page.
         """
@@ -34,7 +34,7 @@ for device, inventory in zip(
 ):
     st.subheader(f"{device.title()} Summary")
     if inventory.empty:
-        display_no_device_available_message(device)
+        display_no_device_in_inventory_message(device)
     else:
         inventory_chart = create_inventory_chart(inventory)
         st.plotly_chart(inventory_chart, use_container_width=True, config={'displayModeBar': False})
@@ -52,6 +52,6 @@ for device, col, inventory in zip(
     with col:
         st.subheader(f"{device.title()} Details")
         if inventory.empty:
-            display_no_device_available_message(device)
+            display_no_device_in_inventory_message(device)
         else:
             display_inventory_table(device, inventory)

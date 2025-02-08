@@ -1,0 +1,68 @@
+[
+  {
+    "id": "S01",
+    "type": "Scooter",
+    "status": "Available",
+    "location": "BLC"
+  },
+  {
+    "id": "S02",
+    "type": "Scooter",
+    "status": "Available",
+    "location": "BLC"
+  },
+  {
+    "id": "S03",
+    "type": "Scooter",
+    "status": "Available",
+    "location": "BLC"
+  },
+  {
+    "id": "S04",
+    "type": "Scooter",
+    "status": "Backup",
+    "location": "BLC"
+  },
+  {
+    "id": "S05",
+    "type": "Scooter",
+    "status": "Backup",
+    "location": "BLC"
+  },
+  {
+    "id": "S06",
+    "type": "Scooter",
+    "status": "Backup",
+    "location": "PG"
+  },
+  {
+    "id": "S07",
+    "type": "Scooter",
+    "status": "Rented",
+    "location": "BLC"
+  },
+  {
+    "id": "S08",
+    "type": "Scooter",
+    "status": "Rented",
+    "location": "BLC"
+  },
+  {
+    "id": "S09",
+    "type": "Scooter",
+    "status": "Rented",
+    "location": "PG"
+  },
+  {
+    "id": "S10",
+    "type": "Scooter",
+    "status": "Rented",
+    "location": "PG"
+  },
+  {
+    "id": "S11",
+    "type": "Scooter",
+    "status": "Rented",
+    "location": "PG"
+  }
+]

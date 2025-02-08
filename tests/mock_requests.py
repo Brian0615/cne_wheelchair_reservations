@@ -9,14 +9,18 @@ class MockRequests:
 
     def __init__(
             self,
+            mock_inventory_data: Optional[List[Dict]] = None,
             mock_reservations_data: Optional[List[Dict]] = None,
             mock_rentals_data: Optional[List[Dict]] = None,
     ):
+        self.mock_inventory = mock_inventory_data if mock_inventory_data is not None else []
         self.mock_reservations_data = mock_reservations_data if mock_reservations_data is not None else []
         self.mock_rentals_data = mock_rentals_data if mock_rentals_data is not None else []
 
     def mock_requests_get(self, url, *args, **kwargs):  # pylint: disable=unused-argument
         """Mock the requests.get method"""
+        if "get_full_inventory" in url:
+            return Mock(json=Mock(return_value=self.mock_inventory))
         if "get_reservations_on_date" in url:
             return Mock(json=Mock(return_value=self.mock_reservations_data))
         if "get_rentals_on_date" in url:

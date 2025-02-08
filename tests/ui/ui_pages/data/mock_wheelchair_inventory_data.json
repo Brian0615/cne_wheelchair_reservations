@@ -1,0 +1,62 @@
+[
+  {
+    "id": "W01",
+    "type": "Wheelchair",
+    "status": "Available",
+    "location": "PG"
+  },
+  {
+    "id": "W02",
+    "type": "Wheelchair",
+    "status": "Available",
+    "location": "PG"
+  },
+  {
+    "id": "W03",
+    "type": "Wheelchair",
+    "status": "Available",
+    "location": "PG"
+  },
+  {
+    "id": "W04",
+    "type": "Wheelchair",
+    "status": "Backup",
+    "location": "PG"
+  },
+  {
+    "id": "W05",
+    "type": "Wheelchair",
+    "status": "Backup",
+    "location": "PG"
+  },
+  {
+    "id": "W06",
+    "type": "Wheelchair",
+    "status": "Backup",
+    "location": "BLC"
+  },
+  {
+    "id": "W07",
+    "type": "Wheelchair",
+    "status": "Rented",
+    "location": "PG"
+  },
+  {
+    "id": "W08",
+    "type": "Wheelchair",
+    "status": "Rented",
+    "location": "PG"
+  },
+  {
+    "id": "W09",
+    "type": "Wheelchair",
+    "status": "Rented",
+    "location": "BLC"
+  },
+  {
+    "id": "W10",
+    "type": "Wheelchair",
+    "status": "Rented",
+    "location": "BLC"
+  }
+]
