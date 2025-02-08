@@ -13,11 +13,11 @@ from ui.src.constants import Page
 def display_inventory_table(
         device_type: DeviceType,
         inventory: pd.DataFrame,
-        admin_mode: bool = False,
+        show_filters: bool = True,
 ) -> pd.DataFrame:
     """Display the inventory of a device type."""
 
-    if not admin_mode:
+    if show_filters:
         col1, col2 = st.columns(2)
         with col1:
             status_filter = st.multiselect(
@@ -37,32 +37,17 @@ def display_inventory_table(
         if location_filter:
             inventory = inventory[inventory["location"] == location_filter]
 
-    updated_inventory = st.data_editor(
+    st.dataframe(
         data=inventory,
         column_order=["id", "status", "location"],
         column_config={
-            "id": st.column_config.TextColumn(label=Device.model_fields["id"].title, required=True, disabled=True),
-            "status": st.column_config.SelectboxColumn(
-                label=Device.model_fields["status"].title,
-                options=DeviceStatus,
-                default=DeviceStatus.AVAILABLE,
-                required=True,
-                disabled=not admin_mode,
-            ),
-            "location": st.column_config.SelectboxColumn(
-                label=Device.model_fields["location"].title,
-                options=Location,
-                default=Location.BLC,
-                required=True,
-                disabled=not admin_mode,
-            ),
+            "id": st.column_config.TextColumn(label=Device.model_fields["id"].title),
+            "status": st.column_config.TextColumn(label=Device.model_fields["status"].title),
+            "location": st.column_config.TextColumn(label=Device.model_fields["location"].title),
         },
         use_container_width=True,
         hide_index=True,
-        key=f"{'admin_' if admin_mode else ''}inventory_{device_type.lower()}"
     )
-    updated_inventory["type"] = device_type
-    return updated_inventory
 
 
 def display_reservations_table(

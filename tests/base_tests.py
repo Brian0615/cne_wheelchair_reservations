@@ -148,12 +148,12 @@ class BaseTestCases:
 
             self.assertEqual(
                 expected_num_warnings,
-                sum("No Scooters in Inventory" in warning.value for warning in at.warning),
+                sum("No Scooters" in warning.value for warning in at.warning),
                 "A warning message should be displayed that there are no Scooters"
             )
             self.assertEqual(
                 expected_num_warnings,
-                sum("No Wheelchairs in Inventory" in warning.value for warning in at.warning),
+                sum("No Wheelchairs" in warning.value for warning in at.warning),
                 "A warning message should be displayed that there are no Wheelchairs"
             )
             self.assertEqual(0, len(at.dataframe), "No dataframes should be displayed as there is no data")
@@ -166,14 +166,14 @@ class BaseTestCases:
 
             # a warning should NOT be displayed for the device that has inventory
             self.assertFalse(
-                any(f"No {device_type.title()}s in Inventory" in warning.value for warning in at.warning),
-                f'"No {device_type.title()}s in Inventory" should not appear as there are {device_type.value.lower()}s'
+                any(f"No {device_type.title()}s" in warning.value for warning in at.warning),
+                f'"No {device_type.title()}s" should not appear as there are {device_type.value.lower()}s'
             )
 
             # a warning should be displayed for the device that does NOT have inventory
             other_device_type = DeviceType.SCOOTER if device_type == DeviceType.WHEELCHAIR else DeviceType.WHEELCHAIR
             self.assertTrue(
-                any(f"No {other_device_type.title()}s in Inventory" in warning.value for warning in at.warning),
+                any(f"No {other_device_type.title()}s" in warning.value for warning in at.warning),
                 f"A warning should be displayed for the {other_device_type.value.lower()} inventory"
             )
 

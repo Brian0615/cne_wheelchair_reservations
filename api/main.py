@@ -8,7 +8,7 @@ from api.src.exceptions import UniqueViolation
 from api.src.rds_service import RDSService
 from api.src.s3_service import S3Service
 from api.src.utils import auto_process_database_errors
-from common.constants import DeviceType, Location, DEVICE_ID_PATTERN, RESERVATION_ID_PATTERN
+from common.constants import DeviceType, Location, DEVICE_ID_PATTERN, RESERVATION_ID_PATTERN, DeviceStatus
 from common.data_models import (
     ChangeDeviceInfo,
     CompletedRental,
@@ -37,18 +37,11 @@ def get_full_inventory() -> List[Device]:
     return rds_service.get_full_inventory().to_dict(orient="records")
 
 
-@app.post("/devices/add_to_inventory")
+@app.post("/devices/add")
 @auto_process_database_errors
-def insert_devices(devices: List[Device]):
+def add_devices(devices: List[Device]):
     """Add a device to the inventory"""
-    return rds_service.insert_devices(devices)
-
-
-@app.post("/devices/update_inventory")
-@auto_process_database_errors
-def update_devices(devices: List[Device]):
-    """Set the full inventory of devices. Overwrites the existing inventory."""
-    return rds_service.update_devices(devices)
+    return rds_service.add_devices(devices)
 
 
 @app.post("/devices/update_location")
@@ -56,6 +49,20 @@ def update_devices(devices: List[Device]):
 def update_devices_location(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)], location: Location):
     """Update the location of devices"""
     return rds_service.update_devices_location(device_ids, location)
+
+
+@app.post("/devices/update_status")
+@auto_process_database_errors
+def update_devices_status(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)], status: DeviceStatus):
+    """Update the status of devices"""
+    return rds_service.update_devices_status(device_ids, status)
+
+
+@app.post("/devices/remove")
+@auto_process_database_errors
+def remove_devices(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)]):
+    """Remove devices from the inventory"""
+    return rds_service.remove_devices(device_ids)
 
 
 @app.post("/reservations/add_new_reservation")

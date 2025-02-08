@@ -160,7 +160,7 @@ class RDSService:
                 cursor.execute(select_query)
                 return [row[0] for row in cursor.fetchall()]
 
-    def insert_devices(self, devices: List[Device]):
+    def add_devices(self, devices: List[Device]):
         """Add devices to the inventory in the database. Will raise an error if there are any conflicts."""
 
         self._insert_or_update_devices_helper(devices, insert_only=True)
@@ -180,7 +180,7 @@ class RDSService:
         """
 
         query = sql.SQL(
-            self._load_query_by_name(query_name="insert_devices" if insert_only else "update_devices")
+            self._load_query_by_name(query_name="insert_device" if insert_only else "update_device")
         ).format(
             schema=sql.Identifier(self.schema),
             table=sql.Identifier(Table.DEVICES),
@@ -517,7 +517,7 @@ class RDSService:
         """Update the location of devices in the database."""
 
         update_query = sql.SQL(
-            self._load_query_by_name(query_name="update_devices_location")
+            self._load_query_by_name(query_name="update_device_location")
         ).format(
             schema=sql.Identifier(self.schema),
             table=sql.Identifier(Table.DEVICES),
@@ -530,6 +530,43 @@ class RDSService:
                 cursor.executemany(
                     update_query,
                     [{"device_id": device_id, "location": location} for device_id in device_ids],
+                )
+
+    def update_devices_status(self, device_ids: List[str], status: DeviceStatus):
+        """Update the status of devices in the database."""
+
+        update_query = sql.SQL(
+            self._load_query_by_name(query_name="update_device_status")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+            device_id=sql.Placeholder(name="device_id"),
+            status=sql.Placeholder(name="status"),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.executemany(
+                    update_query,
+                    [{"device_id": device_id, "status": status} for device_id in device_ids],
+                )
+
+    def remove_devices(self, device_ids: List[str]):
+        """Remove devices from the inventory in the database."""
+
+        remove_query = sql.SQL(
+            self._load_query_by_name(query_name="remove_device")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+            device_id=sql.Placeholder(name="device_id"),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.executemany(
+                    remove_query,
+                    [{"device_id": device_id} for device_id in device_ids],
                 )
 
     @staticmethod

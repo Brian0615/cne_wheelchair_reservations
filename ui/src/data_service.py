@@ -7,7 +7,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-from common.constants import DeviceType, Location
+from common.constants import DeviceType, Location, DeviceStatus
 from common.data_models import (
     ChangeDeviceInfo,
     CompletedRental,
@@ -54,52 +54,9 @@ class DataService:
         self.api_host = api_host if api_host is not None else os.environ["API_HOST"]
         self.api_port = api_port if api_port is not None else os.environ["API_PORT"]
 
-    @auto_process_api_errors
-    def get_available_devices(self, device_type: DeviceType, location: Location):
-        """Get the available devices of a specific type at a specific location using the API."""
-        response = requests.get(
-            url=f"http://{self.api_host}:{self.api_port}/devices/get_available_devices",
-            params={"device_type": device_type, "location": location},
-            timeout=DEFAULT_TIMEOUT,
-        )
-        return response.json()
-
-    @auto_process_api_errors
-    def get_full_inventory(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Get the full inventory of devices using the API."""
-        response = requests.get(
-            url=f"http://{self.api_host}:{self.api_port}/devices/get_full_inventory",
-            timeout=DEFAULT_TIMEOUT,
-        )
-        inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
-        if inventory.empty:
-            inventory = pd.DataFrame(data={field: [] for field in Device.model_fields}, dtype=str)
-        inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
-
-        return (
-            inventory[inventory["type"] == DeviceType.SCOOTER],
-            inventory[inventory["type"] == DeviceType.WHEELCHAIR],
-        )
-
-    @auto_process_api_errors
-    def add_to_inventory(self, devices: List[Device]):
-        """Add devices to the inventory using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/devices/add_to_inventory",
-            json=[device.model_dump(mode="json") for device in devices],
-            timeout=DEFAULT_TIMEOUT,
-        )
-        return response.status_code, response.json()
-
-    @auto_process_api_errors
-    def update_inventory(self, inventory: List[Device]):
-        """Set the full inventory of devices using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/devices/update_inventory",
-            json=[device.model_dump(mode="json") for device in inventory],
-            timeout=DEFAULT_TIMEOUT,
-        )
-        return response.status_code, response.json()
+    # ==============================
+    # RESERVATIONS
+    # ==============================
 
     @auto_process_api_errors
     def add_new_reservation(self, reservation: NewReservation):
@@ -110,29 +67,6 @@ class DataService:
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()
-
-    @auto_process_api_errors
-    def get_rentals_on_date(
-            self,
-            rental_date: datetime.date,
-            device_type: Optional[DeviceType] = None,
-            in_progress_rentals_only: bool = False,
-    ) -> pd.DataFrame:
-        """Get the rentals on a specific date using the API."""
-        response = requests.get(
-            f"http://{self.api_host}:{self.api_port}/rentals/get_rentals_on_date",
-            params={
-                "date": rental_date.strftime("%Y-%m-%d"),
-                "device_type": device_type,
-                "in_progress_rentals_only": in_progress_rentals_only,
-            },
-            timeout=DEFAULT_TIMEOUT,
-        )
-        rentals = response.json()
-        rentals = pd.DataFrame([RentalSummary(**rental).model_dump() for rental in rentals])
-        if rentals.empty:
-            return rentals
-        return rentals.sort_values(by="id")
 
     @auto_process_api_errors
     def get_number_of_reservations_on_date(
@@ -175,6 +109,33 @@ class DataService:
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
         return reservations
 
+    # ==============================
+    # RENTALS
+    # ==============================
+
+    @auto_process_api_errors
+    def get_rentals_on_date(
+            self,
+            rental_date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            in_progress_rentals_only: bool = False,
+    ) -> pd.DataFrame:
+        """Get the rentals on a specific date using the API."""
+        response = requests.get(
+            f"http://{self.api_host}:{self.api_port}/rentals/get_rentals_on_date",
+            params={
+                "date": rental_date.strftime("%Y-%m-%d"),
+                "device_type": device_type,
+                "in_progress_rentals_only": in_progress_rentals_only,
+            },
+            timeout=DEFAULT_TIMEOUT,
+        )
+        rentals = response.json()
+        rentals = pd.DataFrame([RentalSummary(**rental).model_dump() for rental in rentals])
+        if rentals.empty:
+            return rentals
+        return rentals.sort_values(by="id")
+
     @auto_process_api_errors
     def add_new_rental(self, new_rental: NewRental):
         """Add a new rental using the API."""
@@ -205,6 +166,47 @@ class DataService:
         )
         return response.status_code, response.json()
 
+    # ==============================
+    # DEVICES
+    # ==============================
+
+    @auto_process_api_errors
+    def get_available_devices(self, device_type: DeviceType, location: Location):
+        """Get the available devices of a specific type at a specific location using the API."""
+        response = requests.get(
+            url=f"http://{self.api_host}:{self.api_port}/devices/get_available_devices",
+            params={"device_type": device_type, "location": location},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.json()
+
+    @auto_process_api_errors
+    def get_full_inventory(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Get the full inventory of devices using the API."""
+        response = requests.get(
+            url=f"http://{self.api_host}:{self.api_port}/devices/get_full_inventory",
+            timeout=DEFAULT_TIMEOUT,
+        )
+        inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
+        if inventory.empty:
+            inventory = pd.DataFrame(data={field: [] for field in Device.model_fields}, dtype=str)
+        inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
+
+        return (
+            inventory[inventory["type"] == DeviceType.SCOOTER],
+            inventory[inventory["type"] == DeviceType.WHEELCHAIR],
+        )
+
+    @auto_process_api_errors
+    def add_devices(self, devices: List[Device]):
+        """Add devices to the inventory using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/devices/add",
+            json=[device.model_dump(mode="json") for device in devices],
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.json()
+
     @auto_process_api_errors
     def update_devices_location(self, device_ids: List[str], location: Location):
         """Update the location of devices using the API."""
@@ -215,6 +217,31 @@ class DataService:
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()
+
+    @auto_process_api_errors
+    def update_devices_status(self, device_ids: List[str], status: DeviceStatus):
+        """Update the status of devices using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/devices/update_status",
+            params={"status": status},
+            json=device_ids,
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.json()
+
+    @auto_process_api_errors
+    def remove_devices(self, device_ids: List[str]):
+        """Remove devices from the inventory using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/devices/remove",
+            json=device_ids,
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.json()
+
+    # ==============================
+    # RENTAL FORMS
+    # ==============================
 
     @auto_process_api_errors
     def upload_rental_form(self, pdf_bytes: bytes, rental_id: str):

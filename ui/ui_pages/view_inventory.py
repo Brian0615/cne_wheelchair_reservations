@@ -13,9 +13,9 @@ def display_no_device_in_inventory_message(device_type: DeviceType):
     """Display a message when there are no devices available."""
     st.warning(
         f"""
-        **No {device_type.title()}s in Inventory**:
+        **No {device_type.title()}s**: There are no {device_type}s in the inventory.
         
-        There are no {device_type}s in the inventory. You can add some in the Manage Inventory page.
+        You can add some in the Manage Inventory page.
         """
     )
 
@@ -43,7 +43,7 @@ for device, inventory in zip(
 st.divider()
 
 # display inventory details
-scooter_col, wheelchair_col = st.columns(2)
+scooter_col, wheelchair_col = st.columns(2, gap="large")
 for device, col, inventory in zip(
         [DeviceType.SCOOTER, DeviceType.WHEELCHAIR],
         [scooter_col, wheelchair_col],
@@ -52,6 +52,6 @@ for device, col, inventory in zip(
     with col:
         st.subheader(f"{device.title()} Details")
         if inventory.empty:
-            display_no_device_in_inventory_message(device)
+            display_no_device_in_inventory_message(device_type=device)
         else:
-            display_inventory_table(device, inventory)
+            display_inventory_table(device_type=device, inventory=inventory, show_filters=True)

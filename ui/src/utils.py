@@ -7,36 +7,10 @@ import streamlit as st
 from plotly import graph_objects as go
 from pydantic import BaseModel
 
-from common.constants import DeviceStatus, DeviceType, Location
-from common.data_models.device import Device
+from common.constants import DeviceStatus
 from common.utils import get_default_timezone
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-
-
-def add_devices(data_service: DataService, device_type: DeviceType, inventory: pd.DataFrame):
-    """Add devices to the inventory."""
-    num_to_add = st.slider(f"Select the number of {device_type}s to add", 1, 50, 1, 1)
-
-    add_clicked = st.button(f"Add {num_to_add} {device_type.value}{'s' if num_to_add > 1 else ''}")
-    if add_clicked:
-        if inventory.empty:
-            next_device_index = 1
-        else:
-            next_device_index = inventory["id"].str.extract(r"(\d+)")[0].astype(int).max() + 1
-
-        new_devices = [
-            Device(
-                id=f"{device_type.value[0].upper()}{next_device_index + i:02}",
-                type=device_type,
-                status=DeviceStatus.AVAILABLE,
-                location=Location.BLC,
-            )
-            for i in range(num_to_add)
-        ]
-
-        data_service.add_to_inventory(devices=new_devices)
-        st.rerun()
 
 
 # noinspection PyTypeChecker
@@ -113,39 +87,6 @@ def display_validation_errors(errors: List[dict], validation_class: type[BaseMod
     error_str = "\n* ".join([error_str] + display_errors)
 
     st.error(error_str)
-
-
-def transfer_devices(data_service: DataService, device_type: DeviceType, device_ids: List[str]):
-    """Transfer devices to a new location."""
-    devices_to_transfer = st.multiselect(
-        f"{device_type}s to Transfer",
-        options=sorted(device_ids),
-        default=None,
-        key=f"{device_type.value.lower()}_to_transfer",
-    )
-    new_location = st.selectbox(
-        label="New Location",
-        options=Location,
-        index=None,
-        key=f"{device_type.value.lower()}_new_location",
-    )
-
-    num_devices_str = f"{len(devices_to_transfer)} {device_type}{'s' if len(devices_to_transfer) > 1 else ''}"
-    if st.button(
-            label=f"Transfer {num_devices_str}",
-            disabled=(not devices_to_transfer or not new_location)
-    ):
-        status_code, result = data_service.update_devices_location(
-            device_ids=devices_to_transfer,
-            location=new_location,
-        )
-        if status_code == 200:
-            st.session_state["transfer_devices_toast_msg"] = (
-                f"**Success!** Transferred {num_devices_str} to {new_location}"
-            )
-            st.rerun()
-        else:
-            st.error(result)
 
 
 def get_date_input(label: str, key_prefix: str, col=None):
