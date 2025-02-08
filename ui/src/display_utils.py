@@ -14,15 +14,16 @@ def display_inventory_table(
         device_type: DeviceType,
         inventory: pd.DataFrame,
         show_filters: bool = True,
-) -> pd.DataFrame:
+):
     """Display the inventory of a device type."""
 
     if show_filters:
         col1, col2 = st.columns(2)
         with col1:
-            status_filter = st.multiselect(
+            status_filter = st.selectbox(
                 "Filter by Status",
                 options=DeviceStatus,
+                index=None,
                 key=f"{device_type.value.lower()}_status_filter",
             )
         with col2:
@@ -33,7 +34,7 @@ def display_inventory_table(
                 key=f"{device_type.value.lower()}_location_filter",
             )
         if status_filter:
-            inventory = inventory[inventory["status"].isin(status_filter)]
+            inventory = inventory[inventory["status"] == status_filter]
         if location_filter:
             inventory = inventory[inventory["location"] == location_filter]
 
@@ -47,6 +48,7 @@ def display_inventory_table(
         },
         use_container_width=True,
         hide_index=True,
+        key=f"{device_type.value.lower()}_inventory_table",
     )
 
 

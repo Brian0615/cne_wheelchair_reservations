@@ -26,18 +26,14 @@ class TestHome(BaseTestCases.BaseUIPageTest):
         self.assertEqual(0, len(at.subheader), "No subheaders for reservations or rentals should be displayed")
         self.assertEqual(0, len(at.dataframe), "No dataframes should be displayed as there is no data")
 
-    def test_scooter_reservations_only(self):
-        """Check the UI content for when there are only scooter reservations"""
-        self._test_single_device_reservations_only(device_type=DeviceType.SCOOTER)
+    def test_single_device_reservations_only(self):
+        """Check the UI content for when there are only reservations for one device type"""
+        for device_type in DeviceType:
+            with self.subTest(device_type=device_type):
+                self._subtest_single_device_reservations_only(device_type=device_type)
 
-    def test_wheelchair_reservations_only(self):
-        """Check the UI content for when there are only wheelchair reservations"""
-        self._test_single_device_reservations_only(device_type=DeviceType.WHEELCHAIR)
-
-    def test_scooter_rentals_only(self):
-        """Check the UI content for when there are only scooter rentals"""
-        self._test_single_device_rentals_only(device_type=DeviceType.SCOOTER)
-
-    def test_wheelchair_rentals_only(self):
-        """Check the UI content for when there are only wheelchair rentals"""
-        self._test_single_device_rentals_only(device_type=DeviceType.WHEELCHAIR)
+    def test_single_device_rentals_only(self):
+        """Check the UI content for when there are only rentals for one device type"""
+        for device_type in DeviceType:
+            with self.subTest(device_type=device_type):
+                self._subtest_single_device_rentals_only(device_type=device_type)

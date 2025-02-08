@@ -1,4 +1,4 @@
-from common.constants import DeviceType
+from common.constants import DeviceStatus, DeviceType, Location
 from tests.base_tests import BaseTestCases
 
 
@@ -12,10 +12,17 @@ class TestManageInventory(BaseTestCases.BaseUIPageTest):
         """Check the UI content for when there are no devices in the inventory"""
         self._test_empty_inventory(expected_num_warnings=1)
 
-    def test_scooters_only(self):
-        """Check the UI content for when there are only scooters in the inventory"""
-        self._test_single_device_inventory_only(device_type=DeviceType.SCOOTER)
+    def test_single_device_inventory_only(self):
+        """Check the UI content for when there is only one device type in the inventory"""
+        for device_type in DeviceType:
+            with self.subTest(device_type=device_type):
+                self._subtest_single_device_inventory_only(device_type=device_type)
 
-    def test_wheelchairs_only(self):
-        """Check the UI content for when there are only wheelchairs in the inventory"""
-        self._test_single_device_inventory_only(device_type=DeviceType.WHEELCHAIR)
+    # pylint: disable=duplicate-code
+    def test_filter_inventory(self):
+        """Check the UI content for filtering the inventory"""
+        for device_type in DeviceType:
+            for status in [None] + list(DeviceStatus):
+                for location in [None] + list(Location):
+                    with self.subTest(device_type=device_type, status=status, location=location):
+                        self._subtest_filter_inventory(device_type=device_type, status=status, location=location)
