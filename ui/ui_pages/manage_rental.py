@@ -1,5 +1,3 @@
-from enum import StrEnum
-
 import streamlit as st
 from pydantic import ValidationError
 
@@ -11,12 +9,6 @@ from ui.src.utils import clear_session_state_for_form, display_validation_errors
 
 initialize_page(page_header="Manage Rental")
 data_service = DataService()
-
-
-class ManageRentalOptions(StrEnum):
-    """Options for managing a rental"""
-    COMPLETE_RENTAL = "Complete Rental"
-    CHANGE_WHEELCHAIR_OR_SCOOTER = "Change Wheelchair or Scooter"
 
 
 @st.dialog("Success!")

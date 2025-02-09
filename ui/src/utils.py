@@ -141,16 +141,22 @@ def get_rental_selection(
 def clear_session_state_for_form(
         clear_prefixes: List[str],
         default_date: Optional[date] = None,
-        default_time: Optional[time] = None
+        default_time: Optional[time] = None,
+        delete_fields: bool = False
 ):
     """Clear session state data with a given list of prefixes"""
     for key in st.session_state.keys():
         if any(key.startswith(prefix) for prefix in clear_prefixes):
+            if delete_fields:
+                del st.session_state[key]
+                continue
             if key.endswith("date"):
                 st.session_state[key] = default_date if default_date is not None else CNEDates.get_default_date()
             elif key.endswith("time"):
                 st.session_state[key] = (
                     default_time if default_time is not None else datetime.now(tz=get_default_timezone()).time()
                 )
+            elif key.endswith("button"):  # do not attempt to clear button state
+                continue
             else:
                 st.session_state[key] = None

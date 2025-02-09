@@ -135,14 +135,53 @@ class RDSService:
             .format(schema=sql.Identifier(self.schema), table=sql.Identifier(table_name))
         )
 
-    def get_full_inventory(self):
-        """Get the full inventory of devices from the database."""
+    @staticmethod
+    def _fetch_result_data_as_dataframe(cursor) -> pd.DataFrame:
+        """Fetch data from a cursor as a pandas DataFrame."""
+        result = cursor.fetchall()
+        col_names = [desc[0] for desc in cursor.description]
+        return pd.DataFrame(result, columns=col_names)
+
+    def _execute_many(self, query, params: List[dict]):
+        """Execute a query multiple times with different parameters."""
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.execute(self.__form_select_all_query(table_name=Table.DEVICES))
-                return self._fetch_result_data_as_dataframe(cursor)
+                try:
+                    cursor.executemany(query=query, params_seq=params)
+                except psycopg.errors.UniqueViolation:
+                    conn.rollback()
+                    raise
 
-    def select_available_device_ids(self, device_type: DeviceType, location: Location):
+    # ==============================
+    # DEVICES
+    # ==============================
+
+    def _insert_or_update_devices_helper(self, devices: List[Device], insert_only: bool):
+        """
+        Helper function to insert or update devices in the database.
+
+        Args:
+            devices (List[Device]): List of devices to insert or update.
+            insert_only (bool): whether to overwrite existing devices.
+                (If insert_only is False, will insert for any non-existing devices, and overwrite any existing devices.)
+        """
+
+        query = sql.SQL(
+            self._load_query_by_name(query_name="insert_device" if insert_only else "update_device")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+            **{field: sql.Placeholder(name=field) for field in Device.model_fields},
+        )
+
+        self._execute_many(query=query, params=[device.model_dump() for device in devices])
+
+    def add_devices(self, devices: List[Device]):
+        """Add devices to the inventory in the database. Will raise an error if there are any conflicts."""
+
+        self._insert_or_update_devices_helper(devices, insert_only=True)
+
+    def get_available_device_ids(self, device_type: DeviceType, location: Location) -> List[str]:
         """Get all available devices of a given type at a given location."""
 
         select_query = sql.SQL(
@@ -160,10 +199,25 @@ class RDSService:
                 cursor.execute(select_query)
                 return [row[0] for row in cursor.fetchall()]
 
-    def add_devices(self, devices: List[Device]):
-        """Add devices to the inventory in the database. Will raise an error if there are any conflicts."""
+    def get_full_inventory(self) -> pd.DataFrame:
+        """Get the full inventory of devices from the database."""
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(self.__form_select_all_query(table_name=Table.DEVICES))
+                return self._fetch_result_data_as_dataframe(cursor)
 
-        self._insert_or_update_devices_helper(devices, insert_only=True)
+    def remove_devices(self, device_ids: List[str]):
+        """Remove devices from the inventory in the database."""
+
+        remove_query = sql.SQL(
+            self._load_query_by_name(query_name="remove_device")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.DEVICES),
+            device_id=sql.Placeholder(name="device_id"),
+        )
+
+        self._execute_many(query=remove_query, params=[{"device_id": device_id} for device_id in device_ids])
 
     def update_devices(self, devices: List[Device]):
         """
@@ -173,151 +227,43 @@ class RDSService:
 
         self._insert_or_update_devices_helper(devices, insert_only=False)
 
-    def _insert_or_update_devices_helper(self, devices: List[Device], insert_only: bool):
-        """
-        Helper function to insert or update devices in the database.
-        If insert_only is False, will insert for any non-existing devices, and overwrite any existing devices.
-        """
+    def update_devices_location(self, device_ids: List[str], location: Location):
+        """Update the location of devices in the database."""
 
-        query = sql.SQL(
-            self._load_query_by_name(query_name="insert_device" if insert_only else "update_device")
+        update_query = sql.SQL(
+            self._load_query_by_name(query_name="update_device_location")
         ).format(
             schema=sql.Identifier(self.schema),
             table=sql.Identifier(Table.DEVICES),
-            id=sql.Placeholder(name="id"),
-            type=sql.Placeholder(name="type"),
-            status=sql.Placeholder(name="status"),
+            device_id=sql.Placeholder(name="device_id"),
             location=sql.Placeholder(name="location"),
         )
 
-        with self._initialize_connection() as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.executemany(
-                        query,
-                        [
-                            {
-                                "id": device.id,
-                                "type": device.type,
-                                "status": device.status,
-                                "location": device.location
-                            } for device in devices
-                        ],
-                    )
-                except psycopg.errors.UniqueViolation:
-                    conn.rollback()
-                    raise
+        self._execute_many(
+            query=update_query,
+            params=[{"device_id": device_id, "location": location} for device_id in device_ids],
+        )
 
-    def insert_new_reservation(self, reservation: NewReservation) -> str:
-        """Create a reservation in the database."""
+    def update_devices_status(self, device_ids: List[str], status: DeviceStatus):
+        """Update the status of devices in the database."""
 
-        insert_query = sql.SQL(
-            self._load_query_by_name(query_name="insert_new_reservation")
+        update_query = sql.SQL(
+            self._load_query_by_name(query_name="update_device_status")
         ).format(
-            device_type_prefix=sql.Placeholder(name="device_type_prefix"),
             schema=sql.Identifier(self.schema),
-            table=sql.Identifier(Table.RESERVATIONS),
-            date=sql.Placeholder(name="date"),
-            device_type=sql.Placeholder(name="device_type"),
-            name=sql.Placeholder(name="name"),
-            phone_number=sql.Placeholder(name="phone_number"),
-            location=sql.Placeholder(name="location"),
-            reservation_time=sql.Placeholder(name="reservation_time"),
+            table=sql.Identifier(Table.DEVICES),
+            device_id=sql.Placeholder(name="device_id"),
             status=sql.Placeholder(name="status"),
         )
 
-        # execute the query and return the created reservation ID
-        with self._initialize_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    insert_query,
-                    {
-                        "device_type_prefix": reservation.device_type.get_prefix(),
-                        "date": reservation.date,
-                        "device_type": reservation.device_type,
-                        "name": reservation.name,
-                        "phone_number": reservation.phone_number,
-                        "location": reservation.location,
-                        "reservation_time": reservation.reservation_time,
-                        "status": ReservationStatus.get_default_reservation_status(device_type=reservation.device_type),
-                    }
-                )
-                result = cursor.fetchall()
-        return result[0][0]
-
-    def get_rentals_on_date(
-            self,
-            date: datetime.date,
-            device_type: Optional[DeviceType] = None,
-            in_progress_rentals_only: bool = False,
-    ):
-        """Get all rentals on a given date."""
-
-        select_query = sql.SQL(
-            self._load_query_by_name(query_name="get_rentals_on_date")
-        ).format(
-            schema=sql.Identifier(self.schema),
-            table=sql.Identifier(Table.RENTALS),
-            date=sql.Placeholder(),
-            device_type=sql.Placeholder(),
-            in_progress_only=sql.Placeholder(),
+        self._execute_many(
+            query=update_query,
+            params=[{"device_id": device_id, "status": status} for device_id in device_ids],
         )
 
-        with self._initialize_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(select_query, (date, device_type, device_type, in_progress_rentals_only))
-                return self._fetch_result_data_as_dataframe(cursor)
-
-    def get_number_of_reservations_on_date(
-            self,
-            date: datetime.date,
-            device_type: DeviceType,
-            location: Location,
-    ) -> pd.DataFrame:
-        """Get the number of reservations on a given date."""
-
-        select_query = sql.SQL(
-            self._load_query_by_name(query_name="get_number_of_reservations_on_date")
-        ).format(
-            schema=sql.Identifier(self.schema),
-            table=sql.Identifier(Table.RESERVATIONS),
-            date=sql.Placeholder(),
-            device_type=sql.Placeholder(),
-            location=sql.Placeholder(),
-        )
-
-        with self._initialize_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(select_query, (date, device_type, location))
-                return self._fetch_result_data_as_dataframe(cursor)
-
-
-    def get_reservations_on_date(
-            self,
-            date: datetime.date,
-            device_type: Optional[DeviceType] = None,
-            exclude_picked_up_reservations: bool = False,
-    ) -> pd.DataFrame:
-        """Get all reservations on a given date."""
-
-        query_name = (
-            "get_not_picked_up_reservations_on_date"
-            if exclude_picked_up_reservations
-            else "get_reservations_on_date"
-        )
-        select_query = sql.SQL(
-            self._load_query_by_name(query_name=query_name)
-        ).format(
-            schema=sql.Identifier(self.schema),
-            table=sql.Identifier(Table.RESERVATIONS),
-            date=sql.Placeholder(),
-            device_type=sql.Placeholder(),
-        )
-
-        with self._initialize_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(select_query, (date, device_type, device_type))
-                return self._fetch_result_data_as_dataframe(cursor)
+    # ==============================
+    # RENTALS
+    # ==============================
 
     def add_new_rental(self, new_rental: NewRental):
         """Create a new rental in the database."""
@@ -418,7 +364,7 @@ class RDSService:
                 )
         return rental_id
 
-    def change_device_for_rental(self, change_device_info: ChangeDeviceInfo):
+    def change_rental_device(self, change_device_info: ChangeDeviceInfo):
         """Change the device for a rental in the database."""
 
         self.update_devices(
@@ -513,65 +459,116 @@ class RDSService:
                     },
                 )
 
-    def update_devices_location(self, device_ids: List[str], location: Location):
-        """Update the location of devices in the database."""
+    def get_rentals_on_date(
+            self,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            in_progress_rentals_only: bool = False,
+    ):
+        """Get all rentals on a given date."""
 
-        update_query = sql.SQL(
-            self._load_query_by_name(query_name="update_device_location")
+        select_query = sql.SQL(
+            self._load_query_by_name(query_name="get_rentals_on_date")
         ).format(
             schema=sql.Identifier(self.schema),
-            table=sql.Identifier(Table.DEVICES),
-            device_id=sql.Placeholder(name="device_id"),
-            location=sql.Placeholder(name="location"),
+            table=sql.Identifier(Table.RENTALS),
+            date=sql.Placeholder(),
+            device_type=sql.Placeholder(),
+            in_progress_only=sql.Placeholder(),
         )
 
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.executemany(
-                    update_query,
-                    [{"device_id": device_id, "location": location} for device_id in device_ids],
-                )
+                cursor.execute(select_query, (date, device_type, device_type, in_progress_rentals_only))
+                return self._fetch_result_data_as_dataframe(cursor)
 
-    def update_devices_status(self, device_ids: List[str], status: DeviceStatus):
-        """Update the status of devices in the database."""
+    # ==============================
+    # RESERVATIONS
+    # ==============================
 
-        update_query = sql.SQL(
-            self._load_query_by_name(query_name="update_device_status")
+    def get_number_of_reservations_on_date(
+            self,
+            date: datetime.date,
+            device_type: DeviceType,
+            location: Location,
+    ) -> pd.DataFrame:
+        """Get the number of reservations on a given date."""
+
+        select_query = sql.SQL(
+            self._load_query_by_name(query_name="get_number_of_reservations_on_date")
         ).format(
             schema=sql.Identifier(self.schema),
-            table=sql.Identifier(Table.DEVICES),
-            device_id=sql.Placeholder(name="device_id"),
+            table=sql.Identifier(Table.RESERVATIONS),
+            date=sql.Placeholder(),
+            device_type=sql.Placeholder(),
+            location=sql.Placeholder(),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(select_query, (date, device_type, location))
+                return self._fetch_result_data_as_dataframe(cursor)
+
+    def get_reservations_on_date(
+            self,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            exclude_picked_up_reservations: bool = False,
+    ) -> pd.DataFrame:
+        """Get all reservations on a given date."""
+
+        query_name = (
+            "get_not_picked_up_reservations_on_date"
+            if exclude_picked_up_reservations
+            else "get_reservations_on_date"
+        )
+        select_query = sql.SQL(
+            self._load_query_by_name(query_name=query_name)
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            date=sql.Placeholder(),
+            device_type=sql.Placeholder(),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(select_query, (date, device_type, device_type))
+                return self._fetch_result_data_as_dataframe(cursor)
+
+    def insert_new_reservation(self, reservation: NewReservation) -> str:
+        """Create a reservation in the database."""
+
+        insert_query = sql.SQL(
+            self._load_query_by_name(query_name="insert_new_reservation")
+        ).format(
+            device_type_prefix=sql.Placeholder(name="device_type_prefix"),
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            date=sql.Placeholder(name="date"),
+            device_type=sql.Placeholder(name="device_type"),
+            name=sql.Placeholder(name="name"),
+            phone_number=sql.Placeholder(name="phone_number"),
+            location=sql.Placeholder(name="location"),
+            reservation_time=sql.Placeholder(name="reservation_time"),
             status=sql.Placeholder(name="status"),
         )
 
+        # execute the query and return the created reservation ID
         with self._initialize_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.executemany(
-                    update_query,
-                    [{"device_id": device_id, "status": status} for device_id in device_ids],
+                cursor.execute(
+                    insert_query,
+                    {
+                        "device_type_prefix": reservation.device_type.get_prefix(),
+                        "date": reservation.date,
+                        "device_type": reservation.device_type,
+                        "name": reservation.name,
+                        "phone_number": reservation.phone_number,
+                        "location": reservation.location,
+                        "reservation_time": reservation.reservation_time,
+                        "status": ReservationStatus.get_default_reservation_status(device_type=reservation.device_type),
+                    }
                 )
-
-    def remove_devices(self, device_ids: List[str]):
-        """Remove devices from the inventory in the database."""
-
-        remove_query = sql.SQL(
-            self._load_query_by_name(query_name="remove_device")
-        ).format(
-            schema=sql.Identifier(self.schema),
-            table=sql.Identifier(Table.DEVICES),
-            device_id=sql.Placeholder(name="device_id"),
-        )
-
-        with self._initialize_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.executemany(
-                    remove_query,
-                    [{"device_id": device_id} for device_id in device_ids],
-                )
-
-    @staticmethod
-    def _fetch_result_data_as_dataframe(cursor) -> pd.DataFrame:
-        """Fetch data from a cursor as a pandas DataFrame."""
-        result = cursor.fetchall()
-        col_names = [desc[0] for desc in cursor.description]
-        return pd.DataFrame(result, columns=col_names)
+                result = cursor.fetchall()
+        return result[0][0]

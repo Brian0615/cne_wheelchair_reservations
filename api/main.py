@@ -24,24 +24,35 @@ s3_service = S3Service()
 rds_service = RDSService()
 
 
-@app.get("/devices/get_available_devices")
-def get_available_device_ids(device_type: DeviceType, location: Location) -> List[constr(pattern=r"[S|W][0-9]{2}")]:
-    """Get the available devices of a specific type at a specific location"""
-    return rds_service.select_available_device_ids(device_type, location)
-
-
-@app.get("/devices/get_full_inventory")
-@auto_process_database_errors
-def get_full_inventory() -> List[Device]:
-    """Get the full inventory of devices"""
-    return rds_service.get_full_inventory().to_dict(orient="records")
-
+# ==============================
+# DEVICES
+# ==============================
 
 @app.post("/devices/add")
 @auto_process_database_errors
 def add_devices(devices: List[Device]):
     """Add a device to the inventory"""
     return rds_service.add_devices(devices)
+
+
+@app.get("/devices/get_available_devices")
+def get_available_device_ids(device_type: DeviceType, location: Location) -> List[constr(pattern=r"[S|W][0-9]{2}")]:
+    """Get the available devices of a specific type at a specific location"""
+    return rds_service.get_available_device_ids(device_type, location)
+
+
+@app.get("/devices/get_full_inventory")
+@auto_process_database_errors
+def get_full_inventory() -> List[Device]:
+    """Get the full inventory of devices"""
+    return [Device(**x) for x in rds_service.get_full_inventory().to_dict(orient="records")]
+
+
+@app.post("/devices/remove")
+@auto_process_database_errors
+def remove_devices(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)]):
+    """Remove devices from the inventory"""
+    return rds_service.remove_devices(device_ids)
 
 
 @app.post("/devices/update_location")
@@ -58,48 +69,9 @@ def update_devices_status(device_ids: List[constr(to_upper=True, pattern=DEVICE_
     return rds_service.update_devices_status(device_ids, status)
 
 
-@app.post("/devices/remove")
-@auto_process_database_errors
-def remove_devices(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)]):
-    """Remove devices from the inventory"""
-    return rds_service.remove_devices(device_ids)
-
-
-@app.post("/reservations/add_new_reservation")
-@auto_process_database_errors
-def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True, pattern=RESERVATION_ID_PATTERN):
-    """Add a new reservation"""
-    try:
-        return rds_service.insert_new_reservation(reservation=reservation)
-    except UniqueViolation as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-
-
-@app.get("/reservations/get_number_of_reservations_on_date")
-@auto_process_database_errors
-def get_number_of_reservations_on_date(date: str, device_type: DeviceType, location: Location) -> int:
-    """Get the number of reservations on a specific date"""
-    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-    result = rds_service.get_number_of_reservations_on_date(date=date, device_type=device_type, location=location)
-    return result.iloc[0]["number_of_reservations"] if not result.empty else 0
-
-
-@app.get("/reservations/get_reservations_on_date")
-@auto_process_database_errors
-def get_reservations_on_date(
-        date: str,
-        device_type: Optional[DeviceType] = None,
-        exclude_picked_up_reservations: bool = False,
-) -> List[Reservation]:
-    """Get the reservations on a specific date"""
-    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-    reservations = rds_service.get_reservations_on_date(
-        date=date,
-        device_type=device_type,
-        exclude_picked_up_reservations=exclude_picked_up_reservations,
-    )
-    return [Reservation(**x) for x in reservations.to_dict(orient="records")]
-
+# ==============================
+# RENTALS
+# ==============================
 
 @app.post("/rentals/add_new_rental")
 @auto_process_database_errors
@@ -110,9 +82,9 @@ def add_new_rental(new_rental: NewRental):
 
 @app.post("/rentals/change_device")
 @auto_process_database_errors
-def change_device(change_device_info: ChangeDeviceInfo):
+def change_rental_device(change_device_info: ChangeDeviceInfo):
     """Change the device of a rental"""
-    return rds_service.change_device_for_rental(change_device_info=change_device_info)
+    return rds_service.change_rental_device(change_device_info=change_device_info)
 
 
 @app.post("/rentals/complete_rental")
@@ -140,11 +112,9 @@ def get_rentals_on_date(
     return [RentalSummary(**x) for x in rentals.to_dict(orient="records")]
 
 
-@app.put("/forms/upload_rental_form")
-def upload_rental_form(pdf_bytes: Annotated[bytes, File()], rental_id: str):
-    """Upload a rental form to S3"""
-    s3_service.upload_rental_form(pdf_bytes=pdf_bytes, rental_id=rental_id)
-
+# ==============================
+# RENTAL FORMS
+# ==============================
 
 @app.get("/forms/download_rental_form")
 def download_rental_form(rental_id: str) -> Optional[bytes]:
@@ -153,3 +123,49 @@ def download_rental_form(rental_id: str) -> Optional[bytes]:
         return s3_service.download_rental_form(rental_id=rental_id)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.put("/forms/upload_rental_form")
+def upload_rental_form(pdf_bytes: Annotated[bytes, File()], rental_id: str):
+    """Upload a rental form to S3"""
+    s3_service.upload_rental_form(pdf_bytes=pdf_bytes, rental_id=rental_id)
+
+
+# ==============================
+# RESERVATIONS
+# ==============================
+
+@app.get("/reservations/get_number_of_reservations_on_date")
+@auto_process_database_errors
+def get_number_of_reservations_on_date(date: str, device_type: DeviceType, location: Location) -> int:
+    """Get the number of reservations on a specific date"""
+    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    result = rds_service.get_number_of_reservations_on_date(date=date, device_type=device_type, location=location)
+    return result.iloc[0]["number_of_reservations"] if not result.empty else 0
+
+
+@app.get("/reservations/get_reservations_on_date")
+@auto_process_database_errors
+def get_reservations_on_date(
+        date: str,
+        device_type: Optional[DeviceType] = None,
+        exclude_picked_up_reservations: bool = False,
+) -> List[Reservation]:
+    """Get the reservations on a specific date"""
+    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    reservations = rds_service.get_reservations_on_date(
+        date=date,
+        device_type=device_type,
+        exclude_picked_up_reservations=exclude_picked_up_reservations,
+    )
+    return [Reservation(**x) for x in reservations.to_dict(orient="records")]
+
+
+@app.post("/reservations/add_new_reservation")
+@auto_process_database_errors
+def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True, pattern=RESERVATION_ID_PATTERN):
+    """Add a new reservation"""
+    try:
+        return rds_service.insert_new_reservation(reservation=reservation)
+    except UniqueViolation as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc

@@ -17,6 +17,7 @@ from common.data_models import (
     RentalSummary,
     Reservation,
 )
+from common.utils import get_default_timezone
 
 DEFAULT_TIMEOUT = 5
 
@@ -39,7 +40,7 @@ def auto_process_api_errors(func):
             )
             with st.expander(label="Full Error Traceback"):
                 st.write(exc)
-            st.stop()
+            raise
         except Exception as exc:
             st.error(f"**API Error**: {exc}")
             raise
@@ -47,6 +48,7 @@ def auto_process_api_errors(func):
     return wrapper
 
 
+# pylint: disable=no-self-argument
 class DataService:
     """Service class to interact with the API."""
 
@@ -87,9 +89,10 @@ class DataService:
         )
         return response.json()
 
+    @st.cache_data(ttl=60)
     @auto_process_api_errors
     def get_reservations_on_date(
-            self,
+            _self,
             date: datetime.date,
             device_type: Optional[DeviceType] = None,
             exclude_picked_up_reservations: bool = False,
@@ -97,7 +100,7 @@ class DataService:
         """Get the reservations on a specific date using the API."""
 
         response = requests.get(
-            f"http://{self.api_host}:{self.api_port}/reservations/get_reservations_on_date",
+            f"http://{_self.api_host}:{_self.api_port}/reservations/get_reservations_on_date",
             params={
                 "date": date.strftime("%Y-%m-%d"),
                 "device_type": device_type,
@@ -107,6 +110,11 @@ class DataService:
         )
         reservations = response.json()
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
+        if reservations.empty:
+            return reservations
+        reservations["reservation_time"] = (
+            pd.to_datetime(reservations["reservation_time"], utc=True).dt.tz_convert(get_default_timezone())
+        )
         return reservations
 
     # ==============================
