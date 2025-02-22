@@ -82,60 +82,61 @@ date, rental_id, rental_data = get_rental_selection(
 if rental_id is None:
     st.stop()
 
-# rental completion form
-col1, col2, col3 = st.columns(3)
-completed_rental_info = {
-    "id": rental_id,
-    "date": date,
-    "name": rental_data["name"],
-    "device_id": rental_data["device_id"],
-    "return_time": col1.time_input(
-        label="Return Time",
-        value=datetime.now(get_default_timezone()).time(),
-        key="complete_rental_time",
-    ),
-    "return_location": col2.selectbox(
-        label="Return Location",
-        options=Location,
-        index=None,
-        key="complete_rental_location",
-    ),
-    "return_staff_name": col3.text_input(
-        label="Staff Name",
-        key="complete_rental_staff_name",
-    ),
-}
+with st.container(border=True):
+    # rental completion form
+    col1, col2, col3 = st.columns(3)
+    completed_rental_info = {
+        "id": rental_id,
+        "date": date,
+        "name": rental_data["name"],
+        "device_id": rental_data["device_id"],
+        "return_time": col1.time_input(
+            label="Return Time",
+            value=datetime.now(get_default_timezone()).time(),
+            key="complete_rental_time",
+        ),
+        "return_location": col2.selectbox(
+            label="Return Location",
+            options=Location,
+            index=None,
+            key="complete_rental_location",
+        ),
+        "return_staff_name": col3.text_input(
+            label="Staff Name",
+            key="complete_rental_staff_name",
+        ),
+    }
 
-st.write(
-    f"**By checking the box(es) and signing below I, {rental_data['name']}, "
-    f"confirm that the following have been returned to me:**"
-)
+    st.write(
+        f"**By checking the box(es) and signing below I, {rental_data['name']}, "
+        f"confirm that the following have been returned to me:**"
+    )
 
-check_items = True  # pylint: disable=invalid-name
-if rental_data["items_left_behind"]:
-    check_items = st.checkbox("Items Left Behind during Rental: " + ", ".join(rental_data["items_left_behind"]))
-check_deposit = st.checkbox(f"{rental_data['deposit_payment_method']} Deposit of $50")
-st.write("Signature")
-# pylint: disable=invalid-name
-canvas_signature = st_canvas(
-    stroke_width=2,
-    stroke_color="#1E90FF",
-    height=100,
-    key="complete_rental_signature",
-).image_data
+    check_items = True  # pylint: disable=invalid-name
+    if rental_data["items_left_behind"]:
+        check_items = st.checkbox("Items Left Behind during Rental: " + ", ".join(rental_data["items_left_behind"]))
+    check_deposit = st.checkbox(f"{rental_data['deposit_payment_method']} Deposit of $50")
+    st.write("Signature")
+    # pylint: disable=invalid-name
+    canvas_signature = st_canvas(
+        stroke_width=2,
+        stroke_color="#1E90FF",
+        height=100,
+        key="complete_rental_signature",
+    ).image_data
 
-# form submission or errors
-errors = st.session_state.get("complete_rental_errors")
-if errors:
-    display_validation_errors(errors, CompletedRental)
-allow_submission = all([
-    np.count_nonzero(np.max(canvas_signature, axis=-1)) > 500,
-    completed_rental_info["return_location"],
-    completed_rental_info["return_time"],
-    completed_rental_info["return_staff_name"],
-    check_deposit,
-    check_items,
-])
+    # form submission or errors
+    errors = st.session_state.get("complete_rental_errors")
+    if errors:
+        display_validation_errors(errors, CompletedRental)
+    allow_submission = all([
+        np.count_nonzero(np.max(canvas_signature, axis=-1)) > 500,
+        completed_rental_info["return_location"],
+        completed_rental_info["return_time"],
+        completed_rental_info["return_staff_name"],
+        check_deposit,
+        check_items,
+    ])
 st.button(
     label="Complete Rental",
     on_click=complete_rental,

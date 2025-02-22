@@ -53,8 +53,8 @@ if disable_edits:
         "You may view the reservation details below."
     )
 
-update_col, change_col = st.columns([1, 2])
-with update_col.expander("Confirm or Cancel Reservation", expanded=True):
+confirm_cancel_col, update_col = st.columns([1, 2])
+with confirm_cancel_col.expander("Confirm or Cancel Reservation", expanded=True):
     match reservation.status:
         case ReservationStatus.CANCELLED:
             status_func = st.error
@@ -84,7 +84,7 @@ with update_col.expander("Confirm or Cancel Reservation", expanded=True):
         kwargs={"reservation": reservation, "status": ReservationStatus.CANCELLED},
     )
 
-with change_col.expander("Change Reservation Info", expanded=True):
+with update_col.expander("Change Reservation Info", expanded=True):
     st.info(
         "**Note**: The reservation date or device type may not be changed. "
         "If you wish to do so, cancel this reservation and create a new one."

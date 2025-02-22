@@ -7,7 +7,7 @@ from common.data_models.rental import NewRental
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.rental_utils import submit_form
+from ui.src.rental_utils import submit_rental_form
 from ui.src.utils import display_validation_errors
 
 initialize_page(page_header="New Rental")
@@ -165,7 +165,7 @@ if not allow_submission:
     )
 submit = st.button(
     label="Submit",
-    on_click=submit_form,
+    on_click=submit_rental_form,
     args=(rental_info, canvas_signature),
     disabled=not allow_submission,
 )
