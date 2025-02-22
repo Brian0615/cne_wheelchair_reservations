@@ -49,6 +49,7 @@ def auto_process_api_errors(func):
 
 
 # pylint: disable=no-self-argument
+# noinspection PyMethodParameters
 class DataService:
     """Service class to interact with the API."""
 
@@ -201,21 +202,27 @@ class DataService:
     # DEVICES
     # ==============================
 
+    def _update_devices_functions_cache(self):
+        self.get_available_devices.clear()
+        self.get_full_inventory.clear()
+
+    @st.cache_data(ttl=60, show_spinner=False)
     @auto_process_api_errors
-    def get_available_devices(self, device_type: DeviceType, location: Location):
+    def get_available_devices(_self, device_type: DeviceType, location: Location):
         """Get the available devices of a specific type at a specific location using the API."""
         response = requests.get(
-            url=f"http://{self.api_host}:{self.api_port}/devices/get_available_devices",
+            url=f"http://{_self.api_host}:{_self.api_port}/devices/get_available_devices",
             params={"device_type": device_type, "location": location},
             timeout=DEFAULT_TIMEOUT,
         )
         return response.json()
 
+    @st.cache_data(ttl=60, show_spinner=False)
     @auto_process_api_errors
-    def get_full_inventory(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def get_full_inventory(_self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Get the full inventory of devices using the API."""
         response = requests.get(
-            url=f"http://{self.api_host}:{self.api_port}/devices/get_full_inventory",
+            url=f"http://{_self.api_host}:{_self.api_port}/devices/get_full_inventory",
             timeout=DEFAULT_TIMEOUT,
         )
         inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
@@ -236,6 +243,7 @@ class DataService:
             json=[device.model_dump(mode="json") for device in devices],
             timeout=DEFAULT_TIMEOUT,
         )
+        self._update_devices_functions_cache()
         return response.status_code, response.json()
 
     @auto_process_api_errors
@@ -247,6 +255,7 @@ class DataService:
             json=device_ids,
             timeout=DEFAULT_TIMEOUT,
         )
+        self._update_devices_functions_cache()
         return response.status_code, response.json()
 
     @auto_process_api_errors
@@ -258,6 +267,7 @@ class DataService:
             json=device_ids,
             timeout=DEFAULT_TIMEOUT,
         )
+        self._update_devices_functions_cache()
         return response.status_code, response.json()
 
     @auto_process_api_errors
@@ -268,6 +278,7 @@ class DataService:
             json=device_ids,
             timeout=DEFAULT_TIMEOUT,
         )
+        self._update_devices_functions_cache()
         return response.status_code, response.json()
 
     # ==============================

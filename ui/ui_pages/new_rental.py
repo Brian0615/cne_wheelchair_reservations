@@ -1,235 +1,151 @@
-from datetime import datetime
-from typing import List
-
 import numpy as np
-import pandas as pd
 import streamlit as st
-from pydantic import ValidationError
 from streamlit_drawable_canvas import st_canvas
 
 from common.constants import DeviceType, HoldItem, Location, PaymentMethod, WALK_IN_RESERVATION_ID
 from common.data_models.rental import NewRental
-from common.utils import get_default_timezone
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.signature import Signature
-from ui.src.utils import clear_session_state_for_form, display_validation_errors
-from ui.src.wheelchair_form import WheelchairForm
+from ui.src.rental_utils import submit_form
+from ui.src.utils import display_validation_errors
 
 initialize_page(page_header="New Rental")
 data_service = DataService()
 
-
-@st.dialog("Success!")
-def display_success_dialog(rental_id: str, new_rental: NewRental, form_data: bytes):
-    """Display the success dialog upon creating a new rental"""
-    st.success(
-        f"""
-        The following rental was created successfully:
-        
-        * **Name**: {new_rental.name}
-        * **{new_rental.device_type}**: {new_rental.device_id}
-        * **Rental ID**: {rental_id}
-        """
-    )
-    if new_rental.device_type == DeviceType.WHEELCHAIR:
-        st.download_button(
-            label="Download Rental Form",
-            data=form_data,
-            icon=":material/download:",
-            file_name=f"rental_form_{rental_id}.pdf",
-        )
-    if st.button("Close"):
-        clear_session_state_for_form(clear_prefixes=["rental_form_"])
-        st.rerun()
-
-
-def submit_form(new_rental: dict, signature_data: np.array):
-    """Submit the new rental form"""
-    # clear previous errors
-    st.session_state["rental_form_errors"] = None
-    try:
-        # process signature
-        new_rental["signature"] = Signature(signature_data=signature_data).encode_as_base64()
-
-        # update pickup time
-        new_rental["pickup_time"] = datetime.combine(
-            date=new_rental["date"],
-            time=new_rental["pickup_time"],
-            tzinfo=get_default_timezone(),
-        )
-
-        # validate rental data
-        new_rental = NewRental(**new_rental)
-
-        # try to add the new rental
-        status_code, rental_id = data_service.add_new_rental(new_rental)
-        if new_rental.device_type == DeviceType.WHEELCHAIR:
-            form_data = WheelchairForm(rental_data=new_rental, rental_id=rental_id).export_form_to_bytes()
-            status_code, _ = data_service.upload_rental_form(pdf_bytes=form_data, rental_id=rental_id)
-        else:
-            form_data = None
-        if status_code == 200:
-            display_success_dialog(rental_id=rental_id, new_rental=new_rental, form_data=form_data)
-
-    except ValidationError as exc:
-        st.session_state["rental_form_errors"] = exc.errors()
-
-
-@st.cache_data(ttl=30, show_spinner=False)
-def get_available_devices(
-        device_type: DeviceType,
-        location: Location,
-) -> List[str]:
-    """Helper function for caching purposes"""
-    return data_service.get_available_devices(device_type=device_type, location=location)
-
-
-@st.cache_data(ttl=30, show_spinner=False)
-def get_reservations_on_date(
-        reservation_date: datetime.date,
-        device_type: DeviceType,
-        exclude_picked_up_reservations: bool,
-) -> pd.DataFrame:
-    """Helper function for caching purposes"""
-    return data_service.get_reservations_on_date(
-        date=reservation_date,
-        device_type=device_type,
-        exclude_picked_up_reservations=exclude_picked_up_reservations,
-    )
-
-
 rental_info = {}
 
-# first row of intro section of form
-col1, col2, col3, col4 = st.columns(4)
-all_dates = CNEDates.get_cne_date_list()
-rental_info["date"] = col1.date_input(
-    label="Rental Date",
-    min_value=min(all_dates),
-    max_value=max(all_dates),
-    key="rental_form_date",
-)
-rental_info["pickup_time"] = col2.time_input(label="Pickup Time", value="now", key="rental_form_pickup_time")
-rental_info["pickup_location"] = col3.selectbox(
-    label="Pickup Location",
-    options=Location,
-    index=None,
-    key="rental_form_pickup_location",
-)
-rental_info["device_type"] = col4.selectbox(
-    label="Rental Type",
-    options=DeviceType,
-    index=None,
-    key="rental_form_device_type",
-)
-
-if not all(rental_info.get(x) for x in ["date", "pickup_time", "pickup_location", "device_type"]):
-    st.stop()
-
-# check whether there are available devices
-available_devices = get_available_devices(
-    device_type=rental_info["device_type"],
-    location=rental_info["pickup_location"],
-)
-if not available_devices:
-    st.error(
-        f"**No Available {rental_info["device_type"]}s**: "
-        f"There are no available {rental_info["device_type"]}s "
-        f"at the {rental_info["pickup_location"]} location."
+# Intro Section of Rental Form
+with st.container(border=True):
+    # first row of intro section of form
+    col1, col2, col3, col4 = st.columns(4)
+    all_dates = CNEDates.get_cne_date_list()
+    rental_info["date"] = col1.date_input(
+        label="Rental Date",
+        min_value=min(all_dates),
+        max_value=max(all_dates),
+        key="rental_form_date",
     )
-    st.stop()
+    rental_info["pickup_time"] = col2.time_input(label="Pickup Time", value="now", key="rental_form_pickup_time")
+    rental_info["pickup_location"] = col3.selectbox(
+        label="Pickup Location",
+        options=Location,
+        index=None,
+        key="rental_form_pickup_location",
+    )
+    rental_info["device_type"] = col4.selectbox(
+        label="Rental Type",
+        options=DeviceType,
+        index=None,
+        key="rental_form_device_type",
+    )
 
-# second row of intro section of form
-reservations_df = get_reservations_on_date(
-    reservation_date=rental_info["date"],
-    device_type=rental_info["device_type"],
-    exclude_picked_up_reservations=True,
-)
-if reservations_df.empty:
-    reservations_list = []
-else:
-    reservations_list = reservations_df["name"] + " (" + reservations_df["id"] + ")"
-col1, col2, _, _ = st.columns(4)
-rental_info["reservation_id"] = col1.selectbox(
-    label="Reservation Name/ID",
-    options=sorted(reservations_list) + [WALK_IN_RESERVATION_ID],
-    index=None,
-    key="rental_form_reservation_id",
-)
-if rental_info["reservation_id"]:
-    if rental_info["reservation_id"] != WALK_IN_RESERVATION_ID:
-        rental_info["reservation_id"] = rental_info["reservation_id"].split("(")[1].replace(")", "")
+    if not all(rental_info.get(x) for x in ["date", "pickup_time", "pickup_location", "device_type"]):
+        st.stop()
+
+    # check whether there are available devices
+    available_devices = data_service.get_available_devices(
+        device_type=rental_info["device_type"],
+        location=rental_info["pickup_location"],
+    )
+    if not available_devices:
+        st.error(
+            f"**No Available {rental_info["device_type"]}s**: "
+            f"There are no available {rental_info["device_type"]}s "
+            f"at the {rental_info["pickup_location"]} location."
+        )
+        st.stop()
+
+    # second row of intro section of form
+    reservations_df = data_service.get_reservations_on_date(
+        date=rental_info["date"],
+        device_type=rental_info["device_type"],
+        exclude_picked_up_reservations=True,
+    )
+    if reservations_df.empty:
+        reservations_list = []
     else:
-        rental_info["reservation_id"] = None
+        reservations_list = reservations_df["name"] + " (" + reservations_df["id"] + ")"
+    col1, col2, _, _ = st.columns(4)
+    rental_info["reservation_id"] = col1.selectbox(
+        label="Reservation Name/ID",
+        options=sorted(reservations_list) + [WALK_IN_RESERVATION_ID],
+        index=None,
+        key="rental_form_reservation_id",
+    )
+    if rental_info["reservation_id"]:
+        if rental_info["reservation_id"] != WALK_IN_RESERVATION_ID:
+            rental_info["reservation_id"] = rental_info["reservation_id"].split("(")[1].replace(")", "")
+        else:
+            rental_info["reservation_id"] = None
 
-rental_info["device_id"] = col2.selectbox(
-    "Assigned Chair/Scooter",
-    options=sorted(available_devices),
-    index=None,
-    key="rental_form_device_id",
-)
+    rental_info["device_id"] = col2.selectbox(
+        "Assigned Chair/Scooter",
+        options=sorted(available_devices),
+        index=None,
+        key="rental_form_device_id",
+    )
 
-# renter information section of form
-st.divider()
-st.subheader("Renter Information")
-col1, col2 = st.columns([2, 1])
-rental_info["name"] = col1.text_input(label="Name", key="rental_form_name")
-rental_info["phone_number"] = col2.text_input(label="Phone Number", key="rental_form_phone_number")
+# Renter Information Section of Form
+with st.container(border=True):
+    st.subheader("Renter Information")
+    col1, col2 = st.columns([2, 1])
+    rental_info["name"] = col1.text_input(label="Name", key="rental_form_name")
+    rental_info["phone_number"] = col2.text_input(label="Phone Number", key="rental_form_phone_number")
 
-col1, col2 = st.columns([2, 1])
-rental_info['address'] = col1.text_input(label="Address", key="rental_form_address")
-rental_info['city'] = col2.text_input(label="City", key="rental_form_city")
-col1, col2, col3 = st.columns(3)
-rental_info['province'] = col1.text_input(label="Province", value="Ontario", key="rental_form_province")
-rental_info['postal_code'] = col2.text_input(label="Postal Code", key="rental_form_postal_code")
-rental_info['country'] = col3.text_input(label="Country", value="Canada", key="rental_form_country")
+    col1, col2 = st.columns([2, 1])
+    rental_info['address'] = col1.text_input(label="Address", key="rental_form_address")
+    rental_info['city'] = col2.text_input(label="City", key="rental_form_city")
+    col1, col2, col3 = st.columns(3)
+    rental_info['province'] = col1.text_input(label="Province", value="Ontario", key="rental_form_province")
+    rental_info['postal_code'] = col2.text_input(label="Postal Code", key="rental_form_postal_code")
+    rental_info['country'] = col3.text_input(label="Country", value="Canada", key="rental_form_country")
 
-id_verified = st.checkbox("ID Verified?")
+    id_verified = st.checkbox("ID Verified?")
 
-# payment information section of form
-st.divider()
-st.subheader("Payment Information")
-col1, col2 = st.columns(2)
-rental_info["fee_payment_amount"] = DeviceType.get_fee_amount(rental_info["device_type"])
-rental_info['fee_payment_method'] = col1.selectbox(
-    label=f"Payment Type for **${rental_info['fee_payment_amount']}** Fee",
-    options=PaymentMethod.get_accepted_fee_payment_methods(),
-    index=None,
-    key="rental_form_fee_payment_method",
-)
-rental_info["deposit_payment_amount"] = DeviceType.get_deposit_amount(rental_info["device_type"])
-rental_info['deposit_payment_method'] = col2.selectbox(
-    label=f"Payment Type for **${rental_info['deposit_payment_amount']}** Deposit",
-    options=PaymentMethod.get_accepted_deposit_payment_methods(),
-    index=None,
-    key="rental_form_deposit_payment_method",
-)
+# Payment Information Section of Form
+with st.container(border=True):
+    st.subheader("Payment Information")
+    col1, col2 = st.columns(2)
+    rental_info["fee_payment_amount"] = DeviceType.get_fee_amount(rental_info["device_type"])
+    rental_info['fee_payment_method'] = col1.selectbox(
+        label=f"Payment Type for **${rental_info['fee_payment_amount']}** Fee",
+        options=PaymentMethod.get_accepted_fee_payment_methods(),
+        index=None,
+        key="rental_form_fee_payment_method",
+    )
+    rental_info["deposit_payment_amount"] = DeviceType.get_deposit_amount(rental_info["device_type"])
+    rental_info['deposit_payment_method'] = col2.selectbox(
+        label=f"Payment Type for **${rental_info['deposit_payment_amount']}** Deposit",
+        options=PaymentMethod.get_accepted_deposit_payment_methods(),
+        index=None,
+        key="rental_form_deposit_payment_method",
+    )
 
-# additional information section of form
-st.divider()
-st.subheader("Additional Information")
-col1, col2 = st.columns(2)
-rental_info['staff_name'] = col1.text_input("Staff Name")
-rental_info['items_left_behind'] = col2.multiselect(
-    "Items Left Behind by Renter",
-    options=HoldItem,
-    key="rental_form_items_left_behind",
-)
+# Additional Information Section of Form
+with st.container(border=True):
+    st.subheader("Additional Information")
+    col1, col2 = st.columns(2)
+    rental_info['staff_name'] = col1.text_input("Staff Name")
+    rental_info['items_left_behind'] = col2.multiselect(
+        "Items Left Behind by Renter",
+        options=HoldItem,
+        key="rental_form_items_left_behind",
+    )
 
-st.divider()
-st.subheader("Terms and Conditions")
-st.markdown("insert bunch of conditions here...")
+# Terms and Conditions Section of Form
+with st.container(border=True):
+    st.subheader("Terms and Conditions")
+    st.markdown("insert bunch of conditions here...")
 
-st.markdown("By signing below, I agree to the terms and conditions above.")
-# pylint: disable=invalid-name
-canvas_signature = st_canvas(
-    stroke_width=2,
-    stroke_color="#1E90FF",
-    height=100,
-    key="rental_form_signature",
-).image_data
+    st.markdown("By signing below, I agree to the terms and conditions above.")
+    # pylint: disable=invalid-name
+    canvas_signature = st_canvas(
+        stroke_width=2,
+        stroke_color="#1E90FF",
+        height=100,
+        key="rental_form_signature",
+    ).image_data
 
 # quick validation of renter agreement
 allow_submission = all([
@@ -237,7 +153,6 @@ allow_submission = all([
     id_verified,
 ])
 
-st.divider()
 errors = st.session_state.get("rental_form_errors")
 if errors:
     display_validation_errors(errors, NewRental)
