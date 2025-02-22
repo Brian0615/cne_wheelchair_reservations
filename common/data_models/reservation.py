@@ -28,7 +28,6 @@ class Reservation(BaseModel):
     notes: Optional[str] = Field(title="Additional Notes", default="N/A")
 
 
-
 class NewReservation(Reservation):
     """Data validation class for a New Reservation"""
     model_config = ConfigDict(extra="forbid")
