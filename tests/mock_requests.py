@@ -32,6 +32,8 @@ class MockRequests:
         """Mock the requests.post method"""
         if "complete_rental" in url:
             return Mock(status_code=200, json=Mock(return_value={}))
+        if "update_reservation_status" in url:
+            return Mock(status_code=200)
         raise ValueError(f"Unsupported API url for mocking requests.post: {url}")
 
     @staticmethod

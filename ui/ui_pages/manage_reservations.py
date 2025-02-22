@@ -7,7 +7,8 @@ from ui.src.data_service import DataService
 from ui.src.reservation_utils import (
     initialize_reservation_form,
     render_reservation_form,
-    submit_reservation_form, update_reservation_status,
+    submit_reservation_form,
+    update_reservation_status,
 )
 from ui.src.utils import clear_session_state_for_form, get_date_input
 
@@ -69,6 +70,7 @@ with update_col.expander("Confirm or Cancel Reservation", expanded=True):
         use_container_width=True,
         icon=":material/check_circle:",
         disabled=disable_edits,
+        key="confirm_reservation",
         on_click=update_reservation_status,
         kwargs={"reservation": reservation, "status": ReservationStatus.CONFIRMED},
     )
@@ -77,9 +79,11 @@ with update_col.expander("Confirm or Cancel Reservation", expanded=True):
         use_container_width=True,
         icon=":material/cancel:",
         disabled=disable_edits,
+        key="cancel_reservation",
         on_click=update_reservation_status,
         kwargs={"reservation": reservation, "status": ReservationStatus.CANCELLED},
     )
+
 with change_col.expander("Change Reservation Info", expanded=True):
     st.info(
         "**Note**: The reservation date or device type may not be changed. "
