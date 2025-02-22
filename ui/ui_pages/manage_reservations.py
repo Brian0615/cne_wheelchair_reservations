@@ -1,27 +1,95 @@
 import streamlit as st
 
-from common.constants import DeviceType
+from common.constants import ReservationStatus
+from common.data_models import Reservation
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
-from ui.src.display_utils import display_reservations_table
-from ui.src.utils import get_date_input
+from ui.src.reservation_utils import (
+    initialize_reservation_form,
+    render_reservation_form,
+    submit_reservation_form, update_reservation_status,
+)
+from ui.src.utils import clear_session_state_for_form, get_date_input
 
 initialize_page(page_header="Manage Reservations")
 
 # initialize data service
 data_service = DataService()
 
-view_date = get_date_input(label="View Reservations for:", key_prefix="manage_reservations")
-reservations = data_service.get_reservations_on_date(date=view_date)
+# get date input and load reservations for that date
+date_col, reservation_col = st.columns([1, 2])
+reservation_date = get_date_input(label="Reservation Date", key_prefix="manage_reservations", col=date_col)
+reservations = data_service.get_reservations_on_date(date=reservation_date)
 if reservations is None or reservations.empty:
-    st.warning(f"**No Reservations**: There are no reservations for {view_date.strftime('%b %d, %Y')}.")
+    st.warning(f"**No Reservations**: There are no reservations for {reservation_date.strftime('%b %d, %Y')}.")
     st.stop()
 
-scooter_reservations, wheelchair_reservations = (
-    reservations[reservations["device_type"] == DeviceType.SCOOTER],
-    reservations[reservations["device_type"] == DeviceType.WHEELCHAIR],
+# get reservation ID
+reservation_id = reservation_col.selectbox(
+    label="Select a Reservation",
+    options=sorted(
+        reservations["id"] + " - " + reservations["name"]
+        + " (" + reservations["reservation_time"].dt.strftime("%I:%M %p")
+        + ", " + reservations["location"] + ")"
+    ),
+    index=None,
+    on_change=clear_session_state_for_form,
+    kwargs={"clear_prefixes": ["reservation_form_"], "delete_fields": True},
+    key="manage_reservations_id_selection",
 )
-st.subheader(f"{DeviceType.SCOOTER} Reservations")
-display_reservations_table(scooter_reservations, device_type=DeviceType.SCOOTER, admin_mode=True)
-st.subheader(f"{DeviceType.WHEELCHAIR} Reservations")
-display_reservations_table(wheelchair_reservations, device_type=DeviceType.WHEELCHAIR, admin_mode=True)
+if not reservation_id:
+    st.stop()
+reservation_id = reservation_id.split("-")[0].strip()
+reservation = Reservation(**reservations.loc[reservations["id"] == reservation_id].to_dict(orient="records")[0])
+disable_edits = reservation.status in {
+    ReservationStatus.PICKED_UP,
+    ReservationStatus.COMPLETED,
+    ReservationStatus.CANCELLED
+}
+if disable_edits:
+    st.warning(
+        "**Note**: You may not edit a reservation that has been picked up, completed, or cancelled. "
+        "You may view the reservation details below."
+    )
+
+update_col, change_col = st.columns([1, 2])
+with update_col.expander("Confirm or Cancel Reservation", expanded=True):
+    match reservation.status:
+        case ReservationStatus.CANCELLED:
+            status_func = st.error
+        case ReservationStatus.CONFIRMED:
+            status_func = st.success
+        case ReservationStatus.PENDING:
+            status_func = st.warning
+        case _:
+            status_func = st.info
+    status_func(f"Reservation Status: **{reservation.status}**")
+    st.button(
+        label="Confirm Reservation",
+        use_container_width=True,
+        icon=":material/check_circle:",
+        disabled=disable_edits,
+        on_click=update_reservation_status,
+        kwargs={"reservation": reservation, "status": ReservationStatus.CONFIRMED},
+    )
+    st.button(
+        "Cancel Reservation",
+        use_container_width=True,
+        icon=":material/cancel:",
+        disabled=disable_edits,
+        on_click=update_reservation_status,
+        kwargs={"reservation": reservation, "status": ReservationStatus.CANCELLED},
+    )
+with change_col.expander("Change Reservation Info", expanded=True):
+    st.info(
+        "**Note**: The reservation date or device type may not be changed. "
+        "If you wish to do so, cancel this reservation and create a new one."
+    )
+    initialize_reservation_form(existing_reservation=reservation)
+    updated_reservation, is_submitted = render_reservation_form(
+        existing_reservation=reservation,
+        disable_edits=disable_edits,
+    )
+
+if is_submitted:
+    submit_reservation_form(reservation=updated_reservation, reservation_model=Reservation)

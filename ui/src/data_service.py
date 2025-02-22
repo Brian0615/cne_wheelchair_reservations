@@ -7,7 +7,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-from common.constants import DeviceType, Location, DeviceStatus
+from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
 from common.data_models import (
     ChangeDeviceInfo,
     CompletedRental,
@@ -68,6 +68,7 @@ class DataService:
             json=reservation.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
+        self.get_reservations_on_date.clear()
         return response.status_code, response.json()
 
     @auto_process_api_errors
@@ -89,7 +90,7 @@ class DataService:
         )
         return response.json()
 
-    @st.cache_data(ttl=60)
+    @st.cache_data(ttl=60, show_spinner=False)
     @auto_process_api_errors
     def get_reservations_on_date(
             _self,
@@ -116,6 +117,28 @@ class DataService:
             pd.to_datetime(reservations["reservation_time"], utc=True).dt.tz_convert(get_default_timezone())
         )
         return reservations
+
+    @auto_process_api_errors
+    def update_reservation(self, reservation: Reservation):
+        """Update an existing reservation using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/reservations/update_reservation",
+            json=reservation.model_dump(mode="json"),
+            timeout=DEFAULT_TIMEOUT,
+        )
+        self.get_reservations_on_date.clear()
+        return response.status_code
+
+    @auto_process_api_errors
+    def update_reservation_status(self, reservation_id: str, status: ReservationStatus):
+        """Update the status of a reservation using the API."""
+        response = requests.post(
+            f"http://{self.api_host}:{self.api_port}/reservations/update_reservation_status",
+            params={"reservation_id": reservation_id, "reservation_status": status},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        self.get_reservations_on_date.clear()
+        return response.status_code
 
     # ==============================
     # RENTALS

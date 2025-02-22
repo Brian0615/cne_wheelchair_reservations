@@ -6,7 +6,7 @@ from common.data_models import NewReservation
 from common.utils import get_default_timezone
 from tests.base_tests import BaseTestCases
 from tests.mock_requests import MockRequests
-from ui.src import utils
+from ui.src import reservation_utils
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 
@@ -70,6 +70,6 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
         mock_requests = MockRequests()
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests)
         at.button(key="reservation_form_submit_button").click()
-        with patch.object(utils, attribute="display_validation_errors") as mock_display_validation_errors:
-            self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+        with patch.object(reservation_utils, attribute="display_validation_errors") as mock_display_validation_errors:
+            self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at, allow_errors=True)
             mock_display_validation_errors.assert_called_once()

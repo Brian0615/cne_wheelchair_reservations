@@ -8,7 +8,14 @@ from api.src.exceptions import UniqueViolation
 from api.src.rds_service import RDSService
 from api.src.s3_service import S3Service
 from api.src.utils import auto_process_database_errors
-from common.constants import DeviceType, Location, DEVICE_ID_PATTERN, RESERVATION_ID_PATTERN, DeviceStatus
+from common.constants import (
+    DeviceStatus,
+    DeviceType,
+    Location,
+    ReservationStatus,
+    DEVICE_ID_PATTERN,
+    RESERVATION_ID_PATTERN,
+)
 from common.data_models import (
     ChangeDeviceInfo,
     CompletedRental,
@@ -169,3 +176,17 @@ def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True,
         return rds_service.insert_new_reservation(reservation=reservation)
     except UniqueViolation as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/reservations/update_reservation")
+@auto_process_database_errors
+def update_reservation(reservation: Reservation):
+    """Update reservation"""
+    return rds_service.update_reservation(reservation=reservation)
+
+
+@app.post("/reservations/update_reservation_status")
+@auto_process_database_errors
+def update_reservation_status(reservation_id: str, reservation_status: ReservationStatus):
+    """Update the status of a reservation"""
+    return rds_service.update_reservation_status(reservation_id=reservation_id, reservation_status=reservation_status)

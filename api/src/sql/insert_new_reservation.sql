@@ -5,7 +5,7 @@ WITH new_reservation_id
              WHERE date = {date})
 
 INSERT
-INTO {schema}.{table} (id, date, device_type, name, phone_number, location, reservation_time, status)
+INTO {schema}.{table} (id, date, device_type, name, phone_number, location, reservation_time, status, notes)
 VALUES ((SELECT reservation_id FROM new_reservation_id),
         {date},
         {device_type},
@@ -13,5 +13,6 @@ VALUES ((SELECT reservation_id FROM new_reservation_id),
         {phone_number},
         {location},
         {reservation_time},
-        {status})
+        {status},
+        {notes})
 RETURNING (SELECT reservation_id FROM new_reservation_id)

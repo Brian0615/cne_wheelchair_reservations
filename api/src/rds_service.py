@@ -14,7 +14,7 @@ from psycopg.errors import ConnectionTimeout, OperationalError
 from psycopg.types.enum import EnumInfo, register_enum
 
 from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus, Table
-from common.data_models import ChangeDeviceInfo, CompletedRental, Device, NewRental, NewReservation
+from common.data_models import ChangeDeviceInfo, CompletedRental, Device, NewRental, NewReservation, Reservation
 from common.utils import read_secret
 
 logger = logging.getLogger(__name__)
@@ -552,6 +552,7 @@ class RDSService:
             location=sql.Placeholder(name="location"),
             reservation_time=sql.Placeholder(name="reservation_time"),
             status=sql.Placeholder(name="status"),
+            notes=sql.Placeholder(name="notes"),
         )
 
         # execute the query and return the created reservation ID
@@ -568,7 +569,65 @@ class RDSService:
                         "location": reservation.location,
                         "reservation_time": reservation.reservation_time,
                         "status": ReservationStatus.get_default_reservation_status(device_type=reservation.device_type),
+                        "notes": reservation.notes,
                     }
                 )
                 result = cursor.fetchall()
         return result[0][0]
+
+    def update_reservation(self, reservation: Reservation):
+        """Update an existing reservation in the database."""
+
+        update_query = sql.SQL(
+            self._load_query_by_name(query_name="update_reservation")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            reservation_id=sql.Placeholder(name="reservation_id"),
+            date=sql.Placeholder(name="date"),
+            device_type=sql.Placeholder(name="device_type"),
+            name=sql.Placeholder(name="name"),
+            phone_number=sql.Placeholder(name="phone_number"),
+            location=sql.Placeholder(name="location"),
+            reservation_time=sql.Placeholder(name="reservation_time"),
+            notes=sql.Placeholder(name="notes"),
+        )
+
+        # execute the query and return the created reservation ID
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    update_query,
+                    {
+                        "reservation_id": reservation.id,
+                        "date": reservation.date,
+                        "device_type": reservation.device_type,
+                        "location": reservation.location,
+                        "name": reservation.name,
+                        "phone_number": reservation.phone_number,
+                        "reservation_time": reservation.reservation_time,
+                        "notes": reservation.notes,
+                    }
+                )
+
+    def update_reservation_status(self, reservation_id: str, reservation_status: ReservationStatus):
+        """Update the status of a reservation in the database."""
+
+        update_query = sql.SQL(
+            self._load_query_by_name(query_name="update_reservation_status")
+        ).format(
+            schema=sql.Identifier(self.schema),
+            table=sql.Identifier(Table.RESERVATIONS),
+            reservation_id=sql.Placeholder(name="reservation_id"),
+            status=sql.Placeholder(name="status"),
+        )
+
+        with self._initialize_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    update_query,
+                    {
+                        "reservation_id": reservation_id,
+                        "status": reservation_status,
+                    }
+                )
