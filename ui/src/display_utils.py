@@ -141,6 +141,7 @@ def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
             "items_left_behind": st.column_config.ListColumn(label="Items Left Behind"),
             "notes": st.column_config.TextColumn(label="Notes"),
         },
+        use_container_width=True,
     )
 
 
