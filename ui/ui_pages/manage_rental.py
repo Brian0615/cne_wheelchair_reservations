@@ -38,6 +38,9 @@ with st.expander(f"Update Rental {rental_data['device_type'].value}", expanded=T
             device_type=rental_data["device_type"],
             location=Location(change_device_info["location"]),
         )
+        if not available_devices:
+            st.warning("**No Available Devices**: There are no available devices at this location.")
+            st.stop()
         change_device_info["new_device_id"] = col2.selectbox(
             label=f"New {rental_data['device_type'].value} ID",
             options=sorted(available_devices, key=lambda x: int(x[1:])),
@@ -62,4 +65,5 @@ with st.expander(f"Update Rental {rental_data['device_type'].value}", expanded=T
             on_click=change_rental_device,
             args=(change_device_info,),
             disabled=not allow_submission,
+            key="change_device_submit_button",
         )

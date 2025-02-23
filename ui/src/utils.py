@@ -121,7 +121,10 @@ def get_rental_selection(
 
     col1, col2 = st.columns([1, 2])
     rental_date = get_date_input(label="Rental Date", col=col1, key_prefix=key_prefix)
-    rentals = get_rentals_on_date_helper(rental_date=rental_date, in_progress_rentals_only=in_progress_rentals_only)
+    rentals = data_service.get_rentals_on_date(
+        rental_date=rental_date,
+        in_progress_rentals_only=in_progress_rentals_only,
+    )
     if rentals is None or rentals.empty:
         st.warning(f"**No Rentals Today**: There are no rentals on {rental_date.strftime('%b %d, %Y')}.")
         return rental_date, None, None

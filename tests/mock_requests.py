@@ -1,6 +1,8 @@
 from typing import Dict, List, Optional
-
 from unittest.mock import Mock
+
+from common.constants import DeviceStatus
+from common.data_models import Device
 
 
 # pylint: disable=too-few-public-methods
@@ -21,6 +23,14 @@ class MockRequests:
         """Mock the requests.get method"""
         if "get_full_inventory" in url:
             return Mock(json=Mock(return_value=self.mock_inventory_data))
+        if "get_available_devices" in url:
+            return Mock(
+                json=Mock(
+                    return_value=[
+                        x["id"] for x in self.mock_inventory_data if Device(**x).status == DeviceStatus.AVAILABLE
+                    ]
+                )
+            )
         if "get_reservations_on_date" in url:
             return Mock(json=Mock(return_value=self.mock_reservations_data))
         if "get_rentals_on_date" in url:
@@ -30,6 +40,8 @@ class MockRequests:
     @staticmethod
     def mock_requests_post(url, *args, **kwargs):  # pylint: disable=unused-argument
         """Mock the requests.post method"""
+        if "change_device" in url:
+            return Mock(status_code=200)
         if "complete_rental" in url:
             return Mock(status_code=200, json=Mock(return_value={}))
         if "update_reservation_status" in url:

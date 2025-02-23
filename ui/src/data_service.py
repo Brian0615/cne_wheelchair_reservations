@@ -145,16 +145,17 @@ class DataService:
     # RENTALS
     # ==============================
 
+    @st.cache_data(ttl=60, show_spinner=False)
     @auto_process_api_errors
     def get_rentals_on_date(
-            self,
+            _self,
             rental_date: datetime.date,
             device_type: Optional[DeviceType] = None,
             in_progress_rentals_only: bool = False,
     ) -> pd.DataFrame:
         """Get the rentals on a specific date using the API."""
         response = requests.get(
-            f"http://{self.api_host}:{self.api_port}/rentals/get_rentals_on_date",
+            f"http://{_self.api_host}:{_self.api_port}/rentals/get_rentals_on_date",
             params={
                 "date": rental_date.strftime("%Y-%m-%d"),
                 "device_type": device_type,
@@ -176,6 +177,7 @@ class DataService:
             json=new_rental.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
+        self.get_rentals_on_date.clear()
         return response.status_code, response.json()
 
     @auto_process_api_errors
@@ -186,6 +188,8 @@ class DataService:
             json=change_device_info.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
+        self._update_devices_functions_cache()
+        self.get_rentals_on_date.clear()
         return response.status_code, response.json()
 
     @auto_process_api_errors
@@ -196,6 +200,8 @@ class DataService:
             json=completed_rental.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
+        self._update_devices_functions_cache()
+        self.get_rentals_on_date.clear()
         return response.status_code, response.json()
 
     # ==============================
