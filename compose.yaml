@@ -2,7 +2,8 @@ name: cne_wheelchair_reservations
 
 services:
   api:
-    image: brianlammm/cne_api
+    build:
+      dockerfile: api.Dockerfile
     environment:
       AWS_ACCESS_KEY_ID: /run/secrets/aws_access_key_id
       AWS_SECRET_ACCESS_KEY: /run/secrets/aws_secret_access_key
@@ -13,37 +14,53 @@ services:
       POSTGRES_PORT: /run/secrets/postgres_port
       POSTGRES_USERNAME: /run/secrets/postgres_username
       S3_BUCKET: ${S3_BUCKET}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8595/health" ]
+      interval: 10s
+      retries: 3
+      start_period: 15s
+      timeout: 5s
+    image: brianlammm/cne_api
     ports:
       - "8595:8595"   # left side is the host port (external), right side is the container port (internal, used by UI)
+    restart: on-failure
     secrets:
       - aws_access_key_id
       - aws_secret_access_key
       - postgres_host
       - postgres_port
       - postgres_username
+  autoheal:
+    image: willfarrell/autoheal
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: api
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
   ui:
-    image: brianlammm/cne_ui
-    ports:
-      - "80:8095"  # left side is the host port (external), right side is the container port
+    build:
+      dockerfile: ui.Dockerfile
+    depends_on:
+      api:
+        condition: service_started
     environment:
       API_HOST: api
       API_PORT: 8595
       AUTH_CONFIG_PATH: /auth_config.yml
       CNE_YEAR: ${CNE_YEAR}
       PDF_PASSWORD: /run/secrets/pdf_password
-    depends_on:
-      api:
-        condition: service_started
+    image: brianlammm/cne_ui
+    ports:
+      - "80:8095"  # left side is the host port (external), right side is the container port
+    secrets:
+      - pdf_password
     volumes:
       - type: bind
         source: ${AUTH_CONFIG_PATH}
         target: /auth_config.yml
-    secrets:
-      - pdf_password
 
 volumes:
   auth_config:
-
 
 # noinspection ComposeUnknownKeys
 secrets:

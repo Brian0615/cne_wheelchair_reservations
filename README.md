@@ -2,19 +2,29 @@
 
 ## Docker
 
-### Building the Containers
+### Building the Images
 
 ```bash
-docker build -t brianlammm/cne_api -f api.Dockerfile .
-docker build -t brianlammm/cne_ui -f ui.Dockerfile .
+docker compose build
 ```
 
-### Pushing the Containers to Docker Hub
+> #### Building Individual Images
+> ```bash
+> docker build -t brianlammm/cne_api -f api.Dockerfile .
+> docker build -t brianlammm/cne_ui -f ui.Dockerfile .
+> ```
+
+### Pushing the Images to Docker Hub
 
 ```bash
-docker push brianlammm/cne_api
-docker push brianlammm/cne_ui
+docker compose push
 ```
+
+> #### Pushing Individual Images
+> ```bash
+> docker push brianlammm/cne_api
+> docker push brianlammm/cne_ui
+> ```
 
 ### Running the Containers
 

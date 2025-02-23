@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from typing import List, Annotated, Optional
 
 from fastapi import FastAPI, HTTPException, File
@@ -77,6 +77,16 @@ def update_devices_status(device_ids: List[constr(to_upper=True, pattern=DEVICE_
 
 
 # ==============================
+# HEALTH CHECK
+# ==============================
+
+@app.get("/health")
+def health_check():
+    """Health check"""
+    return {"status": "ok", "time": datetime.now().isoformat()}
+
+
+# ==============================
 # RENTALS
 # ==============================
 
@@ -109,7 +119,7 @@ def get_rentals_on_date(
         in_progress_rentals_only: bool = False,
 ) -> List[RentalSummary]:
     """Get the rentals on a specific date"""
-    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    date = datetime.strptime(date, "%Y-%m-%d").date()
     rentals = rds_service.get_rentals_on_date(
         date=date,
         device_type=device_type,
@@ -146,7 +156,7 @@ def upload_rental_form(pdf_bytes: Annotated[bytes, File()], rental_id: str):
 @auto_process_database_errors
 def get_number_of_reservations_on_date(date: str, device_type: DeviceType, location: Location) -> int:
     """Get the number of reservations on a specific date"""
-    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    date = datetime.strptime(date, "%Y-%m-%d").date()
     result = rds_service.get_number_of_reservations_on_date(date=date, device_type=device_type, location=location)
     return result.iloc[0]["number_of_reservations"] if not result.empty else 0
 
@@ -159,7 +169,7 @@ def get_reservations_on_date(
         exclude_picked_up_reservations: bool = False,
 ) -> List[Reservation]:
     """Get the reservations on a specific date"""
-    date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    date = datetime.strptime(date, "%Y-%m-%d").date()
     reservations = rds_service.get_reservations_on_date(
         date=date,
         device_type=device_type,
