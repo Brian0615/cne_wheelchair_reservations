@@ -27,7 +27,7 @@ with st.container(border=True):
         max_value=max(all_dates),
         key="rental_form_date",
     )
-    rental_info["pickup_time"] = col2.time_input(label="Pickup Time", key="rental_form_pickup_time")
+    rental_info["pickup_time"] = col2.time_input(label="Pickup Time", key="rental_form_time")
     rental_info["pickup_location"] = col3.selectbox(
         label="Pickup Location",
         options=Location,
