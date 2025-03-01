@@ -83,7 +83,7 @@ date, rental_id, rental_data = get_rental_selection(
 if rental_id is None:
     st.stop()
 
-initialize_form(form_prefix="rental_form", set_default_time=True)
+initialize_form(form_prefix="complete_rental", set_default_time=True)
 with st.container(border=True):
     # rental completion form
     col1, col2, col3 = st.columns(3)
