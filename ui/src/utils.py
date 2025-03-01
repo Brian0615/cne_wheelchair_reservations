@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, time, date
+from datetime import date, datetime, time
 from typing import List, Optional, Tuple
 
 import pandas as pd
@@ -141,25 +141,24 @@ def get_rental_selection(
     return rental_date, rental_id, rentals.loc[rentals["id"] == rental_id].to_dict(orient="records")[0]
 
 
-def clear_session_state_for_form(
-        clear_prefixes: List[str],
-        default_date: Optional[date] = None,
-        default_time: Optional[time] = None,
-        delete_fields: bool = False
-):
+def clear_session_state_for_form(clear_prefixes: List[str]):
     """Clear session state data with a given list of prefixes"""
     for key in st.session_state.keys():
         if any(key.startswith(prefix) for prefix in clear_prefixes):
-            if delete_fields:
-                del st.session_state[key]
-                continue
-            if key.endswith("date"):
-                st.session_state[key] = default_date if default_date is not None else CNEDates.get_default_date()
-            elif key.endswith("time"):
-                st.session_state[key] = (
-                    default_time if default_time is not None else datetime.now(tz=get_default_timezone()).time()
-                )
-            elif key.endswith("button"):  # do not attempt to clear button state
-                continue
-            else:
-                st.session_state[key] = None
+            del st.session_state[key]
+
+
+def initialize_form(
+        form_prefix: str,
+        set_default_date: Optional[bool] = False,
+        set_default_time: Optional[bool] = False,
+        default_date: Optional[date] = CNEDates.get_default_date(),
+        default_time: Optional[time] = datetime.now(tz=get_default_timezone()).time(),
+):
+    """Initialize a form by setting date/time fields"""
+    if set_default_date:
+        if f"{form_prefix}_date" not in st.session_state:
+            st.session_state[f"{form_prefix}_date"] = default_date
+    if set_default_time:
+        if f"{form_prefix}_time" not in st.session_state:
+            st.session_state[f"{form_prefix}_time"] = default_time

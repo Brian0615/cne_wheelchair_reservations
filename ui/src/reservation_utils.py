@@ -9,7 +9,7 @@ from common.data_models.reservation import Reservation, NewReservation
 from common.utils import get_default_timezone
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import clear_session_state_for_form, display_validation_errors
+from ui.src.utils import clear_session_state_for_form, display_validation_errors, initialize_form
 
 
 # pylint: disable=trailing-whitespace
@@ -30,25 +30,20 @@ def display_success_dialog(reservation_id: str, reservation: Union[NewReservatio
         """
     )
     if st.button("Close"):
-        clear_session_state_for_form(
-            clear_prefixes=["reservation_form_"],
-            default_date=CNEDates.get_default_new_reservation_date(),
-            default_time=time(hour=10),
-        )
+        clear_session_state_for_form(clear_prefixes=["reservation_form_"])
         st.rerun()
 
 
 def initialize_reservation_form(existing_reservation: Optional[Reservation] = None):
     """Initialize the reservation form with default values"""
-    if st.session_state.get("reservation_form_date") is None:
-        st.session_state["reservation_form_date"] = (
-            CNEDates.get_default_new_reservation_date()
-            if existing_reservation is None else existing_reservation.date
-        )
-    if st.session_state.get("reservation_form_reservation_time") is None:
-        st.session_state["reservation_form_reservation_time"] = (
-            time(hour=10) if existing_reservation is None else existing_reservation.reservation_time
-        )
+    initialize_form(
+        form_prefix="reservation_form",
+        set_default_date=True,
+        set_default_time=True,
+        default_date=existing_reservation.date if existing_reservation else CNEDates.get_default_new_reservation_date(),
+        default_time=existing_reservation.reservation_time if existing_reservation else time(hour=10)
+    )
+
     for field in ["device_type", "location", "name", "phone_number", "notes"]:
         if st.session_state.get(f"reservation_form_{field}") is None and existing_reservation is not None:
             st.session_state[f"reservation_form_{field}"] = getattr(existing_reservation, field)
@@ -110,7 +105,7 @@ def render_reservation_form(
         reservation_info["reservation_time"] = col3.time_input(
             label=NewReservation.model_fields["reservation_time"].title,
             step=timedelta(minutes=30),
-            key="reservation_form_reservation_time",
+            key="reservation_form_time",
             disabled=disable_edits and existing_reservation is not None,
         )
         reservation_info["notes"] = st.text_input(
@@ -141,7 +136,7 @@ def submit_reservation_form(reservation: dict, reservation_model):
         status_code, result = DataService().add_new_reservation(reservation=reservation)
         if status_code == 200:
             display_success_dialog(reservation_id=result, reservation=reservation, is_update=False)
-            clear_session_state_for_form(clear_prefixes=["reservation_form_"], delete_fields=True)
+            clear_session_state_for_form(clear_prefixes=["reservation_form_"])
 
     except ValidationError as exc:
         display_validation_errors(exc.errors(), reservation_model)
@@ -153,4 +148,4 @@ def update_reservation_status(reservation: Reservation, status: ReservationStatu
     status_code = DataService().update_reservation_status(reservation_id=reservation.id, status=status)
     if status_code == 200:
         display_success_dialog(reservation_id=reservation.id, reservation=reservation, is_update=True)
-        clear_session_state_for_form(clear_prefixes=["reservation_form_"], delete_fields=True)
+        clear_session_state_for_form(clear_prefixes=["reservation_form_"])

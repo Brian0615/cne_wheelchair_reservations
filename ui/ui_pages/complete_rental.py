@@ -14,7 +14,8 @@ from ui.src.signature import Signature
 from ui.src.utils import (
     clear_session_state_for_form,
     display_validation_errors,
-    get_rental_selection
+    get_rental_selection,
+    initialize_form,
 )
 
 initialize_page(page_header="Complete Rental")
@@ -82,6 +83,7 @@ date, rental_id, rental_data = get_rental_selection(
 if rental_id is None:
     st.stop()
 
+initialize_form(form_prefix="rental_form", set_default_time=True)
 with st.container(border=True):
     # rental completion form
     col1, col2, col3 = st.columns(3)
@@ -90,11 +92,7 @@ with st.container(border=True):
         "date": date,
         "name": rental_data["name"],
         "device_id": rental_data["device_id"],
-        "return_time": col1.time_input(
-            label="Return Time",
-            value=datetime.now(get_default_timezone()).time(),
-            key="complete_rental_time",
-        ),
+        "return_time": col1.time_input(label="Return Time", key="complete_rental_time"),
         "return_location": col2.selectbox(
             label="Return Location",
             options=Location,

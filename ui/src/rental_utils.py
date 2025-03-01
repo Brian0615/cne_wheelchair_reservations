@@ -37,7 +37,7 @@ def display_new_rental_success_dialog(rental_id: str, new_rental: NewRental, for
         st.rerun()
 
 
-def submit_rental_form(new_rental: dict, signature_data: np.array):
+def submit_new_rental_form(new_rental: dict, signature_data: np.array):
     """Submit the new rental form"""
     # clear previous errors
     st.session_state["rental_form_errors"] = None
