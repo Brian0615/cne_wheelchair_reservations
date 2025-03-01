@@ -18,6 +18,9 @@ FROM python:3.13-slim
 COPY --from=builder /venv /venv
 ENV PATH="/venv/bin:$PATH"
 
+# install curl for healthcheck
+RUN apt-get update && apt-get install -y curl
+
 # copy the rest of the files into there
 COPY admin_tools/ /app/admin_tools/
 COPY api/ /app/api/
