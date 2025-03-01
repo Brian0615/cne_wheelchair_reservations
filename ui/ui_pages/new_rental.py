@@ -7,8 +7,8 @@ from common.data_models.rental import NewRental
 from ui.src.auth_utils import initialize_page
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.rental_utils import submit_rental_form
-from ui.src.utils import display_validation_errors
+from ui.src.rental_utils import submit_new_rental_form
+from ui.src.utils import display_validation_errors, initialize_form
 
 initialize_page(page_header="New Rental")
 data_service = DataService()
@@ -16,6 +16,7 @@ data_service = DataService()
 rental_info = {}
 
 # Intro Section of Rental Form
+initialize_form(form_prefix="rental_form", set_default_date=True, set_default_time=True)
 with st.container(border=True):
     # first row of intro section of form
     col1, col2, col3, col4 = st.columns(4)
@@ -26,7 +27,7 @@ with st.container(border=True):
         max_value=max(all_dates),
         key="rental_form_date",
     )
-    rental_info["pickup_time"] = col2.time_input(label="Pickup Time", value="now", key="rental_form_pickup_time")
+    rental_info["pickup_time"] = col2.time_input(label="Pickup Time", key="rental_form_pickup_time")
     rental_info["pickup_location"] = col3.selectbox(
         label="Pickup Location",
         options=Location,
@@ -165,7 +166,7 @@ if not allow_submission:
     )
 submit = st.button(
     label="Submit",
-    on_click=submit_rental_form,
+    on_click=submit_new_rental_form,
     args=(rental_info, canvas_signature),
     disabled=not allow_submission,
 )

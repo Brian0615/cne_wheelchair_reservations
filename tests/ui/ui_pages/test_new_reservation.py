@@ -39,7 +39,7 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
         at.text_input(key="reservation_form_phone_number").set_value("123-456-7890")
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
-        at.time_input(key="reservation_form_reservation_time").set_value(time(11, 30))
+        at.time_input(key="reservation_form_time").set_value(time(11, 30))
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
 
         with patch.object(

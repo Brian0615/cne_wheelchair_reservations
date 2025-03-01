@@ -35,7 +35,7 @@ reservation_id = reservation_col.selectbox(
     ),
     index=None,
     on_change=clear_session_state_for_form,
-    kwargs={"clear_prefixes": ["reservation_form_"], "delete_fields": True},
+    kwargs={"clear_prefixes": ["reservation_form_"]},
     key="manage_reservations_id_selection",
 )
 if not reservation_id:
