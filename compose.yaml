@@ -15,7 +15,7 @@ services:
       POSTGRES_USERNAME: /run/secrets/postgres_username
       S3_BUCKET: ${S3_BUCKET}
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8595/health" ]
+      test: curl -f http://localhost:8595/health || exit 1
       interval: 10s
       retries: 3
       start_period: 15s
