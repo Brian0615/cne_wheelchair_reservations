@@ -21,6 +21,8 @@ services:
       start_period: 15s
       timeout: 5s
     image: brianlammm/cne_api
+    labels:
+      autoheal-app: true
     ports:
       - "8595:8595"   # left side is the host port (external), right side is the container port (internal, used by UI)
     restart: on-failure
@@ -33,7 +35,7 @@ services:
   autoheal:
     image: willfarrell/autoheal
     environment:
-      AUTOHEAL_CONTAINER_LABEL: api
+      AUTOHEAL_CONTAINER_LABEL: autoheal-app
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
