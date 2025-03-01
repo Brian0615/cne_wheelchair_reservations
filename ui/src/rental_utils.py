@@ -76,7 +76,7 @@ def display_change_device_success_dialog(change_data: ChangeDeviceInfo):
     st.success(
         f"""
         The following rental was updated successfully:
-        
+
         * **Rental ID**: {change_data.rental_id}
         * **Old Device ID**: {change_data.old_device_id}
         * **New Device ID**: {change_data.new_device_id}

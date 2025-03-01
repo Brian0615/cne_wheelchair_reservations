@@ -146,6 +146,8 @@ def clear_session_state_for_form(clear_prefixes: List[str]):
     for key in st.session_state.keys():
         if any(key.startswith(prefix) for prefix in clear_prefixes):
             del st.session_state[key]
+            if "button" not in key:
+                st.session_state[key] = None
 
 
 def initialize_form(
@@ -157,8 +159,8 @@ def initialize_form(
 ):
     """Initialize a form by setting date/time fields"""
     if set_default_date:
-        if f"{form_prefix}_date" not in st.session_state:
+        if st.session_state.get(f"{form_prefix}_date") is None:
             st.session_state[f"{form_prefix}_date"] = default_date
     if set_default_time:
-        if f"{form_prefix}_time" not in st.session_state:
+        if st.session_state.get(f"{form_prefix}_time") is None:
             st.session_state[f"{form_prefix}_time"] = default_time
