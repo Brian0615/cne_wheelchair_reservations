@@ -60,6 +60,7 @@ def display_reservations_table(
     """Display the reservations on the UI."""
 
     # filter for reservations of the right type
+    reservations = reservations[reservations["device_type"] == device_type]
     if reservations.empty:
         st.warning(f"**No {device_type} Reservations**: There are no reservations for {device_type.value}s.")
         return None
@@ -112,6 +113,7 @@ def display_reservations_table(
 
 def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
     """Display the rentals on the UI."""
+    rentals = rentals[rentals["device_type"] == device_type]
     if rentals.empty:
         st.warning(f"**No {device_type} Rentals**: There are no rentals for {device_type.value}s.")
         return
