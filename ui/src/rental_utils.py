@@ -2,14 +2,13 @@ from datetime import datetime
 
 import numpy as np
 import streamlit as st
-from pydantic import ValidationError
 
 from common.constants import DeviceType
 from common.data_models import NewRental, ChangeDeviceInfo
 from common.utils import get_default_timezone
 from ui.src.data_service import DataService
 from ui.src.signature import Signature
-from ui.src.utils import clear_session_state_for_form
+from ui.src.utils import clear_session_state_for_form, process_validation_errors
 from ui.src.wheelchair_form import WheelchairForm
 
 
@@ -37,37 +36,33 @@ def display_new_rental_success_dialog(rental_id: str, new_rental: NewRental, for
         st.rerun()
 
 
+@process_validation_errors(error_key="rental_form_errors")
 def submit_new_rental_form(new_rental: dict, signature_data: np.array):
     """Submit the new rental form"""
-    # clear previous errors
-    st.session_state["rental_form_errors"] = None
-    try:
-        # process signature
-        new_rental["signature"] = Signature(signature_data=signature_data).encode_as_base64()
 
-        # update pickup time
-        new_rental["pickup_time"] = datetime.combine(
-            date=new_rental["date"],
-            time=new_rental["pickup_time"],
-            tzinfo=get_default_timezone(),
-        )
+    # process signature
+    new_rental["signature"] = Signature(signature_data=signature_data).encode_as_base64()
 
-        # validate rental data
-        new_rental = NewRental(**new_rental)
+    # update pickup time
+    new_rental["pickup_time"] = datetime.combine(
+        date=new_rental["date"],
+        time=new_rental["pickup_time"],
+        tzinfo=get_default_timezone(),
+    )
 
-        # try to add the new rental
-        data_service = DataService()
-        status_code, rental_id = data_service.add_new_rental(new_rental)
-        if new_rental.device_type == DeviceType.WHEELCHAIR:
-            form_data = WheelchairForm(rental_data=new_rental, rental_id=rental_id).export_form_to_bytes()
-            status_code, _ = data_service.upload_rental_form(pdf_bytes=form_data, rental_id=rental_id)
-        else:
-            form_data = None
-        if status_code == 200:
-            display_new_rental_success_dialog(rental_id=rental_id, new_rental=new_rental, form_data=form_data)
+    # validate rental data
+    new_rental = NewRental(**new_rental)
 
-    except ValidationError as exc:
-        st.session_state["rental_form_errors"] = exc.errors()
+    # try to add the new rental
+    data_service = DataService()
+    status_code, rental_id = data_service.add_new_rental(new_rental)
+    if new_rental.device_type == DeviceType.WHEELCHAIR:
+        form_data = WheelchairForm(rental_data=new_rental, rental_id=rental_id).export_form_to_bytes()
+        status_code, _ = data_service.upload_rental_form(pdf_bytes=form_data, rental_id=rental_id)
+    else:
+        form_data = None
+    if status_code == 200:
+        display_new_rental_success_dialog(rental_id=rental_id, new_rental=new_rental, form_data=form_data)
 
 
 @st.dialog("Success!")
@@ -87,19 +82,14 @@ def display_change_device_success_dialog(change_data: ChangeDeviceInfo):
         st.rerun()
 
 
+@process_validation_errors(error_key="change_device_errors")
 def change_rental_device(change_data: dict):
     """Change a device on a current rental"""
-    # clear previous errors
-    st.session_state["change_device_errors"] = None
 
-    try:
-        # validate change device data
-        change_data = ChangeDeviceInfo(**change_data)
+    # validate change device data
+    change_data = ChangeDeviceInfo(**change_data)
 
-        # change device
-        status_code, _ = DataService().change_rental_device(change_data)
-        if status_code == 200:
-            display_change_device_success_dialog(change_data)
-
-    except ValidationError as exc:
-        st.session_state["change_device_errors"] = exc.errors()
+    # change device
+    status_code, _ = DataService().change_rental_device(change_data)
+    if status_code == 200:
+        display_change_device_success_dialog(change_data)

@@ -3,8 +3,8 @@ import streamlit as st
 from common.constants import DeviceType
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
+from ui.src.device_utils import create_inventory_chart
 from ui.src.display_utils import display_inventory_table
-from ui.src.utils import create_inventory_chart
 
 initialize_page(page_header="Inventory")
 

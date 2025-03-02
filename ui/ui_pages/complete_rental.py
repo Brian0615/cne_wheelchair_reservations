@@ -2,7 +2,6 @@ from datetime import datetime
 
 import numpy as np
 import streamlit as st
-from pydantic import ValidationError
 from streamlit_drawable_canvas import st_canvas
 
 from common.constants import Location
@@ -16,6 +15,7 @@ from ui.src.utils import (
     display_validation_errors,
     get_rental_selection,
     initialize_form,
+    process_validation_errors,
 )
 
 initialize_page(page_header="Complete Rental")
@@ -40,38 +40,33 @@ def display_success_dialog(completed_rental: CompletedRental):
         st.rerun()
 
 
+@process_validation_errors(error_key="complete_rental_errors")
 def complete_rental(rental_completion_info: dict, signature_data: np.array):
     """Complete a rental"""
 
-    # clear previous errors
-    st.session_state["complete_rental_errors"] = None
-    try:
-        # process signature
-        rental_completion_info["return_signature"] = Signature(signature_data=signature_data).encode_as_base64()
+    # process signature
+    rental_completion_info["return_signature"] = Signature(signature_data=signature_data).encode_as_base64()
 
-        # update return time
-        rental_completion_info["return_time"] = get_default_timezone().localize(
-            datetime.combine(date=rental_completion_info.pop("date"), time=rental_completion_info["return_time"])
+    # update return time
+    rental_completion_info["return_time"] = get_default_timezone().localize(
+        datetime.combine(date=rental_completion_info.pop("date"), time=rental_completion_info["return_time"])
+    )
+
+    # validate rental completion data
+    completed_rental = CompletedRental(**rental_completion_info)
+
+    # complete rental
+    status_code, result = data_service.complete_rental(completed_rental)
+    if status_code == 200:
+        display_success_dialog(completed_rental)
+    else:
+        st.error(
+            f"""
+            **API Error**
+            * Error Code: {status_code}
+            * Error Message: {result}
+            """
         )
-
-        # validate rental completion data
-        completed_rental = CompletedRental(**rental_completion_info)
-
-        # complete rental
-        status_code, result = data_service.complete_rental(completed_rental)
-        if status_code == 200:
-            display_success_dialog(completed_rental)
-        else:
-            st.error(
-                f"""
-                **API Error**
-                * Error Code: {status_code}
-                * Error Message: {result}
-                """
-            )
-
-    except ValidationError as exc:
-        st.session_state["complete_rental_errors"] = exc.errors()
 
 
 # retrieve a particular rental

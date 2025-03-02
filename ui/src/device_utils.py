@@ -1,8 +1,10 @@
+import math
 from functools import wraps
 from typing import List, Tuple
 
 import pandas as pd
 import streamlit as st
+from plotly import graph_objects as go
 
 from common.constants import DeviceType, DeviceStatus, Location
 from common.data_models import Device
@@ -116,3 +118,56 @@ def remove_devices(data_service: DataService, device_type: DeviceType, inventory
         status_code, result = data_service.remove_devices(device_ids=device_ids)
         return status_code, result, f"{label.replace('Remove', 'Removed')} from the inventory"
     return None
+
+
+# noinspection PyTypeChecker
+def create_inventory_chart(inventory: pd.DataFrame):
+    """Create a chart to display the inventory."""
+
+    fig = go.Figure()
+    num_per_row = 25
+    num_rows = math.ceil(len(inventory) / num_per_row)
+    fig.update_layout(
+        autosize=False,
+        width=num_per_row * 50,
+        height=35 * num_rows,
+        margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
+        plot_bgcolor="rgba(0, 0, 0, 0)",
+        paper_bgcolor="rgba(0, 0, 0, 0)",
+    )
+    fig.update_xaxes(range=[0, num_per_row], visible=False, showgrid=False, zeroline=False)
+    fig.update_yaxes(range=[-2 * num_rows, 0], visible=False, showgrid=False, zeroline=False)
+    for i, (_, device) in enumerate(inventory.iterrows()):
+        x0, y0, x1, y1 = (
+            i % num_per_row,
+            -2 * (i // num_per_row),
+            (i % num_per_row) + 0.8,
+            -2 * (i // num_per_row) - 1.5
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=[x0, x0, x1, x1, x0],
+                y=[y0, y1, y1, y0, y0],
+                fill="toself",
+                fillcolor=DeviceStatus.get_device_status_colour(device["status"]),
+                line_color=DeviceStatus.get_device_status_colour(device["status"]),
+                mode="lines",
+                text=f"<b>{device['id']}</b><br>Status: {device['status']}<br>Location: {device['location']}",
+                hoverinfo="text",
+                hoverlabel={"font_size": 14},
+                showlegend=False,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=[(x0 + x1) / 2.0],
+                y=[(y0 + y1) / 2.0],
+                mode="text",
+                text=device["id"],
+                textfont={"color": "#EEEEEE", "size": 14},
+                textposition="middle center",
+                showlegend=False,
+                hoverinfo="skip",
+            )
+        )
+    return fig
