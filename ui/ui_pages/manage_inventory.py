@@ -132,4 +132,4 @@ for col, device_inventory, device in zip(
         if device_inventory.empty:
             display_no_device_in_inventory_message(device)
         else:
-            display_inventory_table(device_type=device, inventory=device_inventory, show_filters=True)
+            display_inventory_table(device_type=device, inventory=device_inventory)
