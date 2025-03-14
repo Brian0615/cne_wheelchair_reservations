@@ -10,7 +10,7 @@ import boto3
 import pandas as pd
 import psycopg
 from psycopg import sql, Connection
-from psycopg.errors import ConnectionTimeout, OperationalError
+from psycopg.errors import ConnectionTimeout
 from psycopg.types.enum import EnumInfo, register_enum
 
 from common.constants import DeviceStatus, DeviceType, HoldItem, Location, PaymentMethod, ReservationStatus, Table
@@ -61,11 +61,16 @@ class RDSService:
 
     def _generate_auth_token(self):
         """Generate an authentication token to connect to the database (for IAM)"""
-        rds_client = boto3.client(
+        if os.getenv("AWS_SESSION_TOKEN") is None:
+            logger.debug("AWS_SESSION_TOKEN not found - authenticating with access key and secret key")
+            rds_client = boto3.client(
             service_name="rds",
             aws_access_key_id=read_secret(os.getenv("AWS_ACCESS_KEY_ID")),
             aws_secret_access_key=read_secret(os.getenv("AWS_SECRET_ACCESS_KEY")),
         )
+        else:
+            logger.debug("Authenticating with IAM role")
+            rds_client = boto3.client(service_name="rds")
         return rds_client.generate_db_auth_token(
             DBHostname=self.host,
             Port=self.port,
@@ -81,17 +86,12 @@ class RDSService:
                 user=self.username,
                 password=self.password if self.password is not None else self._generate_auth_token(),
                 dbname=self.db_name,
-                connect_timeout=15,
+                connect_timeout=5,
             )
             logger.debug("Connected to %s:%s with the %s user", self.host, self.port, self.username)
             return connection
         except ConnectionTimeout as exc:
             raise ConnectionTimeout(
-                f"Timed out trying to connect to the {self.db_name} database at "
-                f"{self.host}:{self.port} with the {self.username} user"
-            ) from exc
-        except OperationalError as exc:
-            raise OperationalError(
                 f"Timed out trying to connect to the {self.db_name} database at "
                 f"{self.host}:{self.port} with the {self.username} user"
             ) from exc
