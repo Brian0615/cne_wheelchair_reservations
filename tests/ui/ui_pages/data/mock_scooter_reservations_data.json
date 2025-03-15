@@ -20,5 +20,49 @@
     "reservation_time": "2024-08-30T14:00:00+00:00",
     "status": "Reserved",
     "notes": ""
+  },
+  {
+    "id": "S0830003",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Teresa Austin",
+    "phone_number": "3456789012",
+    "location": "BLC",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Confirmed",
+    "notes": ""
+  },
+  {
+    "id": "S0830004",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Pamela Lugo",
+    "phone_number": "1239041023",
+    "location": "PG",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Cancelled",
+    "notes": ""
+  },
+  {
+    "id": "S0830005",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Vicki Nunez",
+    "phone_number": "5678901234",
+    "location": "BLC",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Completed",
+    "notes": ""
+  },
+  {
+    "id": "S0830006",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Renee Zimmerman",
+    "phone_number": "5678901234",
+    "location": "PG",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Picked Up",
+    "notes": ""
   }
 ]
