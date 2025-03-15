@@ -4,6 +4,7 @@ channels:
   - conda-forge
   - main
 dependencies:
+  - boto3[version='>1.36,<1.37']
   - ca-certificates[version='>=2024.8']
   - certifi[version='>=2024.8']
   - fastapi[version='>=0.115,<1']
@@ -17,9 +18,11 @@ dependencies:
   - psycopg[version='>=3.2,<3.3']
   - pydantic[version='>=2.8','<3']
   - pydantic-extra-types[version='>=2.8','<3']
-  - pymupdf[version='>=1.25','<2']
   - python[version='>=3.12.7,<3.13']
   - seaborn[version='>=0.13,<1']
   - streamlit[version='>=1.40']
   - pip:
+      - pymupdf>=1.25,<2
+      - streamlit-authenticator>=0.4.0,<0.5
+      - streamlit-drawable-canvas
       - streamlit-extras
