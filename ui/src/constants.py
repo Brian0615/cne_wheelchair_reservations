@@ -1,5 +1,5 @@
 import os
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from enum import StrEnum, auto
 from typing import List, Tuple
 
@@ -42,6 +42,11 @@ class CNEDates:
             max(all_dates),
             max(min(all_dates), datetime.now(tz=get_default_timezone()).date() + timedelta(days=1))
         )
+
+    @classmethod
+    def get_default_new_reservation_time(cls):
+        """Get the default reservation time for the reservation form - 10:00 AM"""
+        return time(hour=10)
 
 
 class Page(StrEnum):

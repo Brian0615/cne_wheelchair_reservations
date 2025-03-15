@@ -17,30 +17,26 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
     def setUp(self):
         self.page_path = "ui/ui_pages/new_reservation.py"
 
-    def test_new_reservation_render_form(self):
-        """Check the rendering of the new reservation form"""
-        mock_requests = MockRequests()
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests)
-        self.assertEqual(
-            at.button(key="new_reservation_submit").label,
-            "Submit Reservation"
-        )
-
     def test_new_reservation_submit_form(self):
         """Check the submission of the new reservation form"""
         mock_requests = MockRequests()
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests)
 
+        # check that all fields are enabled
+        self.assertFalse(at.date_input(key="new_reservation_date").disabled)
+        self.assertFalse(at.selectbox(key="new_reservation_device_type").disabled)
+        self.assertFalse(at.selectbox(key="new_reservation_location").disabled)
+        self.assertFalse(at.text_input(key="new_reservation_name").disabled)
+        self.assertFalse(at.text_input(key="new_reservation_phone_number").disabled)
+        self.assertFalse(at.time_input(key="new_reservation_time").disabled)
+        self.assertFalse(at.text_input(key="new_reservation_notes").disabled)
+        self.assertFalse(at.button(key="new_reservation_submit").disabled)
+
         at.selectbox(key="new_reservation_device_type").select(DeviceType.SCOOTER)
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
         at.selectbox(key="new_reservation_location").select(Location.BLC)
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
         at.text_input(key="new_reservation_name").set_value("John Doe")
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
         at.text_input(key="new_reservation_phone_number").set_value("123-456-7890")
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
         at.time_input(key="new_reservation_time").set_value(time(11, 30))
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
 
         with patch.object(
                 DataService,
@@ -70,6 +66,8 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
         mock_requests = MockRequests()
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests)
         at.button(key="new_reservation_submit").click()
-        with patch.object(utils, attribute="display_validation_errors") as mock_display_validation_errors:
-            self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at, allow_errors=True)
-            mock_display_validation_errors.assert_called_once()
+        with patch.object(DataService, attribute="add_new_reservation") as mock_add_new_reservation:
+            with patch.object(utils, attribute="display_validation_errors") as mock_display_validation_errors:
+                self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at, allow_errors=True)
+                mock_add_new_reservation.assert_not_called()
+                mock_display_validation_errors.assert_called_once()

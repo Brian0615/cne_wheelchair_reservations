@@ -38,7 +38,7 @@ def get_date_input(label: str, key_prefix: str, col=None):
     all_dates = CNEDates.get_cne_date_list()
     if col is None:
         col, _ = st.columns([1, 3])
-    if st.session_state.get(key_prefix) is None:
+    if st.session_state.get(f"{key_prefix}_date") is None:
         st.session_state[f"{key_prefix}_date"] = CNEDates.get_default_date()
     return col.date_input(label=label, min_value=all_dates[0], max_value=all_dates[-1], key=f"{key_prefix}_date")
 

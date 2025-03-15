@@ -1,4 +1,3 @@
-from datetime import time
 from typing import Optional
 
 import streamlit as st
@@ -50,14 +49,21 @@ class ReservationForm(BaseForm):
             "reservation_time": TimeField(
                 key=f"{key_prefix}_time",
                 label="Reservation Time",
-                default_value=existing_reservation.reservation_time if existing_reservation else time(hour=10)
+                default_value=(
+                    existing_reservation.reservation_time
+                    if existing_reservation
+                    else CNEDates.get_default_new_reservation_time()
+                )
             ),
             "notes": TextField(
                 key=f"{key_prefix}_notes",
                 label="Additional Notes",
                 default_value=existing_reservation.notes if existing_reservation else None,
             ),
-            "is_submitted": ButtonField(key=f"{key_prefix}_submit", label="Submit Reservation"),
+            "is_submitted": ButtonField(
+                key=f"{key_prefix}_submit",
+                label="Update Reservation" if existing_reservation else "Submit Reservation",
+            ),
         }
         super().__init__(key_prefix=key_prefix, fields=fields)
 

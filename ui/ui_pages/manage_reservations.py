@@ -91,8 +91,10 @@ with update_col.expander("Change Reservation Info", expanded=True):
     )
     reservation_form.initialize_form()
     updated_reservation, is_submitted = reservation_form.render_form()
+    updated_reservation["id"] = reservation.id
+    updated_reservation["status"] = reservation.status
 errors = st.session_state.get("update_reservation_form_errors")
 if errors:
     display_validation_errors(errors, Reservation)
 if is_submitted:
-    submit_update_reservation_form(reservation=updated_reservation, reservation_model=Reservation)
+    submit_update_reservation_form(reservation=updated_reservation)
