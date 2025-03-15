@@ -2,15 +2,15 @@ import streamlit as st
 
 from common.constants import ReservationStatus
 from common.data_models import Reservation
+from ui.forms import ReservationForm
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
 from ui.src.reservation_utils import (
     initialize_reservation_form,
-    render_reservation_form,
-    submit_reservation_form,
+    submit_update_reservation_form,
     update_reservation_status,
 )
-from ui.src.utils import clear_session_state_for_form, get_date_input
+from ui.src.utils import clear_session_state_for_form, display_validation_errors, get_date_input
 
 initialize_page(page_header="Manage Reservations")
 
@@ -90,10 +90,11 @@ with update_col.expander("Change Reservation Info", expanded=True):
         "If you wish to do so, cancel this reservation and create a new one."
     )
     initialize_reservation_form(existing_reservation=reservation)
-    updated_reservation, is_submitted = render_reservation_form(
-        existing_reservation=reservation,
-        disable_edits=disable_edits,
-    )
-
+    reservation_form = ReservationForm(key_prefix="update_reservation")
+    reservation_form.initialize_form()
+    updated_reservation, is_submitted = reservation_form.render_form()
+errors = st.session_state.get("update_reservation_form_errors")
+if errors:
+    display_validation_errors(errors, Reservation)
 if is_submitted:
-    submit_reservation_form(reservation=updated_reservation, reservation_model=Reservation)
+    submit_update_reservation_form(reservation=updated_reservation, reservation_model=Reservation)

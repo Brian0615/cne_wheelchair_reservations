@@ -2,14 +2,15 @@ from datetime import datetime, timedelta, time
 from typing import Optional, Union
 
 import streamlit as st
-from pydantic import ValidationError
 
 from common.constants import DeviceType, Location, ReservationStatus
 from common.data_models.reservation import Reservation, NewReservation
 from common.utils import get_default_timezone
+from ui.forms.reservation_form import ReservationForm
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
-from ui.src.utils import clear_session_state_for_form, display_validation_errors, initialize_form
+from ui.src.utils import clear_session_state_for_form, initialize_form, \
+    process_validation_errors
 
 
 # pylint: disable=trailing-whitespace
@@ -122,24 +123,34 @@ def render_reservation_form(
     return reservation_info, is_submitted
 
 
-def submit_reservation_form(reservation: dict, reservation_model):
+@process_validation_errors(error_key="new_reservation_form_errors")
+def submit_new_reservation_form(reservation: dict):
     """Submit the reservation form"""
 
-    # clear previous errors
-    st.session_state["reservation_form_errors"] = None
-    try:
-        reservation["reservation_time"] = get_default_timezone().localize(
-            datetime.combine(reservation["date"], reservation["reservation_time"])
-        )
+    reservation["reservation_time"] = get_default_timezone().localize(
+        datetime.combine(reservation["date"], reservation["reservation_time"])
+    )
 
-        reservation = reservation_model(**reservation)
-        status_code, result = DataService().add_new_reservation(reservation=reservation)
-        if status_code == 200:
-            display_success_dialog(reservation_id=result, reservation=reservation, is_update=False)
-            clear_session_state_for_form(clear_prefixes=["reservation_form_"])
+    reservation = NewReservation(**reservation)
+    status_code, result = DataService().add_new_reservation(reservation=reservation)
+    if status_code == 200:
+        display_success_dialog(reservation_id=result, reservation=reservation, is_update=False)
+        ReservationForm(key_prefix="new_reservation").clear_form()
 
-    except ValidationError as exc:
-        display_validation_errors(exc.errors(), reservation_model)
+
+@process_validation_errors(error_key="update_reservation_form_errors")
+def submit_update_reservation_form(reservation: dict):
+    """Submit the reservation form"""
+
+    reservation["reservation_time"] = get_default_timezone().localize(
+        datetime.combine(reservation["date"], reservation["reservation_time"])
+    )
+
+    reservation = Reservation(**reservation)
+    status_code, result = DataService().update_reservation(reservation=reservation)
+    if status_code == 200:
+        display_success_dialog(reservation_id=result, reservation=reservation, is_update=False)
+        ReservationForm(key_prefix="update_reservation").clear_form()
 
 
 def update_reservation_status(reservation: Reservation, status: ReservationStatus):
