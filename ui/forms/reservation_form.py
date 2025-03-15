@@ -48,7 +48,7 @@ class ReservationForm(BaseForm):
                 default_value=existing_reservation.phone_number if existing_reservation else None
             ),
             "reservation_time": TimeField(
-                key=f"{key_prefix}time",
+                key=f"{key_prefix}_time",
                 label="Reservation Time",
                 default_value=existing_reservation.reservation_time if existing_reservation else time(hour=10)
             ),
@@ -63,25 +63,36 @@ class ReservationForm(BaseForm):
 
     def render_form(self):
         """Render the reservation form"""
+        
+        # determine whether fields should be disabled
+        date_device_disabled = self.disabled or self.existing_reservation is not None
+        other_fields_disabled = self.disabled and self.existing_reservation is not None
+
+        # empty dict for storing form data
         result = {}
+
+        # first row of form
         col1, col2, col3 = st.columns(3)
         with col1:
-            result["date"] = self.fields["date"].render(disabled=self.disabled or self.existing_reservation)
+            result["date"] = self.fields["date"].render(disabled=date_device_disabled)
         with col2:
-            result["device_type"] = self.fields["device_type"].render(
-                disabled=self.disabled or self.existing_reservation)
+            result["device_type"] = self.fields["device_type"].render(disabled=date_device_disabled)
         with col3:
-            result["location"] = self.fields["location"].render(disabled=self.disabled and self.existing_reservation)
+            result["location"] = self.fields["location"].render(disabled=other_fields_disabled)
+
+        # second row of form
         col1, col2, col3 = st.columns(3)
         with col1:
-            result["name"] = self.fields["name"].render(disabled=self.disabled and self.existing_reservation)
+            result["name"] = self.fields["name"].render(disabled=other_fields_disabled)
         with col2:
-            result["phone_number"] = self.fields["phone_number"].render(
-                disabled=self.disabled and self.existing_reservation)
+            result["phone_number"] = self.fields["phone_number"].render(disabled=other_fields_disabled)
         with col3:
-            result["reservation_time"] = self.fields["reservation_time"].render(
-                disabled=self.disabled and self.existing_reservation)
-        result["notes"] = self.fields["notes"].render(disabled=self.disabled and self.existing_reservation)
+            result["reservation_time"] = self.fields["reservation_time"].render(disabled=other_fields_disabled)
+
+        # third row of form
+        result["notes"] = self.fields["notes"].render(disabled=other_fields_disabled)
         st.divider()
-        is_submitted = self.fields["is_submitted"].render(disabled=self.disabled and self.existing_reservation)
+
+        # form submission
+        is_submitted = self.fields["is_submitted"].render(disabled=other_fields_disabled)
         return result, is_submitted

@@ -122,6 +122,7 @@ def process_validation_errors(error_key: str):
                 func(*args, **kwargs)
             except ValidationError as exc:
                 st.session_state[error_key] = exc.errors()
+                st.rerun()
 
         return wrapper
 

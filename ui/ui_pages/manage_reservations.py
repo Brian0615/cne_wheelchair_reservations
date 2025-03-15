@@ -89,8 +89,11 @@ with update_col.expander("Change Reservation Info", expanded=True):
         "**Note**: The reservation date or device type may not be changed. "
         "If you wish to do so, cancel this reservation and create a new one."
     )
-    initialize_reservation_form(existing_reservation=reservation)
-    reservation_form = ReservationForm(key_prefix="update_reservation")
+    reservation_form = ReservationForm(
+        key_prefix="update_reservation",
+        existing_reservation=reservation,
+        disabled=disable_edits,
+    )
     reservation_form.initialize_form()
     updated_reservation, is_submitted = reservation_form.render_form()
 errors = st.session_state.get("update_reservation_form_errors")

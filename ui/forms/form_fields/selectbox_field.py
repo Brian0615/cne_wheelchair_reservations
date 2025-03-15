@@ -17,7 +17,7 @@ class SelectboxField(BaseFormField):
             default_value: Optional[str] = None,
     ):
         self.options = options
-        super().__init__(key=key, label=label, default_value=options.index(default_value) if default_value else None)
+        super().__init__(key=key, label=label, default_value=default_value if default_value else None)
 
     def render(self, disabled: bool = False):
         """Render the selectbox field"""

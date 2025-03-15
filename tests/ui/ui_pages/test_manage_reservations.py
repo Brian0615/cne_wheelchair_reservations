@@ -45,9 +45,15 @@ class TestManageReservations(BaseTestCases.BaseUIPageTest):
         at.selectbox(key="manage_reservations_id_selection").select_index(0)
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
 
-        # check that reservation date and reservation type cannot be modified
-        self.assertTrue(at.date_input("reservation_form_date").disabled)
-        self.assertTrue(at.selectbox("reservation_form_device_type").disabled)
+        # check that reservation date and reservation type cannot be modified in the update reservation form
+        self.assertTrue(
+            at.date_input("update_reservation_date").disabled,
+            msg="Reservation date should be disabled if updating an existing reservation",
+        )
+        self.assertTrue(
+            at.selectbox("update_reservation_device_type").disabled,
+            msg="Reservation type should be disabled if updating an existing reservation",
+        )
 
         # test confirm reservation button
         at.button(key="confirm_reservation").click()
