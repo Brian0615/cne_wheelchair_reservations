@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import numpy as np
 import streamlit as st
 
 from common.constants import DeviceType
@@ -37,11 +36,11 @@ def display_new_rental_success_dialog(rental_id: str, new_rental: NewRental, for
 
 
 @process_validation_errors(error_key="rental_form_errors")
-def submit_new_rental_form(new_rental: dict, signature_data: np.array):
+def submit_new_rental_form(new_rental: dict):
     """Submit the new rental form"""
 
     # process signature
-    new_rental["signature"] = Signature(signature_data=signature_data).encode_as_base64()
+    new_rental["signature"] = Signature(signature_data=new_rental["signature"]).encode_as_base64()
 
     # update pickup time
     new_rental["pickup_time"] = datetime.combine(

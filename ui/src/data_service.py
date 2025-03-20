@@ -19,6 +19,7 @@ from common.data_models import (
 )
 from common.utils import get_default_timezone
 
+DEFAULT_CACHE_TTL = 60
 DEFAULT_TIMEOUT = 5
 
 
@@ -91,7 +92,7 @@ class DataService:
         )
         return response.json()
 
-    @st.cache_data(ttl=60, show_spinner=False)
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @auto_process_api_errors
     def get_reservations_on_date(
             _self,
@@ -145,7 +146,7 @@ class DataService:
     # RENTALS
     # ==============================
 
-    @st.cache_data(ttl=60, show_spinner=False)
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @auto_process_api_errors
     def get_rentals_on_date(
             _self,
@@ -212,7 +213,7 @@ class DataService:
         self.get_available_devices.clear()
         self.get_full_inventory.clear()
 
-    @st.cache_data(ttl=60, show_spinner=False)
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @auto_process_api_errors
     def get_available_devices(_self, device_type: DeviceType, location: Location):
         """Get the available devices of a specific type at a specific location using the API."""
@@ -223,7 +224,8 @@ class DataService:
         )
         return response.json()
 
-    @st.cache_data(ttl=60, show_spinner=False)
+    # pylint: disable=not-an-iterable
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @auto_process_api_errors
     def get_full_inventory(_self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Get the full inventory of devices using the API."""

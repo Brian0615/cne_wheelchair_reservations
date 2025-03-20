@@ -7,8 +7,8 @@ from ui.forms.form_fields.base_form_field import BaseFormField
 
 
 # pylint: disable=too-few-public-methods
-class SelectboxField(BaseFormField):
-    """Selectbox field class"""
+class MultiSelectField(BaseFormField):
+    """MultiSelect field class"""
 
     def __init__(
             self,
@@ -18,11 +18,11 @@ class SelectboxField(BaseFormField):
             default_value: Optional[str] = None,
     ):
         self.options = options
-        super().__init__(key=key, label=label, default_value=default_value if default_value else None)
+        super().__init__(key=key, label=label, default_value=default_value if default_value else [])
 
     def render(self, disabled: bool = False):
-        """Render the selectbox field"""
-        return st.selectbox(
+        """Render the MultiSelect field"""
+        return st.multiselect(
             label=self.label,
             options=self.options,
             key=self.key,

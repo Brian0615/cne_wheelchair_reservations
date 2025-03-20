@@ -1,8 +1,9 @@
-from datetime import time, timedelta
+from datetime import datetime, time, timedelta
 from typing import Optional
 
 import streamlit as st
 
+from common.utils import get_default_timezone
 from ui.forms.form_fields.base_form_field import BaseFormField
 
 
@@ -14,7 +15,7 @@ class TimeField(BaseFormField):
             self,
             key: str,
             label: Optional[str] = "Time",
-            default_value: Optional[time] = time(hour=10),
+            default_value: Optional[time] = datetime.now(tz=get_default_timezone()).time(),
             step: Optional[timedelta] = timedelta(minutes=30),
     ):
         self.step = step
