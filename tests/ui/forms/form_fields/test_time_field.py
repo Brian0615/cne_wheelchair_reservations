@@ -1,16 +1,19 @@
-from datetime import time, timedelta
-
+from datetime import datetime, time, timedelta
 from unittest import TestCase
 
 from streamlit.testing.v1 import AppTest
 
+from ui.src.utils import get_default_timezone
+
 
 class TestTimeField(TestCase):
+    """Test the Time Field"""
 
     def test_initialize_field(self):
         """Test initializing a new Time Field"""
 
-        def run_initialize_field(default_value):
+        # pylint: disable=import-outside-toplevel,reimported,redefined-outer-name
+        def run_initialize_field():
             from datetime import time
 
             from ui.forms.form_fields.time_field import TimeField
@@ -18,14 +21,16 @@ class TestTimeField(TestCase):
             field = TimeField(key="test_key", label="Test Label", default_value=time(hour=15, minute=30))
             field.initialize_field()
 
-            at = AppTest.from_function(run_initialize_field).run()
-            self.assertEqual(at.session_state["test_key"], time(hour=15, minute=30))
+        at = AppTest.from_function(run_initialize_field).run()
+        self.assertEqual(at.session_state["test_key"], time(hour=15, minute=30))
 
     def test_render(self):
         """Test rendering a Time Field"""
 
+        # pylint: disable=import-outside-toplevel
         def run_render(is_disabled: bool):
             from ui.forms.form_fields.time_field import TimeField
+
             field = TimeField(key="test_key", label="Test Label")
             field.initialize_field()
             field.render(disabled=is_disabled)
@@ -37,7 +42,16 @@ class TestTimeField(TestCase):
 
                 self.assertEqual(at.time_input("test_key").disabled, disabled)
                 self.assertEqual(at.time_input("test_key").label, "Test Label")
-                self.assertEqual(at.time_input("test_key").value, time(hour=10))
+                self.assertLessEqual(
+                    (
+                        datetime.now(tz=get_default_timezone()).replace(tzinfo=None)
+                        - datetime.combine(
+                            datetime.now(tz=get_default_timezone()).date(),
+                            at.time_input("test_key").value
+                        )
+                    ),
+                    timedelta(minutes=1)
+                )
                 self.assertEqual(at.time_input("test_key").step, timedelta(minutes=30).total_seconds())
 
                 if not disabled:

@@ -10,6 +10,7 @@ from ui.src.constants import CNEDates
 
 
 class TestReservationForm(TestCase):
+    """Test the reservation form"""
 
     def setUp(self):
 
@@ -25,15 +26,21 @@ class TestReservationForm(TestCase):
             notes="Test notes"
         )
 
+    # pylint: disable=import-outside-toplevel
+    @staticmethod
+    def _run_form(reservation, render: bool):
+        """Run the form rendering"""
+        from ui.forms.reservation_form import ReservationForm
+
+        form = ReservationForm(key_prefix="test_form", existing_reservation=reservation)
+        form.initialize_form()
+        if render:
+            form.render_form()
+
     def test_initialize_form_new_reservation(self):
+        """Test that the form is initialized with the correct default values"""
 
-        def run_initialize_form():
-            from ui.forms.reservation_form import ReservationForm
-
-            form = ReservationForm(key_prefix="test_form")
-            form.initialize_form()
-
-        at = AppTest.from_function(run_initialize_form).run()
+        at = AppTest.from_function(self._run_form, args=(None, False)).run()
         self.assertEqual(at.session_state["test_form_date"], CNEDates.get_default_new_reservation_date())
         self.assertEqual(at.session_state["test_form_device_type"], None)
         self.assertEqual(at.session_state["test_form_location"], None)
@@ -43,14 +50,9 @@ class TestReservationForm(TestCase):
         self.assertEqual(at.session_state["test_form_notes"], None)
 
     def test_initialize_form_existing_reservation(self):
+        """Test that the form is initialized with the correct values for an existing reservation"""
 
-        def run_initialize_form(reservation):
-            from ui.forms.reservation_form import ReservationForm
-
-            form = ReservationForm(key_prefix="test_form", existing_reservation=reservation)
-            form.initialize_form()
-
-        at = AppTest.from_function(run_initialize_form, kwargs={"reservation": self.mock_reservation}).run()
+        at = AppTest.from_function(self._run_form, args=(self.mock_reservation, False)).run()
         self.assertEqual(at.session_state["test_form_date"], self.mock_reservation.date)
         self.assertEqual(at.session_state["test_form_device_type"], self.mock_reservation.device_type)
         self.assertEqual(at.session_state["test_form_location"], self.mock_reservation.location)
@@ -60,14 +62,9 @@ class TestReservationForm(TestCase):
         self.assertEqual(at.session_state["test_form_notes"], self.mock_reservation.notes)
 
     def test_render_form_new_reservation(self):
+        """Test rendering the form with a new reservation"""
 
-        def run_render_form():
-            from ui.forms.reservation_form import ReservationForm
-
-            form = ReservationForm(key_prefix="test_form")
-            form.render_form()
-
-        at = AppTest.from_function(run_render_form).run()
+        at = AppTest.from_function(self._run_form, args=(None, True)).run()
         for element_type in [at.button, at.date_input, at.selectbox, at.text_input, at.time_input]:
             for element in element_type:
                 self.assertFalse(element.disabled)

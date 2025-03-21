@@ -1,5 +1,3 @@
-from typing import List
-
 import streamlit as st
 
 from common.constants import DeviceType, Location, WALK_IN_RESERVATION_ID, PaymentMethod, HoldItem
@@ -81,13 +79,6 @@ class RentalForm(BaseForm):
             )
         }
         super().__init__(key_prefix=key_prefix, fields=fields)
-
-    def update_device_options(self, device_ids: List[str]):
-        """Update the device options in the rental form"""
-        if sorted(device_ids) != self.fields["device_id"].options:
-            self.fields["device_id"].options = sorted(device_ids)
-            st.write("updated devices")
-        st.rerun()
 
     # pylint: disable=too-many-statements
     def render_form(self):

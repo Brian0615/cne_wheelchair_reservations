@@ -69,7 +69,7 @@ class ReservationForm(BaseForm):
 
     def render_form(self):
         """Render the reservation form"""
-        
+
         # determine whether fields should be disabled
         date_device_disabled = self.disabled or self.existing_reservation is not None
         other_fields_disabled = self.disabled and self.existing_reservation is not None

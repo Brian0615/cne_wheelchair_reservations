@@ -5,6 +5,7 @@ import streamlit as st
 from common.constants import DeviceType
 from common.data_models import NewRental, ChangeDeviceInfo
 from common.utils import get_default_timezone
+from ui.forms import RentalForm
 from ui.src.data_service import DataService
 from ui.src.signature import Signature
 from ui.src.utils import clear_session_state_for_form, process_validation_errors
@@ -62,6 +63,7 @@ def submit_new_rental_form(new_rental: dict):
         form_data = None
     if status_code == 200:
         display_new_rental_success_dialog(rental_id=rental_id, new_rental=new_rental, form_data=form_data)
+        RentalForm(key_prefix="new_rental").clear_form()
 
 
 @st.dialog("Success!")
