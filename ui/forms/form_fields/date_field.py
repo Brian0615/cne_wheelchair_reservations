@@ -7,10 +7,11 @@ from ui.forms.form_fields.base_form_field import BaseFormField
 from ui.src.constants import CNEDates
 
 
-# pylint: disable=too-few-public-methods, too-many-arguments
+# pylint: disable=too-few-public-methods
 class DateField(BaseFormField):
     """Date field class"""
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
             self,
             key: str,

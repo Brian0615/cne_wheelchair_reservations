@@ -1,43 +1,33 @@
-from unittest import TestCase
-
 from streamlit.testing.v1 import AppTest
 
+from tests.base_tests import BaseTestCases
+from ui.forms.form_fields.text_field import TextField
 
-class TestTextField(TestCase):
+
+class TestTextField(BaseTestCases.BaseFormFieldTest):
+    """Test the Text Field"""
+
+    def setUp(self):
+        self.field_class = TextField
 
     def test_initialize_field(self):
         """Test initializing a new Text Field"""
 
-        def run_initialize_field(default_value):
-            from ui.forms.form_fields.text_field import TextField
-            field = TextField(key="test_key", label="Test Label", default_value=default_value)
-            field.initialize_field()
-
-        for default in [None, "b"]:
+        for default in [None, "test_input"]:
             with self.subTest(msg=f"Default value={default}"):
-                at = AppTest.from_function(run_initialize_field, kwargs={"default_value": default}).run()
-                self.assertEqual(at.session_state["test_key"], default)
+                super()._test_initialize_field_with_kwargs(
+                    kwargs_dict={"default_value": default},
+                    expected_init_value=default,
+                )
 
-    def test_render(self):
-        """Test rendering a Text field"""
+    @staticmethod
+    def _get_field(at: AppTest):
+        return at.text_input("test_key")
 
-        def run_render(default_value, is_disabled: bool):
-            from ui.forms.form_fields.text_field import TextField
-            field = TextField(key="test_key", label="Test Label", default_value=default_value)
-            field.initialize_field()
-            field.render(disabled=is_disabled)
+    def _run_field_post_render_checks(self, at: AppTest, disabled: bool):
+        self.assertEqual(self._get_field(at=at).value, None)
 
-        for disabled in [True, False]:
-            for default in [None, "b"]:
-                with self.subTest(f"Render with default_value={default}, disabled={disabled}"):
-                    at = AppTest.from_function(run_render, kwargs={"default_value": default, "is_disabled": disabled})
-                    at.run()
-
-                    self.assertEqual(at.text_input("test_key").disabled, disabled)
-                    self.assertEqual(at.text_input("test_key").label, "Test Label")
-                    self.assertEqual(at.text_input("test_key").value, default)
-
-                    if not disabled:
-                        at.text_input("test_key").input("abcdef")
-                        at.run()
-                        self.assertEqual(at.text_input("test_key").value, "abcdef")
+    def _run_field_post_interaction_checks(self, at: AppTest):
+        self._get_field(at=at).input("abcdef")
+        at.run()
+        self.assertEqual(self._get_field(at=at).value, "abcdef")

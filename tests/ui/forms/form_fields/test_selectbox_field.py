@@ -1,47 +1,43 @@
-from unittest import TestCase
-
 from streamlit.testing.v1 import AppTest
 
+from tests.base_tests import BaseTestCases
+from ui.forms.form_fields.selectbox_field import SelectboxField
 
-class TestSelectboxField(TestCase):
+
+# pylint: disable=import-outside-toplevel,duplicate-code
+class TestSelectboxField(BaseTestCases.BaseFormFieldTest):
+    """Test the Selectbox Field"""
+
+    def setUp(self):
+        self.field_class = SelectboxField
+        self.expected_init_value = None
 
     def test_initialize_field(self):
         """Test initializing a new Selectbox Field"""
 
-        def run_initialize_field(default_value):
-            from ui.forms.form_fields.selectbox_field import SelectboxField
-            field = SelectboxField(key="test_key", label="Test Label", options=["a", "b"], default_value=default_value)
-            field.initialize_field()
-
         for default in [None, "b"]:
             with self.subTest(msg=f"Default value={default}"):
-                at = AppTest.from_function(run_initialize_field, kwargs={"default_value": default}).run()
-                self.assertEqual(at.session_state["test_key"], default)
+                super()._test_initialize_field_with_kwargs(
+                    kwargs_dict={"options": ["a", "b", "c"], "default_value": default},
+                    expected_init_value=default,
+                )
+
+    @staticmethod
+    def _get_field(at: AppTest):
+        return at.selectbox("test_key")
 
     def test_render(self):
         """Test rendering a Selectbox field"""
+        super()._test_render_with_kwargs(kwargs_dict={"options": ["a", "b"]})
 
-        def run_render(default_value, is_disabled: bool):
-            from ui.forms.form_fields.selectbox_field import SelectboxField
-            field = SelectboxField(key="test_key", label="Test Label", options=["a", "b"], default_value=default_value)
-            field.initialize_field()
-            field.render(disabled=is_disabled)
+    def _run_field_post_render_checks(self, at: AppTest, disabled: bool):
+        self.assertEqual(self._get_field(at=at).options, ["a", "b"])
+        self.assertEqual(self._get_field(at=at).value, None)
 
-        for disabled in [True, False]:
-            for default in [None, "b"]:
-                with self.subTest(f"Render with default_value={default}, disabled={disabled}"):
-                    at = AppTest.from_function(run_render, kwargs={"default_value": default, "is_disabled": disabled})
-                    at.run()
-
-                    self.assertEqual(at.selectbox("test_key").disabled, disabled)
-                    self.assertEqual(at.selectbox("test_key").label, "Test Label")
-                    self.assertEqual(at.selectbox("test_key").options, ["a", "b"])
-                    self.assertEqual(at.selectbox("test_key").value, default)
-
-                    if not disabled:
-                        at.selectbox("test_key").select("a")
-                        at.run()
-                        self.assertEqual(at.selectbox("test_key").value, "a")
-                        at.selectbox("test_key").select("b")
-                        at.run()
-                        self.assertEqual(at.selectbox("test_key").value, "b")
+    def _run_field_post_interaction_checks(self, at: AppTest):
+        self._get_field(at=at).select("a")
+        at.run()
+        self.assertEqual(self._get_field(at=at).value, "a")
+        self._get_field(at=at).select("b")
+        at.run()
+        self.assertEqual(self._get_field(at=at).value, "b")
