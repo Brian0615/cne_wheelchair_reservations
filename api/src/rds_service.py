@@ -28,7 +28,7 @@ logger.addHandler(stream_handler)
 class RDSService:
     """Service class to interact with the PostgreSQL database."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
             self,
             host: str = os.environ["POSTGRES_HOST"],
@@ -64,10 +64,10 @@ class RDSService:
         if os.getenv("AWS_SESSION_TOKEN") is None:
             logger.debug("AWS_SESSION_TOKEN not found - authenticating with access key and secret key")
             rds_client = boto3.client(
-            service_name="rds",
-            aws_access_key_id=read_secret(os.getenv("AWS_ACCESS_KEY_ID")),
-            aws_secret_access_key=read_secret(os.getenv("AWS_SECRET_ACCESS_KEY")),
-        )
+                service_name="rds",
+                aws_access_key_id=read_secret(os.getenv("AWS_ACCESS_KEY_ID")),
+                aws_secret_access_key=read_secret(os.getenv("AWS_SECRET_ACCESS_KEY")),
+            )
         else:
             logger.debug("Authenticating with IAM role")
             rds_client = boto3.client(service_name="rds")
@@ -156,6 +156,7 @@ class RDSService:
     # DEVICES
     # ==============================
 
+    # pylint: disable=not-an-iterable
     def _insert_or_update_devices_helper(self, devices: List[Device], insert_only: bool):
         """
         Helper function to insert or update devices in the database.

@@ -2,15 +2,11 @@ import streamlit as st
 
 from common.constants import ReservationStatus
 from common.data_models import Reservation
+from ui.forms import ReservationForm
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
-from ui.src.reservation_utils import (
-    initialize_reservation_form,
-    render_reservation_form,
-    submit_reservation_form,
-    update_reservation_status,
-)
-from ui.src.utils import clear_session_state_for_form, get_date_input
+from ui.src.reservation_utils import submit_update_reservation_form, update_reservation_status
+from ui.src.utils import display_validation_errors, get_date_input
 
 initialize_page(page_header="Manage Reservations")
 
@@ -34,8 +30,7 @@ reservation_id = reservation_col.selectbox(
         + ", " + reservations["location"] + ")"
     ),
     index=None,
-    on_change=clear_session_state_for_form,
-    kwargs={"clear_prefixes": ["reservation_form_"]},
+    on_change=ReservationForm(key_prefix="update_reservation").clear_form,
     key="manage_reservations_id_selection",
 )
 if not reservation_id:
@@ -69,7 +64,7 @@ with confirm_cancel_col.expander("Confirm or Cancel Reservation", expanded=True)
         label="Confirm Reservation",
         use_container_width=True,
         icon=":material/check_circle:",
-        disabled=disable_edits,
+        disabled=disable_edits or reservation.status == ReservationStatus.CONFIRMED,
         key="confirm_reservation",
         on_click=update_reservation_status,
         kwargs={"reservation": reservation, "status": ReservationStatus.CONFIRMED},
@@ -89,11 +84,17 @@ with update_col.expander("Change Reservation Info", expanded=True):
         "**Note**: The reservation date or device type may not be changed. "
         "If you wish to do so, cancel this reservation and create a new one."
     )
-    initialize_reservation_form(existing_reservation=reservation)
-    updated_reservation, is_submitted = render_reservation_form(
+    reservation_form = ReservationForm(
+        key_prefix="update_reservation",
         existing_reservation=reservation,
-        disable_edits=disable_edits,
+        disabled=disable_edits,
     )
-
+    reservation_form.initialize_form()
+    updated_reservation, is_submitted = reservation_form.render_form()
+    updated_reservation["id"] = reservation.id
+    updated_reservation["status"] = reservation.status
+errors = st.session_state.get("update_reservation_form_errors")
+if errors:
+    display_validation_errors(errors, Reservation)
 if is_submitted:
-    submit_reservation_form(reservation=updated_reservation, reservation_model=Reservation)
+    submit_update_reservation_form(reservation=updated_reservation)

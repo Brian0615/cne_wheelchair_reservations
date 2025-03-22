@@ -1,0 +1,104 @@
+from typing import Optional
+
+import streamlit as st
+
+from common.constants import DeviceType, Location
+from common.data_models import Reservation
+from ui.forms.base_form import BaseForm
+from ui.forms.form_fields import ButtonField, DateField, SelectboxField, TextField, TimeField
+from ui.src.constants import CNEDates
+
+
+# pylint: disable=too-few-public-methods
+class ReservationForm(BaseForm):
+    """Form for creating a new reservation or updating an existing reservation"""
+
+    def __init__(self, key_prefix: str, existing_reservation: Optional[Reservation] = None, disabled: bool = False):
+        self.disabled = disabled
+        self.existing_reservation = existing_reservation
+        fields = {
+            "date": DateField(
+                key=f"{key_prefix}_date",
+                label="Reservation Date",
+                default_value=(
+                    existing_reservation.date if existing_reservation else CNEDates.get_default_new_reservation_date()
+                ),
+            ),
+            "device_type": SelectboxField(
+                key=f"{key_prefix}_device_type",
+                label="Device Type",
+                options=list(DeviceType),
+                default_value=existing_reservation.device_type if existing_reservation else None,
+            ),
+            "location": SelectboxField(
+                key=f"{key_prefix}_location",
+                label="Location",
+                options=list(Location),
+                default_value=existing_reservation.location if existing_reservation else None
+            ),
+            "name": TextField(
+                key=f"{key_prefix}_name",
+                label="Name",
+                default_value=existing_reservation.name if existing_reservation else None
+            ),
+            "phone_number": TextField(
+                key=f"{key_prefix}_phone_number",
+                label="Phone Number",
+                default_value=existing_reservation.phone_number if existing_reservation else None
+            ),
+            "reservation_time": TimeField(
+                key=f"{key_prefix}_time",
+                label="Reservation Time",
+                default_value=(
+                    existing_reservation.reservation_time
+                    if existing_reservation
+                    else CNEDates.get_default_new_reservation_time()
+                )
+            ),
+            "notes": TextField(
+                key=f"{key_prefix}_notes",
+                label="Additional Notes",
+                default_value=existing_reservation.notes if existing_reservation else None,
+            ),
+            "is_submitted": ButtonField(
+                key=f"{key_prefix}_submit",
+                label="Update Reservation" if existing_reservation else "Submit Reservation",
+            ),
+        }
+        super().__init__(key_prefix=key_prefix, fields=fields)
+
+    def render_form(self):
+        """Render the reservation form"""
+
+        # determine whether fields should be disabled
+        date_device_disabled = self.disabled or self.existing_reservation is not None
+        other_fields_disabled = self.disabled and self.existing_reservation is not None
+
+        # empty dict for storing form data
+        result = {}
+
+        # first row of form
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            result["date"] = self.fields["date"].render_field(disabled=date_device_disabled)
+        with col2:
+            result["device_type"] = self.fields["device_type"].render_field(disabled=date_device_disabled)
+        with col3:
+            result["location"] = self.fields["location"].render_field(disabled=other_fields_disabled)
+
+        # second row of form
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            result["name"] = self.fields["name"].render_field(disabled=other_fields_disabled)
+        with col2:
+            result["phone_number"] = self.fields["phone_number"].render_field(disabled=other_fields_disabled)
+        with col3:
+            result["reservation_time"] = self.fields["reservation_time"].render_field(disabled=other_fields_disabled)
+
+        # third row of form
+        result["notes"] = self.fields["notes"].render_field(disabled=other_fields_disabled)
+        st.divider()
+
+        # form submission
+        is_submitted = self.fields["is_submitted"].render_field(disabled=other_fields_disabled)
+        return result, is_submitted

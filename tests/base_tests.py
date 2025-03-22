@@ -19,6 +19,101 @@ from ui.src.constants import CNEDates
 class BaseTestCases:
     """Shared Test Cases"""
 
+    class BaseFormFieldTest(unittest.TestCase):
+        """Shared Test Cases for Form Fields"""
+
+        def setUp(self):
+            self.field_class = None
+            self.expected_init_value = None
+            raise NotImplementedError("Setup Function not Implemented")
+
+        # pylint: disable=protected-access
+        @staticmethod
+        def _run_field(form_field_class, render: bool = False, disabled: bool = False, clear: bool = False, **kwargs):
+            """Run the field, optionally rendering it"""
+            field = form_field_class(key="test_key", label="Test Label", **kwargs)
+            field.initialize_field()
+
+            if render:
+                field._render(disabled=disabled)
+
+                if clear:
+                    field.clear_field()
+
+        @staticmethod
+        def _get_field(at: AppTest):
+            """Get the field from the AppTest"""
+            raise NotImplementedError("Get Field not Implemented")
+
+        def test_initialize_field(self):
+            """Test initializing a new field"""
+            self._test_initialize_field_without_kwargs()
+
+        def _test_initialize_field_without_kwargs(self):
+            """Helper function to test initializing a new field without any kwargs"""
+            at = AppTest.from_function(script=self._run_field, args=(self.field_class,)).run()
+            self.assertEqual(at.session_state["test_key"], self.expected_init_value)
+
+        def _test_initialize_field_with_kwargs(self, kwargs_dict, expected_init_value):
+            """Helper function to test initializing a new field with kwargs"""
+            at = AppTest.from_function(script=self._run_field, args=(self.field_class,), kwargs=kwargs_dict).run()
+            self.assertEqual(at.session_state["test_key"], expected_init_value)
+
+        def test_render(self):
+            """Test rendering a field"""
+            self._test_render_without_kwargs()
+
+        def _test_render_without_kwargs(self):
+            for disabled in [True, False]:
+                with self.subTest(f"Render with disabled={disabled}"):
+                    at = AppTest.from_function(
+                        script=self._run_field,
+                        args=(self.field_class,),
+                        kwargs={"render": True, "disabled": disabled},
+                    ).run()
+                    self._run_field_post_render_checks(at=at, disabled=disabled)
+
+        def _test_render_with_kwargs(self, kwargs_dict):
+            for disabled in [True, False]:
+                with self.subTest(f"Render with disabled={disabled}"):
+                    kwargs_dict["render"] = True
+                    kwargs_dict["disabled"] = disabled
+                    at = AppTest.from_function(
+                        script=self._run_field,
+                        args=(self.field_class,),
+                        kwargs=kwargs_dict,
+                    ).run()
+                    self._run_post_render_checks(at=at, disabled=disabled)
+
+        def _run_post_render_checks(self, at: AppTest, disabled: bool):
+            """Run checks for a field after it is rendered"""
+            self.assertEqual(self._get_field(at=at).disabled, disabled)
+            self.assertEqual(self._get_field(at=at).label, "Test Label")
+            self._run_field_post_render_checks(at=at, disabled=disabled)
+
+            if not disabled:
+                self._run_field_post_interaction_checks(at=at)
+
+        def _run_field_post_render_checks(self, at: AppTest, disabled: bool):
+            """Run field-specific checks for a field after it is rendered"""
+
+            raise NotImplementedError("Run Post Render Checks not Implemented")
+
+        def _run_field_post_interaction_checks(self, at: AppTest):
+            """Run field-specific checks for a field after it is interacted with (assuming it is not disabled)"""
+
+            raise NotImplementedError("Run Post Interaction Checks not Implemented")
+
+        def test_clear_field(self):
+            """Test clearing a field"""
+            at = AppTest.from_function(
+                script=self._run_field,
+                args=(self.field_class,),
+                kwargs={"render": True, "clear": True},
+            ).run()
+            with self.assertRaises(KeyError):
+                _ = at.session_state["test_key"]
+
     class BaseUIPageTest(unittest.TestCase):
         """Shared Test Cases for UI Pages"""
 
