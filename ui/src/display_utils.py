@@ -14,6 +14,7 @@ def coerce_pandas_aware_datetime(data: pd.Series) -> pd.Series:
     return pd.to_datetime(data, errors="coerce", utc=True).dt.tz_convert(get_default_timezone())
 
 
+# pylint: disable=unsubscriptable-object
 def display_inventory_table(device_type: DeviceType, inventory: pd.DataFrame):
     """Display the inventory of a device type."""
 

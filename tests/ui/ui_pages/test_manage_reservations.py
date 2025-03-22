@@ -17,8 +17,8 @@ class TestManageReservations(BaseTestCases.BaseUIPageTest):
 
     def _init_app_test_with_loaded_reservations(self):
         data = self._load_mock_data_from_json(device_type=DeviceType.SCOOTER, data_type="reservations")
-        for i in range(len(data)):
-            data[i]["date"] = CNEDates.get_default_date().strftime("%Y-%m-%d")  # mock with default date
+        for element in data:
+            element["date"] = CNEDates.get_default_date().strftime("%Y-%m-%d")  # mock with default date
         mock_requests = MockRequests(mock_reservations_data=data)
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests)
         return mock_requests, at
