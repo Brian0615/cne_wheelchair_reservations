@@ -20,7 +20,7 @@ class MultiSelectField(BaseFormField):
         self.options = options
         super().__init__(key=key, label=label, default_value=default_value if default_value else [])
 
-    def render(self, disabled: bool = False):
+    def _render(self, disabled: bool = False):
         """Render the MultiSelect field"""
         return st.multiselect(
             label=self.label,

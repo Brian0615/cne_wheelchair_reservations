@@ -20,7 +20,7 @@ class SelectboxField(BaseFormField):
         self.options = options
         super().__init__(key=key, label=label, default_value=default_value if default_value else None)
 
-    def render(self, disabled: bool = False):
+    def _render(self, disabled: bool = False):
         """Render the selectbox field"""
         return st.selectbox(
             label=self.label,

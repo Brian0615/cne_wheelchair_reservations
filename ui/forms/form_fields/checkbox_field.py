@@ -9,9 +9,9 @@ class CheckboxField(BaseFormField):
     def __init__(self, key: str, label: str):
         super().__init__(key=key, label=label)
 
-    def initialize_field(self):
+    def _initialize(self):
         """Initialize the checkbox field - do nothing as checkboxes cannot be initialized"""
 
-    def render(self, disabled: bool = False):
+    def _render(self, disabled: bool = False):
         """Render the checkbox field"""
         return st.checkbox(label=self.label, key=self.key, disabled=disabled)

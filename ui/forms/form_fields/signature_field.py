@@ -7,7 +7,7 @@ from ui.forms.form_fields.base_form_field import BaseFormField
 class SignatureField(BaseFormField):
     """Signature field class"""
 
-    def render(self, disabled: bool = False):
+    def _render(self, disabled: bool = False):
         """Render the signature field"""
         return st_canvas(
             stroke_width=2,

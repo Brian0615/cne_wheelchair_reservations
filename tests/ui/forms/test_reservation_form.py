@@ -28,11 +28,11 @@ class TestReservationForm(TestCase):
 
     # pylint: disable=import-outside-toplevel
     @staticmethod
-    def _run_form(reservation, render: bool):
+    def _run_form(reservation, render: bool, disabled: bool = False):
         """Run the form rendering"""
         from ui.forms.reservation_form import ReservationForm
 
-        form = ReservationForm(key_prefix="test_form", existing_reservation=reservation)
+        form = ReservationForm(key_prefix="test_form", existing_reservation=reservation, disabled=disabled)
         form.initialize_form()
         if render:
             form.render_form()
@@ -74,17 +74,11 @@ class TestReservationForm(TestCase):
     def test_render_form_existing_reservation(self):
         """Test rendering the form with an existing reservation"""
 
-        def run_render_form(is_disabled: bool, reservation):
-            from ui.forms.reservation_form import ReservationForm
-
-            form = ReservationForm(key_prefix="test_form", existing_reservation=reservation, disabled=is_disabled)
-            form.render_form()
-
         for disabled in [True, False]:
             with self.subTest(f"Render with disabled={disabled}"):
                 at = AppTest.from_function(
-                    run_render_form,
-                    kwargs={"is_disabled": disabled, "reservation": self.mock_reservation}
+                    self._run_form,
+                    kwargs={"render": True, "reservation": self.mock_reservation, "disabled": disabled}
                 ).run()
                 for element_type in [at.button, at.date_input, at.selectbox, at.text_input, at.time_input]:
                     for element in element_type:

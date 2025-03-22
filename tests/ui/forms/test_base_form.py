@@ -7,6 +7,7 @@ from ui.forms.form_fields import ButtonField, SelectboxField, TextField
 
 
 class TestBaseForm(TestCase):
+    """Base class for testing a Form"""
 
     def setUp(self):
         self.form = BaseForm(

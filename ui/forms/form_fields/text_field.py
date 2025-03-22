@@ -17,6 +17,6 @@ class TextField(BaseFormField):
     ):
         super().__init__(key=key, label=label, default_value=default_value)
 
-    def render(self, disabled=False):
+    def _render(self, disabled=False):
         """Render the text input field"""
         return st.text_input(label=self.label, key=self.key, disabled=disabled)

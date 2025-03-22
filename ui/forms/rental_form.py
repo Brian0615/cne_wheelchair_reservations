@@ -14,6 +14,7 @@ from ui.forms.form_fields import (
 )
 
 
+# pylint: disable=too-few-public-methods
 class RentalForm(BaseForm):
     """Form for creating a new rental"""
 
@@ -90,13 +91,13 @@ class RentalForm(BaseForm):
             # first row of form
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                result["date"] = self.fields["date"].render()
+                result["date"] = self.fields["date"].render_field()
             with col2:
-                result["pickup_time"] = self.fields["pickup_time"].render()
+                result["pickup_time"] = self.fields["pickup_time"].render_field()
             with col3:
-                result["pickup_location"] = self.fields["pickup_location"].render()
+                result["pickup_location"] = self.fields["pickup_location"].render_field()
             with col4:
-                result["device_type"] = self.fields["device_type"].render()
+                result["device_type"] = self.fields["device_type"].render_field()
 
             if not all(result.get(x) for x in result):
                 return result, False
@@ -104,9 +105,9 @@ class RentalForm(BaseForm):
             # second row of form
             col1, col2, _, _ = st.columns(4)
             with col1:
-                result["reservation_id"] = self.fields["reservation_id"].render()
+                result["reservation_id"] = self.fields["reservation_id"].render_field()
             with col2:
-                result["device_id"] = self.fields["device_id"].render()
+                result["device_id"] = self.fields["device_id"].render_field()
 
             if not self.fields["device_id"].options:
                 return result, False
@@ -116,25 +117,25 @@ class RentalForm(BaseForm):
             st.header("Renter Information")
             col1, col2 = st.columns([2, 1])
             with col1:
-                result["name"] = self.fields["name"].render()
+                result["name"] = self.fields["name"].render_field()
             with col2:
-                result["phone_number"] = self.fields["phone_number"].render()
+                result["phone_number"] = self.fields["phone_number"].render_field()
 
             col1, col2 = st.columns([2, 1])
             with col1:
-                result["address"] = self.fields["address"].render()
+                result["address"] = self.fields["address"].render_field()
             with col2:
-                result["city"] = self.fields["city"].render()
+                result["city"] = self.fields["city"].render_field()
 
             col1, col2, col3 = st.columns(3)
             with col1:
-                result["province"] = self.fields["province"].render()
+                result["province"] = self.fields["province"].render_field()
             with col2:
-                result["postal_code"] = self.fields["postal_code"].render()
+                result["postal_code"] = self.fields["postal_code"].render_field()
             with col3:
-                result["country"] = self.fields["country"].render()
+                result["country"] = self.fields["country"].render_field()
 
-            result["id_verified"] = self.fields["id_verified"].render()
+            result["id_verified"] = self.fields["id_verified"].render_field()
 
         # Payment Information Section of Form
         with st.container(border=True):
@@ -142,27 +143,27 @@ class RentalForm(BaseForm):
             col1, col2 = st.columns(2)
             with col1:
                 result["fee_payment_amount"] = DeviceType.get_fee_amount(device=result["device_type"])
-                result["fee_payment_method"] = self.fields["fee_payment_method"].render()
+                result["fee_payment_method"] = self.fields["fee_payment_method"].render_field()
             with col2:
                 result["deposit_payment_amount"] = DeviceType.get_deposit_amount(device=result["device_type"])
-                result["deposit_payment_method"] = self.fields["deposit_payment_method"].render()
+                result["deposit_payment_method"] = self.fields["deposit_payment_method"].render_field()
 
         # Additional Information Section of Form
         with st.container(border=True):
             st.subheader("Additional Information")
             col1, col2 = st.columns(2)
             with col1:
-                result["staff_name"] = self.fields["staff_name"].render()
+                result["staff_name"] = self.fields["staff_name"].render_field()
             with col2:
-                result["items_left_behind"] = self.fields["items_left_behind"].render()
+                result["items_left_behind"] = self.fields["items_left_behind"].render_field()
 
         # Terms and Conditions Section of Form
         with st.container(border=True):
             st.subheader("Terms and Conditions")
             st.markdown("Insert Terms and Conditions here...")
             st.markdown("By signing below, I agree to the terms and conditions above.")
-            result["signature"] = self.fields["signature"].render()
+            result["signature"] = self.fields["signature"].render_field()
 
-        is_submitted = self.fields["submit"].render()
+        is_submitted = self.fields["submit"].render_field()
 
         return result, is_submitted

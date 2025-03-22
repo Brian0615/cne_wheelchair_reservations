@@ -24,7 +24,7 @@ class DateField(BaseFormField):
         self.max_date = max_date
         super().__init__(key=key, label=label, default_value=default_value)
 
-    def render(self, disabled: bool = False):
+    def _render(self, disabled: bool = False):
         """Render the date field"""
         return st.date_input(
             label=self.label,

@@ -27,6 +27,7 @@ class BaseTestCases:
             self.expected_init_value = None
             raise NotImplementedError("Setup Function not Implemented")
 
+        # pylint: disable=protected-access
         @staticmethod
         def _run_field(form_field_class, render: bool = False, disabled: bool = False, clear: bool = False, **kwargs):
             """Run the field, optionally rendering it"""
@@ -34,7 +35,7 @@ class BaseTestCases:
             field.initialize_field()
 
             if render:
-                field.render(disabled=disabled)
+                field._render(disabled=disabled)
 
                 if clear:
                     field.clear_field()

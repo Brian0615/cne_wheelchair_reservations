@@ -10,9 +10,9 @@ class ButtonField(BaseFormField):
     def __init__(self, key: str, label: str):
         super().__init__(key=key, label=label)
 
-    def initialize_field(self):
+    def _initialize(self):
         """Initialize the button field - do nothing as buttons cannot be initialized"""
 
-    def render(self, disabled: bool = False):
+    def _render(self, disabled: bool = False):
         """Render the button field"""
         return st.button(label=self.label, key=self.key, disabled=disabled)

@@ -21,6 +21,6 @@ class TimeField(BaseFormField):
         self.step = step
         super().__init__(key=key, label=label, default_value=default_value)
 
-    def render(self, disabled: bool = False):
+    def _render(self, disabled: bool = False):
         """Render the time field"""
         return st.time_input(label=self.label, key=self.key, step=self.step, disabled=disabled)
