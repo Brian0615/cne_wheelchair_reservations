@@ -28,7 +28,7 @@ logger.addHandler(stream_handler)
 class RDSService:
     """Service class to interact with the PostgreSQL database."""
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments
     def __init__(
             self,
             host: str = os.environ["POSTGRES_HOST"],
@@ -433,6 +433,7 @@ class RDSService:
             schema=sql.Identifier(self.schema),
             table=sql.Identifier(Table.DEVICES),
             device_id=sql.Placeholder(name="device_id"),
+            location=sql.Placeholder(name="location"),
         )
 
         with self._initialize_connection() as conn:
@@ -457,6 +458,7 @@ class RDSService:
                     update_device_query,
                     params={
                         "device_id": completed_rental.device_id,
+                        "location": completed_rental.return_location,
                     },
                 )
 
