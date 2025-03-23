@@ -8,6 +8,9 @@ from common.data_models import Device
 from common.utils import get_default_timezone
 from ui.src.constants import Page
 
+# silence the SettingWithCopyWarning
+pd.options.mode.chained_assignment = None  # default='warn'
+
 
 def coerce_pandas_aware_datetime(data: pd.Series) -> pd.Series:
     """Coerce a pandas Series to datetime with timezone awareness."""
