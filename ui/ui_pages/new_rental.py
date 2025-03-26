@@ -4,7 +4,7 @@ import streamlit as st
 
 from common.constants import DeviceType
 from common.data_models.rental import NewRental
-from ui.forms import RentalForm
+from ui.forms import NewRentalForm
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
 from ui.src.rental_utils import submit_new_rental_form
@@ -13,7 +13,7 @@ from ui.src.utils import display_validation_errors
 initialize_page(page_header="New Rental")
 data_service = DataService()
 
-rental_form = RentalForm(key_prefix="new_rental")
+rental_form = NewRentalForm(key_prefix="new_rental")
 rental_form.initialize_form()
 rental_info, is_submitted = rental_form.render_form()
 
