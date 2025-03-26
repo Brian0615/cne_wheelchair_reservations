@@ -1,4 +1,8 @@
-from common.constants import DeviceType
+from typing import Tuple, Dict, Any
+
+import streamlit as st
+
+from common.constants import DeviceType, Location
 from common.data_models import RentalSummary
 from ui.forms.base_form import BaseForm
 from ui.forms.form_fields import (
@@ -20,14 +24,17 @@ class CompleteRentalForm(BaseForm):
         self.rental_info = rental_info
 
         fields = {
-            "date": DateField(key=f"{key_prefix}_date", label="Rental Date"),
             "return_date": DateField(
                 key=f"{key_prefix}_return_date",
                 label="Return Date",
                 default_value=self.rental_info.date,
             ),
             "return_time": TimeField(key=f"{key_prefix}_return_time", label="Return Time"),
-            "return_location": SelectboxField(key=f"{key_prefix}_return_location", label="Return Location"),
+            "return_location": SelectboxField(
+                key=f"{key_prefix}_return_location",
+                label="Return Location",
+                options=Location,
+            ),
             "return_signature": SignatureField(key=f"{key_prefix}_return_signature", label="Signature"),
             "return_staff_name": TextField(key=f"{key_prefix}_staff_name", label="Staff Name"),
             "deposit_received": CheckboxField(
@@ -43,3 +50,43 @@ class CompleteRentalForm(BaseForm):
                 label="Items Left Behind during Rental: " + ", ".join(self.rental_info.items_left_behind),
             )
         super().__init__(fields=fields, key_prefix=key_prefix)
+
+    def render_form(self) -> Tuple[Dict[str, Any], bool]:
+        """Render the form"""
+
+        result = {}
+        with st.container(border=True):
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                result["return_date"] = self.fields["return_date"].render_field()
+            with col2:
+                result["return_time"] = self.fields["return_time"].render_field()
+            with col3:
+                result["return_location"] = self.fields["return_location"].render_field()
+            with col4:
+                result["return_staff_name"] = self.fields["return_staff_name"].render_field()
+
+            st.write(
+                f"**By checking the box(es) and signing below I, {self.rental_info.name}, "
+                f"confirm that the following have been returned to me:**"
+            )
+
+            check_items = True
+            if self.rental_info.items_left_behind:
+                check_items = self.fields["items_left_behind"].render_field()
+            check_deposit = self.fields["deposit_received"].render_field()
+            result["check_items_deposit"] = check_items and check_deposit
+
+            result["return_signature"] = self.fields["return_signature"].render_field()
+
+            is_submitted = self.fields["submit"].render_field(
+                disabled=any([
+                    not result["return_date"],
+                    not result["return_time"],
+                    not result["return_location"],
+                    not result["return_staff_name"],
+                    not result["check_items_deposit"],
+                ])
+            )
+
+            return result, is_submitted
