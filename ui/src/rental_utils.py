@@ -65,10 +65,8 @@ def submit_complete_rental_form(completed_rental: dict):
     ).encode_as_base64()
 
     # update return time
-    completed_rental["return_time"] = datetime.combine(
-        date=completed_rental["return_date"],
-        time=completed_rental["return_time"],
-        tzinfo=get_default_timezone(),
+    completed_rental["return_time"] = get_default_timezone().localize(
+        datetime.combine(completed_rental["return_date"], completed_rental["return_time"])
     )
     completed_rental.pop("return_date")
 
@@ -98,10 +96,8 @@ def submit_new_rental_form(new_rental: dict):
     new_rental["signature"] = Signature(signature_data=new_rental["signature"]).encode_as_base64()
 
     # update pickup time
-    new_rental["pickup_time"] = datetime.combine(
-        date=new_rental["date"],
-        time=new_rental["pickup_time"],
-        tzinfo=get_default_timezone(),
+    new_rental["pickup_time"] = get_default_timezone().localize(
+        datetime.combine(new_rental["date"], new_rental["pickup_time"])
     )
 
     # validate rental data

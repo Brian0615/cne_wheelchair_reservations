@@ -17,7 +17,6 @@ from common.data_models import (
     RentalSummary,
     Reservation,
 )
-from common.utils import get_default_timezone
 
 DEFAULT_CACHE_TTL = 60
 DEFAULT_TIMEOUT = 5
@@ -115,9 +114,6 @@ class DataService:
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
         if reservations.empty:
             return reservations
-        reservations["reservation_time"] = (
-            pd.to_datetime(reservations["reservation_time"], utc=True).dt.tz_convert(get_default_timezone())
-        )
         return reservations
 
     @auto_process_api_errors
