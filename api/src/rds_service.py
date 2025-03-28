@@ -27,8 +27,10 @@ logger.addHandler(stream_handler)
 
 class RDSService:
     """Service class to interact with the PostgreSQL database."""
+    __DEFAULT_CONNECT_TIMEOUT = 5
+    __MAXIMUM_CONNECT_TIMEOUT = 60
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
             self,
             host: str = os.environ["POSTGRES_HOST"],
@@ -79,22 +81,33 @@ class RDSService:
 
     def _initialize_connection(self) -> Connection:
         """Initialize a connection to the database."""
-        try:
-            connection = psycopg.connect(
-                host=self.host,
-                port=self.port,
-                user=self.username,
-                password=self.password if self.password is not None else self._generate_auth_token(),
-                dbname=self.db_name,
-                connect_timeout=5,
-            )
-            logger.debug("Connected to %s:%s with the %s user", self.host, self.port, self.username)
-            return connection
-        except ConnectionTimeout as exc:
-            raise ConnectionTimeout(
-                f"Timed out trying to connect to the {self.db_name} database at "
-                f"{self.host}:{self.port} with the {self.username} user"
-            ) from exc
+        num_retries = 0
+        connect_timeout = self.__DEFAULT_CONNECT_TIMEOUT
+        while True:
+            try:
+                connection = psycopg.connect(
+                    host=self.host,
+                    port=self.port,
+                    user=self.username,
+                    password=self.password if self.password is not None else self._generate_auth_token(),
+                    dbname=self.db_name,
+                    connect_timeout=connect_timeout,
+                )
+                logger.debug("Connected to %s:%s with the %s user", self.host, self.port, self.username)
+                return connection
+            except ConnectionTimeout as exc:
+                if num_retries < int(os.getenv("MAX_CONNECTION_RETRIES", "3")):
+                    num_retries += 1
+                    logger.warning(
+                        "Connection attempt #%s to %s:%s with the %s user timed out after %s seconds - retrying...",
+                        num_retries, self.host, self.port, self.username, connect_timeout
+                    )
+                    connect_timeout = min(connect_timeout * 2, self.__MAXIMUM_CONNECT_TIMEOUT)
+                    continue
+                raise ConnectionTimeout(
+                    f"Timed out trying to connect to the {self.db_name} database at "
+                    f"{self.host}:{self.port} with the {self.username} user"
+                ) from exc
 
     def _initialize_custom_functions(self):
         """Initialize custom functions in the database."""

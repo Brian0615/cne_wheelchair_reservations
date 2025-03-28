@@ -2,6 +2,7 @@ import streamlit as st
 
 from common.constants import ReservationStatus
 from common.data_models import Reservation
+from common.utils import get_default_timezone
 from ui.forms import ReservationForm
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
@@ -26,7 +27,7 @@ reservation_id = reservation_col.selectbox(
     label="Select a Reservation",
     options=sorted(
         reservations["id"] + " - " + reservations["name"]
-        + " (" + reservations["reservation_time"].dt.strftime("%I:%M %p")
+        + " (" + reservations["reservation_time"].dt.tz_convert(get_default_timezone()).dt.strftime("%I:%M %p")
         + ", " + reservations["location"] + ")"
     ),
     index=None,
