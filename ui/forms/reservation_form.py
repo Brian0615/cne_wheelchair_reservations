@@ -17,8 +17,6 @@ class ReservationForm(BaseForm):
     def __init__(self, key_prefix: str, existing_reservation: Optional[Reservation] = None, disabled: bool = False):
         self.disabled = disabled
         self.existing_reservation = existing_reservation
-        if existing_reservation is not None:
-            st.write(existing_reservation.reservation_time)
         fields = {
             "date": DateField(
                 key=f"{key_prefix}_date",
