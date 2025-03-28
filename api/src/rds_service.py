@@ -85,7 +85,6 @@ class RDSService:
         connect_timeout = self.__DEFAULT_CONNECT_TIMEOUT
         while True:
             try:
-                logger.debug(os.environ)
                 connection = psycopg.connect(
                     host=self.host,
                     port=self.port,
