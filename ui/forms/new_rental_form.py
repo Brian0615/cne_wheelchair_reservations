@@ -15,7 +15,7 @@ from ui.forms.form_fields import (
 
 
 # pylint: disable=too-few-public-methods
-class RentalForm(BaseForm):
+class NewRentalForm(BaseForm):
     """Form for creating a new rental"""
 
     def __init__(self, key_prefix: str):

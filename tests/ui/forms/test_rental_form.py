@@ -18,9 +18,9 @@ class TestRentalForm(TestCase):
     @staticmethod
     def _run_form(key_prefix: str, render: bool):
         """Run the form rendering"""
-        from ui.forms.rental_form import RentalForm
+        from ui.forms.new_rental_form import NewRentalForm
 
-        form = RentalForm(key_prefix=key_prefix)
+        form = NewRentalForm(key_prefix=key_prefix)
         form.initialize_form()
         if render:
             form.render_form()

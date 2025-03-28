@@ -3,13 +3,32 @@ from datetime import datetime
 import streamlit as st
 
 from common.constants import DeviceType
-from common.data_models import NewRental, ChangeDeviceInfo
+from common.data_models import CompletedRental, NewRental, ChangeDeviceInfo
 from common.utils import get_default_timezone
-from ui.forms import RentalForm
+from ui.forms import NewRentalForm
 from ui.src.data_service import DataService
 from ui.src.signature import Signature
 from ui.src.utils import clear_session_state_for_form, process_validation_errors
 from ui.src.wheelchair_form import WheelchairForm
+
+
+@st.dialog("Success!")
+def display_complete_rental_success_dialog(completed_rental: CompletedRental):
+    """Display the success dialog upon completing a rental"""
+
+    st.success(
+        f"""
+        The following rental was completed successfully:
+
+        * **Rental ID**: {completed_rental.id}
+        * **Name**: {completed_rental.name}
+        * **Returned Chair/Scooter**: {completed_rental.device_id}
+        """
+    )
+    if st.button("Close"):
+        clear_session_state_for_form(clear_prefixes=["complete_rental_"])
+        st.rerun()
+
 
 
 @st.dialog("Success!")
@@ -36,6 +55,39 @@ def display_new_rental_success_dialog(rental_id: str, new_rental: NewRental, for
         st.rerun()
 
 
+@process_validation_errors(error_key="complete_rental_errors")
+def submit_complete_rental_form(completed_rental: dict):
+    """Complete a rental"""
+
+    # process signature
+    completed_rental["return_signature"] = Signature(
+        signature_data=completed_rental["return_signature"]
+    ).encode_as_base64()
+
+    # update return time
+    completed_rental["return_time"] = get_default_timezone().localize(
+        datetime.combine(completed_rental["return_date"], completed_rental["return_time"])
+    )
+    completed_rental.pop("return_date")
+
+    # validate rental completion data
+    completed_rental = CompletedRental(**completed_rental)
+
+    # complete rental
+    data_service = DataService()
+    status_code, result = data_service.complete_rental(completed_rental)
+    if status_code == 200:
+        display_complete_rental_success_dialog(completed_rental)
+    else:
+        st.error(
+            f"""
+            **API Error**
+            * Error Code: {status_code}
+            * Error Message: {result}
+            """
+        )
+
+
 @process_validation_errors(error_key="rental_form_errors")
 def submit_new_rental_form(new_rental: dict):
     """Submit the new rental form"""
@@ -44,10 +96,8 @@ def submit_new_rental_form(new_rental: dict):
     new_rental["signature"] = Signature(signature_data=new_rental["signature"]).encode_as_base64()
 
     # update pickup time
-    new_rental["pickup_time"] = datetime.combine(
-        date=new_rental["date"],
-        time=new_rental["pickup_time"],
-        tzinfo=get_default_timezone(),
+    new_rental["pickup_time"] = get_default_timezone().localize(
+        datetime.combine(new_rental["date"], new_rental["pickup_time"])
     )
 
     # validate rental data
@@ -63,7 +113,7 @@ def submit_new_rental_form(new_rental: dict):
         form_data = None
     if status_code == 200:
         display_new_rental_success_dialog(rental_id=rental_id, new_rental=new_rental, form_data=form_data)
-        RentalForm(key_prefix="new_rental").clear_form()
+        NewRentalForm(key_prefix="new_rental").clear_form()
 
 
 @st.dialog("Success!")

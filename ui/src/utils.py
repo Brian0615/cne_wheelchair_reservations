@@ -50,15 +50,6 @@ def get_rental_selection(
 ) -> Tuple[date, Optional[str], Optional[dict]]:
     """Render rental retrival options and return the selected rental."""
 
-    # noinspection PyShadowingNames
-    @st.cache_data(ttl=30, show_spinner=False)
-    def get_rentals_on_date_helper(rental_date: date, in_progress_rentals_only: bool):
-        """Helper function to get rentals, for caching purposes"""
-        return data_service.get_rentals_on_date(
-            rental_date=rental_date,
-            in_progress_rentals_only=in_progress_rentals_only,
-        )
-
     col1, col2 = st.columns([1, 2])
     rental_date = get_date_input(label="Rental Date", col=col1, key_prefix=key_prefix)
     rentals = data_service.get_rentals_on_date(
