@@ -132,10 +132,12 @@ class TestManageReservations(BaseTestCases.BaseUIPageTest):
         at.selectbox(key="manage_reservations_id_selection").select_index(0)
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
         self.assertEqual(at.text_input("update_reservation_name").value, "Teresa Austin")
+        self.assertEqual(at.time_input("update_reservation_time").proto.value, "10:00")
 
         at.selectbox(key="manage_reservations_id_selection").select_index(1)
         at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
         self.assertEqual(at.text_input("update_reservation_name").value, "Denise Mccarty")
+        self.assertEqual(at.time_input("update_reservation_time").proto.value, "13:35")
 
     def test_submit_update_reservation_form(self):
         """Check that the Update Reservation button submits the form"""

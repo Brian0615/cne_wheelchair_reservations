@@ -16,13 +16,17 @@ class DateField(BaseFormField):
             self,
             key: str,
             label: Optional[str] = "Date",
-            default_value: Optional[date] = CNEDates.get_default_date(),
-            min_date: Optional[date] = min(CNEDates.get_cne_date_list()),
-            max_date: Optional[date] = max(CNEDates.get_cne_date_list()),
+            default_value: Optional[date] = None,
+            min_date: Optional[date] = None,
+            max_date: Optional[date] = None,
     ):
-        self.min_date = min_date
-        self.max_date = max_date
-        super().__init__(key=key, label=label, default_value=default_value)
+        self.min_date = min_date if min_date is not None else min(CNEDates.get_cne_date_list())
+        self.max_date = max_date if max_date is not None else max(CNEDates.get_cne_date_list())
+        super().__init__(
+            key=key,
+            label=label,
+            default_value=default_value if default_value is not None else CNEDates.get_default_date(),
+        )
 
     def _render(self, disabled: bool = False):
         """Render the date field"""

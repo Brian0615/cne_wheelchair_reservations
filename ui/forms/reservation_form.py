@@ -4,6 +4,7 @@ import streamlit as st
 
 from common.constants import DeviceType, Location
 from common.data_models import Reservation
+from common.utils import get_default_timezone
 from ui.forms.base_form import BaseForm
 from ui.forms.form_fields import ButtonField, DateField, SelectboxField, TextField, TimeField
 from ui.src.constants import CNEDates
@@ -16,6 +17,8 @@ class ReservationForm(BaseForm):
     def __init__(self, key_prefix: str, existing_reservation: Optional[Reservation] = None, disabled: bool = False):
         self.disabled = disabled
         self.existing_reservation = existing_reservation
+        if existing_reservation is not None:
+            st.write(existing_reservation.reservation_time)
         fields = {
             "date": DateField(
                 key=f"{key_prefix}_date",
@@ -50,7 +53,7 @@ class ReservationForm(BaseForm):
                 key=f"{key_prefix}_time",
                 label="Reservation Time",
                 default_value=(
-                    existing_reservation.reservation_time
+                    existing_reservation.reservation_time.astimezone(get_default_timezone())
                     if existing_reservation
                     else CNEDates.get_default_new_reservation_time()
                 )

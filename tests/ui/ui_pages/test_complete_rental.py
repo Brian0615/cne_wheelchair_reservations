@@ -75,45 +75,43 @@ class TestCompleteRental(BaseTestCases.BaseUIPageTest):
         self.assertTrue("Cash Deposit" in at.checkbox[1].label, "Incorrect deposit type displayed")
 
     @patch(
-        target="streamlit_drawable_canvas.st_canvas",
-        return_value=MagicMock(image_data=np.ones((100, 600, 4), dtype=np.uint8))
+        target="ui.src.constants.CNEDates.get_cne_date_list",
+        return_value=[date(2024, 8, 16), date(2024, 9, 2)]
     )
-    @patch.object(
-        CNEDates,
-        attribute="get_cne_date_list",
-        return_value=[date(2024, 8, 16), date(2024, 9, 2)],
-    )
-    def test_complete_rental_form_submission(self, _, __):
+    def test_complete_rental_form_submission(self, _):
         """Test the form submission for completing a rental"""
+        with patch(
+            target="ui.forms.form_fields.signature_field.st_canvas",
+            return_value=MagicMock(image_data=np.ones((100, 600, 4), dtype=np.uint8))
+        ):
+            # select a rental
+            at, mock_requests = self._run_test_with_selected_rental(rental_index=3)
+            self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
 
-        # select a rental
-        at, mock_requests = self._run_test_with_selected_rental(rental_index=3)
-        self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
+            # fill in form
+            at.time_input(key="complete_rental_return_time").set_value(time(14, 30))
+            at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+            self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
+            at.selectbox(key="complete_rental_return_location").set_value(Location.PG)
+            at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+            self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
+            at.text_input(key="complete_rental_staff_name").set_value("Test Staff")
+            at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+            self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
+            at.checkbox[0].set_value(True)
+            at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+            self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
+            at.checkbox[1].set_value(True)
+            at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+            self.assertFalse(at.button(key="complete_rental_submit").disabled, "Submit button should be enabled")
+            at.button(key="complete_rental_submit").set_value(True)
 
-        # fill in form
-        at.time_input(key="complete_rental_return_time").set_value(time(14, 30))
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
-        self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
-        at.selectbox(key="complete_rental_return_location").set_value(Location.PG)
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
-        self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
-        at.text_input(key="complete_rental_staff_name").set_value("Test Staff")
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
-        self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
-        at.checkbox[0].set_value(True)
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
-        self.assertTrue(at.button(key="complete_rental_submit").disabled, "Submit button should be disabled")
-        at.checkbox[1].set_value(True)
-        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
-        self.assertFalse(at.button(key="complete_rental_submit").disabled, "Submit button should be enabled")
-        at.button(key="complete_rental_submit").set_value(True)
-
-        with patch("streamlit.success") as mock_success:
-            self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
-            mock_success.assert_called_once()
-            success_msg = mock_success.call_args[0][0]
-            mock_rental = mock_requests.mock_rentals_data[3]
-            self.assertTrue("completed successfully" in success_msg, "Success message has incorrect contents")
-            self.assertTrue(mock_rental["id"] in success_msg, "Rental ID should be in success message")
-            self.assertTrue(mock_rental["name"] in success_msg, "Renter name should be in success message")
-            self.assertTrue(mock_rental["device_id"] in success_msg, "Device ID should be in success message")
+            with patch("streamlit.success") as mock_success:
+                self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+                mock_success.assert_called_once()
+                success_msg = mock_success.call_args[0][0]
+                mock_rental = mock_requests.mock_rentals_data[3]
+                self.assertTrue("completed successfully" in success_msg, "Success message has incorrect contents")
+                self.assertTrue(mock_rental["id"] in success_msg, "Rental ID should be in success message")
+                self.assertTrue(mock_rental["name"] in success_msg, "Renter name should be in success message")
+                self.assertTrue(mock_rental["device_id"] in success_msg, "Device ID should be in success message")

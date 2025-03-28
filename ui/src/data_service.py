@@ -114,6 +114,7 @@ class DataService:
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
         if reservations.empty:
             return reservations
+        reservations["reservation_time"] = pd.to_datetime(reservations["reservation_time"], utc=True)
         return reservations
 
     @auto_process_api_errors
