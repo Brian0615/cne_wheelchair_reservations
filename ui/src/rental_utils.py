@@ -2,7 +2,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from common.constants import DeviceType
+from common.constants import DeviceType, WALK_IN_RESERVATION_ID
 from common.data_models import CompletedRental, NewRental, ChangeDeviceInfo
 from common.utils import get_default_timezone
 from ui.forms import NewRentalForm
@@ -51,7 +51,6 @@ def display_new_rental_success_dialog(rental_id: str, new_rental: NewRental, for
             file_name=f"rental_form_{rental_id}.pdf",
         )
     if st.button("Close"):
-        clear_session_state_for_form(clear_prefixes=["rental_form_"])
         st.rerun()
 
 
@@ -99,6 +98,10 @@ def submit_new_rental_form(new_rental: dict):
     new_rental["pickup_time"] = get_default_timezone().localize(
         datetime.combine(new_rental["date"], new_rental["pickup_time"])
     )
+
+    # don't put reservation ID if walk-in
+    if new_rental["reservation_id"] == WALK_IN_RESERVATION_ID:
+        new_rental["reservation_id"] = None
 
     # validate rental data
     new_rental = NewRental(**new_rental)
