@@ -13,13 +13,15 @@ class TestCNEDates(unittest.TestCase):
     def test_get_cne_start_end_dates(self):
         """Test the get_cne_start_end_dates method."""
         # make datetime.today return a date in 2021
-        with patch.object(constants, "datetime") as mock_datetime:
-            mock_datetime.now.return_value = get_default_timezone().localize(datetime(2021, 12, 11))
-            mock_datetime.side_effect = datetime
-
+        with patch.object(CNEDates, attribute="get_cne_year", return_value=2021):
             start_date, end_date = CNEDates.get_cne_start_end_dates()
             self.assertEqual(datetime(2021, 8, 20), start_date)
             self.assertEqual(datetime(2021, 9, 6), end_date)
+
+        with patch.object(CNEDates, attribute="get_cne_year", return_value=2025):
+            start_date, end_date = CNEDates.get_cne_start_end_dates()
+            self.assertEqual(datetime(2025, 8, 15), start_date)
+            self.assertEqual(datetime(2025, 9, 1), end_date)
 
     def test_get_cne_date_list(self):
         """Test the get_cne_date_list method."""

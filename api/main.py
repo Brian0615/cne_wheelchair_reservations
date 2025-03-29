@@ -4,22 +4,20 @@ from typing import List, Annotated, Optional
 from fastapi import FastAPI, HTTPException, File
 from pydantic import constr
 
+from api.routers import devices_router
 from api.src.exceptions import UniqueViolation
 from api.src.rds_service import RDSService
 from api.src.s3_service import S3Service
 from api.src.utils import auto_process_database_errors
 from common.constants import (
-    DeviceStatus,
     DeviceType,
     Location,
     ReservationStatus,
-    DEVICE_ID_PATTERN,
     RESERVATION_ID_PATTERN,
 )
 from common.data_models import (
     ChangeDeviceInfo,
     CompletedRental,
-    Device,
     NewRental,
     NewReservation,
     RentalSummary,
@@ -27,53 +25,10 @@ from common.data_models import (
 )
 
 app = FastAPI()
+# add the routers
+app.include_router(devices_router)
 s3_service = S3Service()
 rds_service = RDSService()
-
-
-# ==============================
-# DEVICES
-# ==============================
-
-@app.post("/devices/add")
-@auto_process_database_errors
-def add_devices(devices: List[Device]):
-    """Add a device to the inventory"""
-    return rds_service.add_devices(devices)
-
-
-@app.get("/devices/get_available_devices")
-def get_available_device_ids(device_type: DeviceType, location: Location) -> List[constr(pattern=r"[S|W][0-9]{2}")]:
-    """Get the available devices of a specific type at a specific location"""
-    return rds_service.get_available_device_ids(device_type, location)
-
-
-@app.get("/devices/get_full_inventory")
-@auto_process_database_errors
-def get_full_inventory() -> List[Device]:
-    """Get the full inventory of devices"""
-    return [Device(**x) for x in rds_service.get_full_inventory().to_dict(orient="records")]
-
-
-@app.post("/devices/remove")
-@auto_process_database_errors
-def remove_devices(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)]):
-    """Remove devices from the inventory"""
-    return rds_service.remove_devices(device_ids)
-
-
-@app.post("/devices/update_location")
-@auto_process_database_errors
-def update_devices_location(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)], location: Location):
-    """Update the location of devices"""
-    return rds_service.update_devices_location(device_ids, location)
-
-
-@app.post("/devices/update_status")
-@auto_process_database_errors
-def update_devices_status(device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)], status: DeviceStatus):
-    """Update the status of devices"""
-    return rds_service.update_devices_status(device_ids, status)
 
 
 # ==============================

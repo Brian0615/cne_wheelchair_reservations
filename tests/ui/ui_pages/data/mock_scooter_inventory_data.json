@@ -1,65 +1,76 @@
 [
   {
+    "cne_year": 2025,
     "id": "S01",
     "type": "Scooter",
     "status": "Available",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "S02",
     "type": "Scooter",
     "status": "Available",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "S03",
     "type": "Scooter",
     "status": "Available",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "S04",
     "type": "Scooter",
     "status": "Backup",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "S05",
     "type": "Scooter",
     "status": "Backup",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "S06",
     "type": "Scooter",
     "status": "Backup",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "S07",
     "type": "Scooter",
     "status": "Rented",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "S08",
     "type": "Scooter",
     "status": "Rented",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "S09",
     "type": "Scooter",
     "status": "Rented",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "S10",
     "type": "Scooter",
     "status": "Rented",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "S11",
     "type": "Scooter",
     "status": "Rented",

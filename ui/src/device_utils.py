@@ -1,3 +1,4 @@
+import itertools
 import math
 from functools import wraps
 from typing import List, Tuple
@@ -7,7 +8,8 @@ import streamlit as st
 from plotly import graph_objects as go
 
 from common.constants import DeviceType, DeviceStatus, Location
-from common.data_models import Device
+from common.data_models import NewDevice
+from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 
 
@@ -47,26 +49,33 @@ def display_toast_on_success(func):
 
 
 @display_toast_on_success
-def add_devices(data_service: DataService, device_type: DeviceType, inventory: pd.DataFrame):
+def add_devices(data_service: DataService, device_type: DeviceType):
     """Add devices to the inventory."""
-    num_to_add = st.number_input(f"Number of {device_type}s", 1, 50, 1, 1)
 
-    label = get_manage_devices_str(action="add", device_type=device_type, num_devices=num_to_add)
-    if st.button(label=label, disabled=num_to_add < 1):
-        if inventory.empty:
-            next_device_index = 1
-        else:
-            next_device_index = inventory["id"].str.extract(r"(\d+)")[0].astype(int).max() + 1
+    num_to_add = {}
+    cols = st.columns(len(Location))
+    for col, location in zip(cols, Location):
+        num_to_add[location] = col.number_input(
+            f"Number of {device_type}s to add at **{location}**",
+            min_value=0,
+            max_value=50,
+            value=0,
+            step=1,
+        )
 
-        new_devices = [
-            Device(
-                id=f"{device_type.value[0].upper()}{next_device_index + i:02}",
-                type=device_type,
-                status=DeviceStatus.AVAILABLE,
-                location=Location.BLC,
-            )
-            for i in range(num_to_add)
-        ]
+    label = get_manage_devices_str(action="add", device_type=device_type, num_devices=sum(num_to_add.values()))
+    if st.button(label=label, disabled=sum(num_to_add.values()) < 1):
+        new_devices = itertools.chain.from_iterable(
+            [
+                NewDevice(
+                    cne_year=CNEDates.get_cne_year(),
+                    type=device_type,
+                    status=DeviceStatus.AVAILABLE,
+                    location=Location(location),
+                )
+            ] * num_to_add_at_location
+            for location, num_to_add_at_location in num_to_add.items()
+        )
 
         status_code, result = data_service.add_devices(devices=new_devices)
         return status_code, result, f"{label.replace('Add', 'Added')} to the inventory"

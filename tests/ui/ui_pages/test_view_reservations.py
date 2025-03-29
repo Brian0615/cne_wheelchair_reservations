@@ -29,5 +29,5 @@ class TestViewReservations(BaseTestCases.BaseUIPageTest):
     def test_single_device_reservations_only(self):
         """Check the UI content for when there are only reservations for one device type"""
         for device_type in DeviceType:
-            with self.subTest(device_type=device_type):
+            with self.subTest(device_type=device_type.name):
                 self._subtest_single_device_reservations_only(device_type=device_type)

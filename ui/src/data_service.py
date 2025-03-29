@@ -1,7 +1,7 @@
 import datetime
 import os
 from functools import wraps
-from typing import List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import pandas as pd
 import requests
@@ -12,11 +12,34 @@ from common.data_models import (
     ChangeDeviceInfo,
     CompletedRental,
     Device,
+    NewDevice,
     NewRental,
     NewReservation,
     RentalSummary,
     Reservation,
 )
+from common.logger import initialize_logger, timeit
+from ui.src.constants import CNEDates
+
+
+logger = initialize_logger()
+
+
+class APIError(Exception):
+    """Custom exception for API errors."""
+
+    def __init__(self, message: str, request_data: Optional[dict] = None, details: Optional[str] = None):
+        super().__init__(message)
+        self.message = message
+        st.error(f"**API Error**: {message}")
+        if request_data or details:
+            with st.expander(label="Full Error Traceback"):
+                if request_data:
+                    st.text("Request Data")
+                    st.write(request_data)
+                if details:
+                    st.text("Error Message")
+                    st.write(details)
 
 DEFAULT_CACHE_TTL = 60
 DEFAULT_TIMEOUT = 5
@@ -41,6 +64,8 @@ def auto_process_api_errors(func):
             with st.expander(label="Full Error Traceback"):
                 st.write(exc)
             raise
+        except APIError:
+            return None
         except Exception as exc:
             st.error(f"**API Error**: {exc}")
             raise
@@ -56,6 +81,129 @@ class DataService:
     def __init__(self, api_host: Optional[str] = None, api_port: Optional[str] = None):
         self.api_host = api_host if api_host is not None else os.environ["API_HOST"]
         self.api_port = api_port if api_port is not None else os.environ["API_PORT"]
+
+    # ==============================
+    # HELPER FUNCTIONS
+    # ==============================
+
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def _make_request(
+            self,
+            request_method: Callable,
+            url_path: str,
+            params: Optional[dict] = None,
+            json: Optional[Any] = None,
+            timeout: Optional[int] = DEFAULT_TIMEOUT,
+    ):
+        response = request_method(
+            url=f"http://{self.api_host}:{self.api_port}/{url_path}",
+            params=params,
+            json=json,
+            timeout=timeout,
+        )
+        if response.status_code == 200:
+            return response
+        if response.status_code == 422:
+            raise APIError(
+                message=f"Invalid request to `{url_path}`. Please check the parameters and try again.",
+                request_data={"params": params, "json": json},
+                details=response.json()
+            )
+        raise APIError(message=response.json())
+
+
+        # ==============================
+        # DEVICES
+        # ==============================
+
+    def _update_devices_functions_cache(self):
+        self.get_available_device_ids.clear()
+        self.get_full_inventory.clear()
+
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def add_devices(self, devices: List[NewDevice]):
+        """Add devices to the inventory using the API."""
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="devices/add",
+            json=[device.model_dump(mode="json") for device in devices]
+        )
+        self._update_devices_functions_cache()
+        return response.status_code, response.json()
+
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_available_device_ids(_self, device_type: DeviceType, location: Location):
+        """Get the available devices of a specific type at a specific location using the API."""
+        response = _self._make_request(
+            request_method=requests.get,
+            url_path="devices/get_available_devices",
+            params={"cne_year": CNEDates.get_cne_year(), "device_type": device_type, "location": location},
+        )
+        return response.json()
+
+    # pylint: disable=not-an-iterable
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_full_inventory(_self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Get the full inventory of devices using the API."""
+        response = _self._make_request(
+            request_method=requests.get,
+            url_path="devices/get_full_inventory",
+            params={"cne_year": CNEDates.get_cne_year()},
+        )
+        inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
+        if inventory.empty:
+            inventory = pd.DataFrame(data={field: [] for field in Device.model_fields}, dtype=str)
+        inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
+
+        return (
+            inventory[inventory["type"] == DeviceType.SCOOTER],
+            inventory[inventory["type"] == DeviceType.WHEELCHAIR],
+        )
+
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def remove_devices(self, device_ids: List[str]):
+        """Remove devices from the inventory using the API."""
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="devices/remove",
+            params={"cne_year": CNEDates.get_cne_year()},
+            json=device_ids,
+        )
+        self._update_devices_functions_cache()
+        return response.status_code, response.json()
+
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def update_devices_location(self, device_ids: List[str], location: Location):
+        """Update the location of devices using the API."""
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="devices/update_location",
+            params={"cne_year": CNEDates.get_cne_year(), "location": location},
+            json=device_ids,
+        )
+        self._update_devices_functions_cache()
+        return response.status_code, response.json()
+
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def update_devices_status(self, device_ids: List[str], status: DeviceStatus):
+        """Update the status of devices using the API."""
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="devices/update_status",
+            params={"cne_year": CNEDates.get_cne_year(), "status": status},
+            json=device_ids,
+        )
+        self._update_devices_functions_cache()
+        return response.status_code, response.json()
 
     # ==============================
     # RESERVATIONS
@@ -200,90 +348,6 @@ class DataService:
         )
         self._update_devices_functions_cache()
         self.get_rentals_on_date.clear()
-        return response.status_code, response.json()
-
-    # ==============================
-    # DEVICES
-    # ==============================
-
-    def _update_devices_functions_cache(self):
-        self.get_available_devices.clear()
-        self.get_full_inventory.clear()
-
-    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
-    @auto_process_api_errors
-    def get_available_devices(_self, device_type: DeviceType, location: Location):
-        """Get the available devices of a specific type at a specific location using the API."""
-        response = requests.get(
-            url=f"http://{_self.api_host}:{_self.api_port}/devices/get_available_devices",
-            params={"device_type": device_type, "location": location},
-            timeout=DEFAULT_TIMEOUT,
-        )
-        return response.json()
-
-    # pylint: disable=not-an-iterable
-    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
-    @auto_process_api_errors
-    def get_full_inventory(_self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Get the full inventory of devices using the API."""
-        response = requests.get(
-            url=f"http://{_self.api_host}:{_self.api_port}/devices/get_full_inventory",
-            timeout=DEFAULT_TIMEOUT,
-        )
-        inventory = pd.DataFrame([Device(**device).model_dump(mode="json") for device in response.json()])
-        if inventory.empty:
-            inventory = pd.DataFrame(data={field: [] for field in Device.model_fields}, dtype=str)
-        inventory = inventory.sort_values(by="id", ascending=True).reset_index(drop=True)
-
-        return (
-            inventory[inventory["type"] == DeviceType.SCOOTER],
-            inventory[inventory["type"] == DeviceType.WHEELCHAIR],
-        )
-
-    @auto_process_api_errors
-    def add_devices(self, devices: List[Device]):
-        """Add devices to the inventory using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/devices/add",
-            json=[device.model_dump(mode="json") for device in devices],
-            timeout=DEFAULT_TIMEOUT,
-        )
-        self._update_devices_functions_cache()
-        return response.status_code, response.json()
-
-    @auto_process_api_errors
-    def update_devices_location(self, device_ids: List[str], location: Location):
-        """Update the location of devices using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/devices/update_location",
-            params={"location": location},
-            json=device_ids,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        self._update_devices_functions_cache()
-        return response.status_code, response.json()
-
-    @auto_process_api_errors
-    def update_devices_status(self, device_ids: List[str], status: DeviceStatus):
-        """Update the status of devices using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/devices/update_status",
-            params={"status": status},
-            json=device_ids,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        self._update_devices_functions_cache()
-        return response.status_code, response.json()
-
-    @auto_process_api_errors
-    def remove_devices(self, device_ids: List[str]):
-        """Remove devices from the inventory using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/devices/remove",
-            json=device_ids,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        self._update_devices_functions_cache()
         return response.status_code, response.json()
 
     # ==============================

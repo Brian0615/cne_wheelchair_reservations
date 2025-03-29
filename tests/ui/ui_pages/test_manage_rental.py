@@ -48,7 +48,7 @@ class TestManageRental(BaseTestCases.BaseUIPageTest):
         at.button(key="change_device_submit_button").click()
 
         with patch.object(DataService, "get_rentals_on_date") as mock_get_rentals_on_date:
-            with patch.object(DataService, "get_available_devices") as mock_get_available_devices:
+            with patch.object(DataService, "get_available_device_ids") as mock_get_available_device_ids:
                 self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
                 mock_get_rentals_on_date.clear.assert_called_once()
-                mock_get_available_devices.clear.assert_called_once()
+                mock_get_available_device_ids.clear.assert_called_once()

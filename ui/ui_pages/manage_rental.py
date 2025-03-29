@@ -34,7 +34,7 @@ with st.expander(f"Update Rental {rental_data['device_type'].value}", expanded=T
         key="change_device_location",
     )
     if change_device_info["location"] is not None:
-        available_devices = data_service.get_available_devices(
+        available_devices = data_service.get_available_device_ids(
             device_type=rental_data["device_type"],
             location=Location(change_device_info["location"]),
         )
