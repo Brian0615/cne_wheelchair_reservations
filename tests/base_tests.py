@@ -1,21 +1,25 @@
 import json
 import os
+from datetime import date, datetime
 from typing import List, Optional
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
 import boto3
-from moto import mock_aws
+import numpy as np
 import requests
 import streamlit as st
+from moto import mock_aws
 from streamlit.testing.v1 import AppTest
 
 from api.src.dynamodb_service import DynamoDBService
-from common.constants import DeviceType, DeviceStatus, Location
+from common.constants import DeviceType, DeviceStatus, Location, PaymentMethod, RentalStatus, ReservationStatus
+from common.data_models import NewRental, NewReservation, Reservation
 from common.utils import get_default_timezone
 from tests.mock_requests import MockRequests
 from ui.src import auth_utils
 from ui.src.constants import CNEDates
+from ui.src.signature import Signature
 
 
 # pylint: disable=too-few-public-methods
@@ -56,6 +60,60 @@ class BaseTestCases:
                 ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
             )
             self.service = DynamoDBService()
+
+        @staticmethod
+        def _generate_mock_new_reservation(overrides: Optional[dict] = None):
+            reservation_params = {
+                "cne_year": 2025,
+                "date": date(2025, 8, 20),
+                "device_type": DeviceType.SCOOTER,
+                "location": Location.BLC,
+                "reservation_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 30)),
+                "name": "Test Name",
+                "phone_number": "1234567890",
+                "notes": "",
+                "status": ReservationStatus.PENDING,
+            }
+            if overrides:
+                for key, value in overrides.items():
+                    reservation_params[key] = value
+            return NewReservation(**reservation_params)
+
+        def _generate_mock_reservation(self, overrides: Optional[dict] = None):
+            reservation = self._generate_mock_new_reservation(overrides=overrides)
+            return Reservation(**reservation.model_dump())
+
+        @staticmethod
+        def _generate_mock_new_rental(overrides: Optional[dict] = None):
+            rental_params = {
+                "cne_year": 2025,
+                "date": date(2025, 8, 20),
+                "device_id": "W01",
+                "device_type": DeviceType.WHEELCHAIR,
+                "reservation_id": "W0820001",
+                "pickup_location": Location.BLC,
+                "pickup_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 28)),
+                "status": RentalStatus.IN_PROGRESS,
+                "name": "Test Name",
+                "phone_number": "1234567890",
+                "address": "1234 Test St",
+                "city": "Test City",
+                "province": "Test Province",
+                "postal_code": "A1B2C3",
+                "country": "Canada",
+                "fee_payment_method": PaymentMethod.CREDIT_CARD,
+                "fee_payment_amount": 50,
+                "deposit_payment_method": PaymentMethod.CASH,
+                "deposit_payment_amount": 100,
+                "items_left_behind": [],
+                "notes": None,
+                "staff_name": "Test Staff",
+                "signature": Signature(signature_data=np.ones((100, 600, 4), dtype=np.uint8)).encode_as_base64(),
+            }
+            if overrides:
+                for key, value in overrides.items():
+                    rental_params[key] = value
+            return NewRental(**rental_params)
 
 
     class BaseFormFieldTest(TestCase):

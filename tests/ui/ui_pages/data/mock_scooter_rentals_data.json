@@ -1,5 +1,6 @@
 [
   {
+    "cne_year": 2024,
     "id": "S0830001",
     "date": "2024-08-30",
     "name": "Clara Duran",
@@ -15,6 +16,7 @@
     "notes": ""
   },
   {
+    "cne_year": 2024,
     "id": "S0830002",
     "date": "2024-08-30",
     "name": "Hari Phillips",
@@ -32,6 +34,7 @@
     "notes": ""
   },
   {
+    "cne_year": 2024,
     "id": "S0830003",
     "date": "2024-08-30",
     "name": "Cyrus Finley",

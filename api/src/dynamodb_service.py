@@ -6,11 +6,15 @@ import boto3
 import botocore
 from boto3.dynamodb.conditions import Attr, Key
 
-from api.src.exceptions import DeviceNotFoundException, ReservationNotFoundOrNotEditableException
-from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus
-from common.data_models import NewDevice, NewReservation, Reservation
+from api.src.exceptions import (
+    DeviceNotFoundException,
+    NewDeviceNotFoundException,
+    NewReservationNotFoundOrNotEditableException,
+    ReservationNotFoundOrNotEditableException
+)
+from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus, RentalStatus
+from common.data_models import NewDevice, NewReservation, Reservation, NewRental
 from common.logger import initialize_logger, timeit
-
 
 logger = initialize_logger()
 
@@ -69,6 +73,16 @@ class DynamoDBService:
                 raise exc
 
         return wrapper
+
+    @staticmethod
+    def _get_new_rental_or_reservation_id(table, cne_year: int, date: datetime.date, device_type: DeviceType):
+        response = table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year),
+            FilterExpression=Attr("date").eq(date.isoformat()) & Attr('device_type').eq(device_type),
+        )
+        count = len(response['Items'])
+
+        return f"{device_type.get_prefix()}{date.strftime('%m%d')}{str(count + 1).zfill(3)}"
 
     # ==============================
     # DEVICES
@@ -195,6 +209,116 @@ class DynamoDBService:
 
 
     # ==============================
+    # RENTALS
+    # ==============================
+
+    def get_rentals_on_date(
+            self,
+            date: datetime.date,
+            device_type: DeviceType = None,
+            in_progress_rentals_only: bool = False,
+    ):
+        """Get all rentals on a given date"""
+        key_condition_expression = Key("cne_year").eq(date.year)
+        filter_expression = Attr("date").eq(date.isoformat())
+
+        if device_type:
+            filter_expression &= Attr("device_type").eq(device_type)
+
+        if in_progress_rentals_only:
+            filter_expression &= Attr("status").eq(RentalStatus.IN_PROGRESS)
+
+        response = self.rentals_table.query(
+            KeyConditionExpression=key_condition_expression,
+            FilterExpression=filter_expression,
+            ProjectionExpression=(
+                "id, device_id, device_type, pickup_location, pickup_time, #name, phone_number, "
+                "deposit_payment_method, items_left_behind, notes, return_location, return_time"
+            ),
+            ExpressionAttributeNames={"#name": "name"},
+        )
+
+        return response.get("Items", [])
+
+    @timeit(logger=logger)
+    def insert_rental(self, rental: NewRental):
+        """Insert a new rental."""
+        rental.id = self._get_new_rental_or_reservation_id(
+            table=self.rentals_table,
+            cne_year=rental.cne_year,
+            date=rental.date,
+            device_type=rental.device_type,
+        )
+
+        transact_items = [
+            {
+                "Update": {
+                    "TableName": self.devices_table.name,
+                    "Key": {"cne_year": rental.cne_year, "id": rental.device_id},
+                    "ConditionExpression": (
+                        "attribute_exists(cne_year) AND attribute_exists(id) AND #status = :curr_status"
+                    ),
+                    "UpdateExpression": "SET #status = :new_status, #location = :location",
+                    "ExpressionAttributeNames": {"#status": "status", "#location": "location"},
+                    "ExpressionAttributeValues": {
+                        ":curr_status": DeviceStatus.AVAILABLE,
+                        ":new_status": DeviceStatus.RENTED,
+                        ":location": rental.pickup_location,
+                    },
+                }
+            },
+            {
+                "Put": {
+                    "TableName": self.rentals_table.name,
+                    "Item": rental.model_dump(mode="json"),
+                }
+            },
+        ]
+        if rental.reservation_id:
+            transact_items.append(
+                {
+                    "Update": {
+                        "TableName": self.reservations_table.name,
+                        "Key": {"cne_year": rental.cne_year, "id": rental.reservation_id},
+                        "ConditionExpression": (
+                            "attribute_exists(cne_year) "
+                            "AND attribute_exists(id) "
+                            "AND NOT (#status in (:cancelled, :completed, :picked_up))"
+                        ),
+                        "UpdateExpression": "SET #status = :status, #rental_id = :rental_id",
+                        "ExpressionAttributeNames": {
+                            "#status": "status",
+                            "#rental_id": "rental_id",
+                        },
+                        "ExpressionAttributeValues": {
+                            ":cancelled": ReservationStatus.CANCELLED,
+                            ":completed": ReservationStatus.COMPLETED,
+                            ":picked_up": ReservationStatus.PICKED_UP,
+                            ":status": ReservationStatus.PICKED_UP,
+                            ":rental_id": rental.id,
+                        },
+                    }
+                }
+            )
+
+        try:
+            self.dynamodb.meta.client.transact_write_items(TransactItems=transact_items)
+        except botocore.exceptions.ClientError as exc:
+            if exc.response["Error"]["Code"] == "TransactionCanceledException":
+                cancellation_reasons = exc.response["CancellationReasons"]
+                if cancellation_reasons[0]["Code"] == "ConditionalCheckFailed":
+                    raise NewDeviceNotFoundException(cne_year=rental.cne_year, device_id=rental.device_id) from exc
+                if rental.reservation_id and cancellation_reasons[2]["Code"] == "ConditionalCheckFailed":
+                    raise NewReservationNotFoundOrNotEditableException(
+                        cne_year=rental.cne_year,
+                        reservation_id=rental.reservation_id,
+                    ) from exc
+            raise exc
+        logger.info("Inserted new rental: %s", rental.id)
+        return rental.id
+
+
+    # ==============================
     # RESERVATIONS
     # ==============================
 
@@ -229,25 +353,12 @@ class DynamoDBService:
     @timeit(logger=logger)
     def insert_reservation(self, reservation: NewReservation):
         """Insert a new reservation."""
-        response = self.reservations_table.query(
-            KeyConditionExpression=(
-                Key("cne_year").eq(reservation.cne_year)
-            ),
-            FilterExpression=(
-                Attr("date").eq(reservation.date.isoformat())
-                & Attr('device_type').eq(reservation.device_type)
-            ),
+        reservation.id = self._get_new_rental_or_reservation_id(
+            table=self.reservations_table,
+            cne_year=reservation.cne_year,
+            date=reservation.date,
+            device_type=reservation.device_type,
         )
-        count = len(response['Items'])
-
-        # Generate a new reservation ID
-        reservation_id = (
-            f"{reservation.device_type.get_prefix()}"
-            f"{reservation.date.strftime('%m%d')}"
-            f"{str(count + 1).zfill(3)}"
-        )
-        reservation.id = reservation_id
-
         self.reservations_table.put_item(Item=reservation.model_dump(mode="json"))
         logger.info("Inserted new reservation: %s", reservation.id)
 

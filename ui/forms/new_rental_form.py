@@ -1,3 +1,5 @@
+import re
+
 import streamlit as st
 
 from common.constants import DeviceType, Location, WALK_IN_RESERVATION_ID, PaymentMethod, HoldItem
@@ -106,6 +108,8 @@ class NewRentalForm(BaseForm):
             col1, col2, _, _ = st.columns(4)
             with col1:
                 result["reservation_id"] = self.fields["reservation_id"].render_field()
+            if result["reservation_id"]:
+                result["reservation_id"] = re.search(r"\(([^)]+)\)", result["reservation_id"]).group(1)
             with col2:
                 result["device_id"] = self.fields["device_id"].render_field()
 

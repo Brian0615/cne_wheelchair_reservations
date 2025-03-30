@@ -1,40 +1,16 @@
-from datetime import date, datetime
-from typing import Optional
+from datetime import date
 
 from moto import mock_aws
 
 from api.src.exceptions import ReservationNotFoundOrNotEditableException
 from common.constants import DeviceType, Location, ReservationStatus
-from common.data_models import NewReservation, Reservation
-from common.utils import get_default_timezone
+from common.data_models import Reservation
 from tests.base_tests import BaseTestCases
 
 
 # pylint: disable=missing-class-docstring,missing-function-docstring
 @mock_aws
 class TestDynamoDBServiceReservations(BaseTestCases.BaseDynamoDBServiceTest):
-
-    @staticmethod
-    def _generate_mock_new_reservation(overrides: Optional[dict] = None):
-        reservation_params = {
-            "cne_year": 2025,
-            "date": date(2025, 8, 20),
-            "device_type": DeviceType.SCOOTER,
-            "location": Location.BLC,
-            "reservation_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 30)),
-            "name": "Test Name",
-            "phone_number": "1234567890",
-            "notes": "",
-            "status": ReservationStatus.PENDING,
-        }
-        if overrides:
-            for key, value in overrides.items():
-                reservation_params[key] = value
-        return NewReservation(**reservation_params)
-
-    def _generate_mock_reservation(self, overrides: Optional[dict] = None):
-        reservation = self._generate_mock_new_reservation(overrides=overrides)
-        return Reservation(**reservation.model_dump())
 
     def test_get_reservations_on_date(self):
         response = self.service.get_reservations_on_date(date=date(2025, 8, 20))

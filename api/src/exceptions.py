@@ -6,11 +6,30 @@ class DeviceNotFoundException(Exception):
         super().__init__(self.message)
 
 
+class NewDeviceNotFoundException(Exception):
+    """Exception raised when a device is not found in the inventory."""
+
+    def __init__(self, cne_year: int, device_id: str):
+        self.message = f"Device {device_id} (cne_year={cne_year}) not found in the inventory"
+        super().__init__(self.message)
+
+
 class ReservationNotFoundOrNotEditableException(Exception):
     """Exception raised when a device is not found in the inventory."""
 
     def __init__(self, message: str):
         self.message = message
+        super().__init__(self.message)
+
+
+class NewReservationNotFoundOrNotEditableException(Exception):
+    """Exception raised when a device is not found in the inventory."""
+
+    def __init__(self, cne_year: int, reservation_id: str):
+        self.message = (
+            f"Reservation {reservation_id} (cne_year={cne_year}) not found or "
+            f"is un-editable (because it is cancelled/completed/picked up)"
+        )
         super().__init__(self.message)
 
 

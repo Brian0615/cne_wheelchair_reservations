@@ -6,6 +6,7 @@ from typing import Any, Callable, List, Optional, Tuple
 import pandas as pd
 import requests
 import streamlit as st
+from pydantic import BaseModel
 
 from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
 from common.data_models import (
@@ -20,7 +21,6 @@ from common.data_models import (
 )
 from common.logger import initialize_logger, timeit
 from ui.src.constants import CNEDates
-
 
 logger = initialize_logger()
 
@@ -95,6 +95,8 @@ class DataService:
             json: Optional[Any] = None,
             timeout: Optional[int] = DEFAULT_TIMEOUT,
     ):
+        if isinstance(json, BaseModel):
+            json = json.model_dump(mode="json")
         response = request_method(
             url=f"http://{self.api_host}:{self.api_port}/{url_path}",
             params=params,
@@ -208,6 +210,68 @@ class DataService:
         return response.status_code, response.json()
 
     # ==============================
+    # RENTALS
+    # ==============================
+
+    def _clear_rentals_functions_cache(self):
+        self.get_rentals_on_date.clear()
+
+    @auto_process_api_errors
+    def add_new_rental(self, new_rental: NewRental):
+        """Add a new rental using the API."""
+        response = self._make_request(request_method=requests.post, url_path="rentals/add", json=new_rental)
+        self._clear_rentals_functions_cache()
+        return response.status_code, response.json()
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @auto_process_api_errors
+    def get_rentals_on_date(
+            _self,
+            rental_date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            in_progress_rentals_only: bool = False,
+    ) -> pd.DataFrame:
+        """Get the rentals on a specific date using the API."""
+        response = _self._make_request(
+            request_method=requests.get,
+            url_path="rentals/get_rentals_on_date",
+            params={
+                "date": rental_date.strftime("%Y-%m-%d"),
+                "device_type": device_type,
+                "in_progress_rentals_only": in_progress_rentals_only,
+            },
+        )
+        rentals = response.json()
+        rentals = pd.DataFrame([RentalSummary(**rental).model_dump() for rental in rentals])
+        if rentals.empty:
+            return rentals
+        return rentals.sort_values(by="id")
+
+    @auto_process_api_errors
+    def change_rental_device(self, change_device_info: ChangeDeviceInfo):
+        """Change the device of a rental using the API."""
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="rentals/change_device",
+            json=change_device_info.model_dump(mode="json"),
+        )
+        self._clear_devices_functions_cache()
+        self._clear_rentals_functions_cache()
+        return response.status_code, response.json()
+
+    @auto_process_api_errors
+    def complete_rental(self, completed_rental: CompletedRental):
+        """Complete a rental using the API."""
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="rentals/complete_rental",
+            json=completed_rental.model_dump(mode="json"),
+        )
+        self._clear_devices_functions_cache()
+        self._clear_rentals_functions_cache()
+        return response.status_code, response.json()
+
+    # ==============================
     # RESERVATIONS
     # ==============================
 
@@ -218,11 +282,7 @@ class DataService:
     @auto_process_api_errors
     def add_new_reservation(self, reservation: NewReservation):
         """Add a new reservation using the API."""
-        response = self._make_request(
-            request_method=requests.post,
-            url_path="reservations/add",
-            json=reservation.model_dump(mode="json"),
-        )
+        response = self._make_request(request_method=requests.post, url_path="reservations/add", json=reservation)
         self.get_reservations_on_date.clear()
         return response.status_code, response.json()
 
@@ -260,7 +320,7 @@ class DataService:
         response = self._make_request(
             request_method=requests.post,
             url_path="reservations/update_reservation",
-            json=reservation.model_dump(mode="json"),
+            json=reservation,
         )
         self._clear_reservations_functions_cache()
         return response.status_code
@@ -280,69 +340,6 @@ class DataService:
         )
         self._clear_reservations_functions_cache()
         return response.status_code
-
-    # ==============================
-    # RENTALS
-    # ==============================
-
-    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
-    @auto_process_api_errors
-    def get_rentals_on_date(
-            _self,
-            rental_date: datetime.date,
-            device_type: Optional[DeviceType] = None,
-            in_progress_rentals_only: bool = False,
-    ) -> pd.DataFrame:
-        """Get the rentals on a specific date using the API."""
-        response = requests.get(
-            f"http://{_self.api_host}:{_self.api_port}/rentals/get_rentals_on_date",
-            params={
-                "date": rental_date.strftime("%Y-%m-%d"),
-                "device_type": device_type,
-                "in_progress_rentals_only": in_progress_rentals_only,
-            },
-            timeout=DEFAULT_TIMEOUT,
-        )
-        rentals = response.json()
-        rentals = pd.DataFrame([RentalSummary(**rental).model_dump() for rental in rentals])
-        if rentals.empty:
-            return rentals
-        return rentals.sort_values(by="id")
-
-    @auto_process_api_errors
-    def add_new_rental(self, new_rental: NewRental):
-        """Add a new rental using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/rentals/add_new_rental",
-            json=new_rental.model_dump(mode="json"),
-            timeout=DEFAULT_TIMEOUT,
-        )
-        self.get_rentals_on_date.clear()
-        return response.status_code, response.json()
-
-    @auto_process_api_errors
-    def change_rental_device(self, change_device_info: ChangeDeviceInfo):
-        """Change the device of a rental using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/rentals/change_device",
-            json=change_device_info.model_dump(mode="json"),
-            timeout=DEFAULT_TIMEOUT,
-        )
-        self._clear_devices_functions_cache()
-        self.get_rentals_on_date.clear()
-        return response.status_code, response.json()
-
-    @auto_process_api_errors
-    def complete_rental(self, completed_rental: CompletedRental):
-        """Complete a rental using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/rentals/complete_rental",
-            json=completed_rental.model_dump(mode="json"),
-            timeout=DEFAULT_TIMEOUT,
-        )
-        self._clear_devices_functions_cache()
-        self.get_rentals_on_date.clear()
-        return response.status_code, response.json()
 
     # ==============================
     # RENTAL FORMS
