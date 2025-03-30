@@ -6,9 +6,9 @@ import boto3
 import botocore
 from boto3.dynamodb.conditions import Attr, Key
 
-from api.src.exceptions import DeviceNotFoundException
+from api.src.exceptions import DeviceNotFoundException, ReservationNotFoundOrNotEditableException
 from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus
-from common.data_models import NewDevice, NewReservation
+from common.data_models import NewDevice, NewReservation, Reservation
 from common.logger import initialize_logger, timeit
 
 
@@ -43,6 +43,29 @@ class DynamoDBService:
                             f"At least one of the following devices were not found in the inventory: "
                             f"{kwargs.get('device_ids', [])} (year={kwargs.get('cne_year', '')})",
                         ) from exc
+                raise exc
+
+        return wrapper
+
+    @staticmethod
+    def _auto_raise_reservation_not_found_exception(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except botocore.exceptions.ClientError as exc:
+                if exc.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                    logger.warning("One or more devices not found in the inventory. No devices were deleted.")
+                    reservation_id = None
+                    if "reservation" in kwargs:
+                        reservation_id = kwargs.get("reservation").id
+                    if "reservation_id" in kwargs:
+                        reservation_id = kwargs.get("reservation_id")
+                    raise ReservationNotFoundOrNotEditableException(
+                        f"The reservation was either not found or cannot be updated due to its current status "
+                        f"(year={kwargs.get('cne_year', '')})"
+                        + (f": {reservation_id}" if reservation_id else "")
+                    ) from exc
                 raise exc
 
         return wrapper
@@ -178,13 +201,12 @@ class DynamoDBService:
     @timeit(logger=logger)
     def get_reservations_on_date(
             self,
-            cne_year: int,
             date: datetime.date,
             device_type: Optional[DeviceType] = None,
             exclude_picked_up_reservations: bool = False,
     ) -> List[dict]:
         """Get all reservations on a given date."""
-        key_condition_expression = Key('cne_year').eq(cne_year)
+        key_condition_expression = Key('cne_year').eq(date.year)
         filter_expression = Attr('date').eq(date.isoformat())
 
         if device_type:
@@ -230,3 +252,56 @@ class DynamoDBService:
         logger.info("Inserted new reservation: %s", reservation.id)
 
         return reservation.id
+
+    def _update_reservation_helper(
+            self,
+            key: dict,
+            update_expression: str,
+            expression_attribute_names: dict,
+            expression_attribute_values: dict,
+    ):
+        self.reservations_table.update_item(
+            Key=key,
+            UpdateExpression=update_expression,
+            ExpressionAttributeNames=expression_attribute_names,
+            ExpressionAttributeValues=expression_attribute_values,
+            ConditionExpression=(
+                Attr("cne_year").exists()
+                & Attr("id").exists()
+                & ~Attr("status").is_in(
+                    [
+                        ReservationStatus.CANCELLED,
+                        ReservationStatus.COMPLETED,
+                        ReservationStatus.PICKED_UP
+                    ]
+                )
+            ),
+        )
+
+    @timeit(logger=logger)
+    @_auto_raise_reservation_not_found_exception
+    def update_reservation(self, reservation: Reservation):
+        """Update an existing reservation in the DynamoDB table."""
+        key_dict = {"cne_year": reservation.cne_year, "id": reservation.id}
+
+        # remove cne_year and id from update expression as it is part of key
+        reservation = reservation.model_dump(mode="json")
+        reservation.pop("cne_year")
+        reservation.pop("id")
+        self._update_reservation_helper(
+            key=key_dict,
+            update_expression="SET " + ", ".join(f"#{k} = :{k}" for k in reservation.keys()),
+            expression_attribute_names={f"#{k}": k for k in reservation.keys()},
+            expression_attribute_values={f":{k}": v for k, v in reservation.items()}
+        )
+
+    @timeit(logger=logger)
+    @_auto_raise_reservation_not_found_exception
+    def update_reservation_status(self, cne_year: int, reservation_id: str, status: ReservationStatus):
+        """Update the status of an existing reservation in the DynamoDB table"""
+        self._update_reservation_helper(
+            key={"cne_year": cne_year, "id": reservation_id},
+            update_expression="SET #status = :status",
+            expression_attribute_names={"#status": "status"},
+            expression_attribute_values={":status": status},
+        )

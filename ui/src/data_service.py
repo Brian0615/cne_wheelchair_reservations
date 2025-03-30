@@ -241,7 +241,6 @@ class DataService:
             request_method=requests.get,
             url_path="reservations/get_reservations_on_date",
             params={
-                "cne_year": CNEDates.get_cne_year(),
                 "date": date.strftime("%Y-%m-%d"),
                 "device_type": device_type,
                 "exclude_picked_up_reservations": exclude_picked_up_reservations,
@@ -254,26 +253,32 @@ class DataService:
         reservations["reservation_time"] = pd.to_datetime(reservations["reservation_time"], utc=True)
         return reservations
 
+    @timeit(logger=logger)
     @auto_process_api_errors
     def update_reservation(self, reservation: Reservation):
         """Update an existing reservation using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/reservations/update_reservation",
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="reservations/update_reservation",
             json=reservation.model_dump(mode="json"),
-            timeout=DEFAULT_TIMEOUT,
         )
-        self.get_reservations_on_date.clear()
+        self._clear_reservations_functions_cache()
         return response.status_code
 
+    @timeit(logger=logger)
     @auto_process_api_errors
     def update_reservation_status(self, reservation_id: str, status: ReservationStatus):
         """Update the status of a reservation using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/reservations/update_reservation_status",
-            params={"reservation_id": reservation_id, "reservation_status": status},
-            timeout=DEFAULT_TIMEOUT,
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="reservations/update_reservation_status",
+            params={
+                "cne_year": CNEDates.get_cne_year(),
+                "reservation_id": reservation_id,
+                "reservation_status": status,
+            },
         )
-        self.get_reservations_on_date.clear()
+        self._clear_reservations_functions_cache()
         return response.status_code
 
     # ==============================
