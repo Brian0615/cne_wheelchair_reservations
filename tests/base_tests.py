@@ -39,8 +39,21 @@ class BaseTestCases:
         ]
         __DEFAULT_PROVISIONED_THROUGHPUT = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
 
+        @classmethod
+        def setUpClass(cls):
+            cls.dynamodb = boto3.resource("dynamodb", region_name="us-east-2")
+            cls.devices_table = None
+            cls.rentals_table = None
+            cls.reservations_table = None
+            cls.service = DynamoDBService()
+
         def setUp(self):
-            self.dynamodb = boto3.resource("dynamodb", region_name="us-east-2")
+            if self.devices_table is not None:
+                self.dynamodb.meta.client.delete_table(TableName="cne_devices")
+            if self.rentals_table is not None:
+                self.dynamodb.meta.client.delete_table(TableName="cne_rentals")
+            if self.reservations_table is not None:
+                self.dynamodb.meta.client.delete_table(TableName="cne_reservations")
             self.devices_table = self.dynamodb.create_table(
                 TableName="cne_devices",
                 KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
@@ -59,7 +72,6 @@ class BaseTestCases:
                 AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
                 ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
             )
-            self.service = DynamoDBService()
 
         @staticmethod
         def _generate_mock_new_reservation(overrides: Optional[dict] = None):

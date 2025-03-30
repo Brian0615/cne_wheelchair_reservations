@@ -19,7 +19,7 @@ class TestDynamoDBServiceDevices(BaseTestCases.BaseDynamoDBServiceTest):
         ]
         self.service.add_devices(devices)
 
-        response = self.devices_table.scan()
+        response = self.service.devices_table.scan()
         items = response["Items"]
         self.assertEqual(len(items), 4)
         self.assertEqual(items[0]["cne_year"], 2025)
@@ -85,12 +85,12 @@ class TestDynamoDBServiceDevices(BaseTestCases.BaseDynamoDBServiceTest):
         self.service.add_devices(devices)
 
         self.service.remove_devices(2025, ["S01"])
-        response = self.devices_table.scan()
+        response = self.service.devices_table.scan()
         items = response["Items"]
         self.assertEqual(len(items), 1)
 
         self.service.remove_devices(2025, ["W01"])
-        response = self.devices_table.scan()
+        response = self.service.devices_table.scan()
         items = response["Items"]
         self.assertEqual(len(items), 0)
 
@@ -105,7 +105,7 @@ class TestDynamoDBServiceDevices(BaseTestCases.BaseDynamoDBServiceTest):
         self.service.add_devices(devices)
 
         self.service.update_devices_location(2025, ["S01"], Location.PG)
-        response = self.devices_table.scan()
+        response = self.service.devices_table.scan()
         items = response["Items"]
         self.assertEqual(len(items), 2)
         self.assertEqual(items[0]["location"], Location.PG)
@@ -122,7 +122,7 @@ class TestDynamoDBServiceDevices(BaseTestCases.BaseDynamoDBServiceTest):
         self.service.add_devices(devices)
 
         self.service.update_devices_status(2025, ["S01"], DeviceStatus.RENTED)
-        response = self.devices_table.scan()
+        response = self.service.devices_table.scan()
         items = response["Items"]
         self.assertEqual(len(items), 2)
         self.assertEqual(items[0]["status"], DeviceStatus.RENTED)

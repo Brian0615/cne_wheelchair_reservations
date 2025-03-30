@@ -53,7 +53,7 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
             NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.AVAILABLE)
         ])
         self.service.insert_rental(rental=rental)
-        responses = self.rentals_table.scan()
+        responses = self.service.rentals_table.scan()
         self.assertEqual(len(responses["Items"]), 1)
         self.assertEqual([Rental(**x) for x in responses["Items"]], [Rental(**rental.model_dump(mode="json"))])
 
@@ -77,7 +77,7 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
         reservation = self._generate_mock_new_reservation(overrides={"device_type": DeviceType.WHEELCHAIR})
         reservation.id = self.service.insert_reservation(reservation=reservation)
         self.service.insert_rental(rental=rental)
-        responses = self.rentals_table.scan()
+        responses = self.service.rentals_table.scan()
         self.assertEqual(responses["Items"][0]["id"], "W0820001")
         self.assertEqual(responses["Items"][0]["reservation_id"], "W0820001")
 
