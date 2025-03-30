@@ -1,49 +1,14 @@
-from unittest import TestCase
-
-import boto3
 from moto import mock_aws
 
-from api.src.dynamodb_service import DynamoDBService
 from api.src.exceptions import DeviceNotFoundException
 from common.constants import DeviceType, Location, DeviceStatus
 from common.data_models import NewDevice
+from tests.base_tests import BaseTestCases
 
 
 # pylint: disable=missing-class-docstring,missing-function-docstring
 @mock_aws
-class TestDynamoDBService(TestCase):
-
-    __DEFAULT_TABLE_KEY_SCHEMA = [
-        {"AttributeName": "cne_year", "KeyType": "HASH"},
-        {"AttributeName": "id", "KeyType": "RANGE"}
-    ]
-    __DEFAULT_ATTRIBUTE_DEFINITIONS = [
-        {"AttributeName": "cne_year", "AttributeType": "N"},
-        {"AttributeName": "id", "AttributeType": "S"}
-    ]
-    __DEFAULT_PROVISIONED_THROUGHPUT = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
-
-    def setUp(self):
-        self.dynamodb = boto3.resource("dynamodb", region_name="us-east-2")
-        self.devices_table = self.dynamodb.create_table(
-            TableName="cne_devices",
-            KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
-            AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
-            ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
-        )
-        self.rentals_table = self.dynamodb.create_table(
-            TableName="cne_rentals",
-            KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
-            AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
-            ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
-        )
-        self.reservations_table = self.dynamodb.create_table(
-            TableName="cne_reservations",
-            KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
-            AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
-            ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
-        )
-        self.service = DynamoDBService()
+class TestDynamoDBServiceDevices(BaseTestCases.BaseDynamoDBServiceTest):
 
     def test_add_devices(self):
         devices = [

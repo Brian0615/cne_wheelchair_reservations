@@ -1,12 +1,14 @@
+from datetime import datetime
 from functools import wraps
-from typing import List
+from typing import List, Optional
 
 import boto3
 import botocore
+from boto3.dynamodb.conditions import Attr, Key
 
 from api.src.exceptions import DeviceNotFoundException
-from common.constants import DeviceType, Location, DeviceStatus
-from common.data_models import NewDevice
+from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus
+from common.data_models import NewDevice, NewReservation
 from common.logger import initialize_logger, timeit
 
 
@@ -167,3 +169,64 @@ class DynamoDBService:
                 for device_id in device_ids
             ]
         )
+
+
+    # ==============================
+    # RESERVATIONS
+    # ==============================
+
+    @timeit(logger=logger)
+    def get_reservations_on_date(
+            self,
+            cne_year: int,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            exclude_picked_up_reservations: bool = False,
+    ) -> List[dict]:
+        """Get all reservations on a given date."""
+        key_condition_expression = Key('cne_year').eq(cne_year)
+        filter_expression = Attr('date').eq(date.isoformat())
+
+        if device_type:
+            filter_expression = Attr('device_type').eq(device_type)
+
+        if exclude_picked_up_reservations:
+            filter_expression &= ~Attr('status').is_in([
+                ReservationStatus.PICKED_UP,
+                ReservationStatus.COMPLETED,
+                ReservationStatus.CANCELLED,
+            ])
+
+        response = self.reservations_table.query(
+            KeyConditionExpression=key_condition_expression,
+            FilterExpression=filter_expression
+        )
+
+        return response.get('Items', [])
+
+    @timeit(logger=logger)
+    def insert_reservation(self, reservation: NewReservation):
+        """Insert a new reservation."""
+        response = self.reservations_table.query(
+            KeyConditionExpression=(
+                Key("cne_year").eq(reservation.cne_year)
+            ),
+            FilterExpression=(
+                Attr("date").eq(reservation.date.isoformat())
+                & Attr('device_type').eq(reservation.device_type)
+            ),
+        )
+        count = len(response['Items'])
+
+        # Generate a new reservation ID
+        reservation_id = (
+            f"{reservation.device_type.get_prefix()}"
+            f"{reservation.date.strftime('%m%d')}"
+            f"{str(count + 1).zfill(3)}"
+        )
+        reservation.id = reservation_id
+
+        self.reservations_table.put_item(Item=reservation.model_dump(mode="json"))
+        logger.info("Inserted new reservation: %s", reservation.id)
+
+        return reservation.id

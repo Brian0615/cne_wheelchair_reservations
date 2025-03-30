@@ -1,5 +1,6 @@
 [
   {
+    "cne_year": 2025,
     "id": "W0831001",
     "date": "2024-08-31",
     "device_type": "Wheelchair",
@@ -11,6 +12,7 @@
     "notes": ""
   },
   {
+    "cne_year": 2025,
     "id": "W0831002",
     "date": "2024-08-31",
     "device_type": "Wheelchair",

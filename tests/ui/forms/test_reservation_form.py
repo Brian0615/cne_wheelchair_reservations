@@ -14,7 +14,9 @@ class TestReservationForm(TestCase):
 
     def setUp(self):
 
+        # pylint: disable=duplicate-code
         self.mock_reservation = Reservation(
+            cne_year=2025,
             id="S0901001",
             date=date(2025, 9, 1),
             device_type=DeviceType.SCOOTER,

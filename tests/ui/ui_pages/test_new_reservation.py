@@ -1,7 +1,7 @@
 from datetime import datetime, time
 from unittest.mock import patch
 
-from common.constants import DeviceType, Location
+from common.constants import DeviceType, Location, ReservationStatus
 from common.data_models import NewReservation
 from common.utils import get_default_timezone
 from tests.base_tests import BaseTestCases
@@ -48,6 +48,7 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
                 self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
                 mock_add_new_reservation.assert_called_once_with(
                     reservation=NewReservation(
+                        cne_year=CNEDates.get_cne_year(),
                         date=CNEDates.get_default_date(),
                         device_type=DeviceType.SCOOTER,
                         location=Location.BLC,
@@ -56,7 +57,8 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
                         reservation_time=get_default_timezone().localize(
                             datetime.combine(CNEDates.get_default_date(), time(hour=11, minute=30))
                         ),  # check that the time gets converted properly
-                        notes=None
+                        notes=None,
+                        status=ReservationStatus.PENDING,
                     )
                 )
                 mock_success.assert_called_once()

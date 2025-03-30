@@ -1,13 +1,16 @@
 import json
 import os
-import unittest
 from typing import List, Optional
+from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
+import boto3
+from moto import mock_aws
 import requests
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
+from api.src.dynamodb_service import DynamoDBService
 from common.constants import DeviceType, DeviceStatus, Location
 from common.utils import get_default_timezone
 from tests.mock_requests import MockRequests
@@ -19,7 +22,43 @@ from ui.src.constants import CNEDates
 class BaseTestCases:
     """Shared Test Cases"""
 
-    class BaseFormFieldTest(unittest.TestCase):
+    @mock_aws
+    class BaseDynamoDBServiceTest(TestCase):
+        """Shared Test Cases for DynamoDB Service"""
+        __DEFAULT_TABLE_KEY_SCHEMA = [
+            {"AttributeName": "cne_year", "KeyType": "HASH"},
+            {"AttributeName": "id", "KeyType": "RANGE"}
+        ]
+        __DEFAULT_ATTRIBUTE_DEFINITIONS = [
+            {"AttributeName": "cne_year", "AttributeType": "N"},
+            {"AttributeName": "id", "AttributeType": "S"}
+        ]
+        __DEFAULT_PROVISIONED_THROUGHPUT = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
+
+        def setUp(self):
+            self.dynamodb = boto3.resource("dynamodb", region_name="us-east-2")
+            self.devices_table = self.dynamodb.create_table(
+                TableName="cne_devices",
+                KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
+                AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
+                ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
+            )
+            self.rentals_table = self.dynamodb.create_table(
+                TableName="cne_rentals",
+                KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
+                AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
+                ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
+            )
+            self.reservations_table = self.dynamodb.create_table(
+                TableName="cne_reservations",
+                KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
+                AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
+                ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
+            )
+            self.service = DynamoDBService()
+
+
+    class BaseFormFieldTest(TestCase):
         """Shared Test Cases for Form Fields"""
 
         def setUp(self):
@@ -114,7 +153,7 @@ class BaseTestCases:
             with self.assertRaises(KeyError):
                 _ = at.session_state["test_key"]
 
-    class BaseUIPageTest(unittest.TestCase):
+    class BaseUIPageTest(TestCase):
         """Shared Test Cases for UI Pages"""
 
         def setUp(self):

@@ -103,6 +103,8 @@ class DataService:
         )
         if response.status_code == 200:
             return response
+        if response.status_code == 404:
+            raise APIError(message=f"Resource not found at `{url_path}`. Please check the URL and try again.",)
         if response.status_code == 422:
             raise APIError(
                 message=f"Invalid request to `{url_path}`. Please check the parameters and try again.",
@@ -112,11 +114,11 @@ class DataService:
         raise APIError(message=response.json())
 
 
-        # ==============================
-        # DEVICES
-        # ==============================
+    # ==============================
+    # DEVICES
+    # ==============================
 
-    def _update_devices_functions_cache(self):
+    def _clear_devices_functions_cache(self):
         self.get_available_device_ids.clear()
         self.get_full_inventory.clear()
 
@@ -129,7 +131,7 @@ class DataService:
             url_path="devices/add",
             json=[device.model_dump(mode="json") for device in devices]
         )
-        self._update_devices_functions_cache()
+        self._clear_devices_functions_cache()
         return response.status_code, response.json()
 
 
@@ -176,7 +178,7 @@ class DataService:
             params={"cne_year": CNEDates.get_cne_year()},
             json=device_ids,
         )
-        self._update_devices_functions_cache()
+        self._clear_devices_functions_cache()
         return response.status_code, response.json()
 
     @timeit(logger=logger)
@@ -189,7 +191,7 @@ class DataService:
             params={"cne_year": CNEDates.get_cne_year(), "location": location},
             json=device_ids,
         )
-        self._update_devices_functions_cache()
+        self._clear_devices_functions_cache()
         return response.status_code, response.json()
 
     @timeit(logger=logger)
@@ -202,44 +204,30 @@ class DataService:
             params={"cne_year": CNEDates.get_cne_year(), "status": status},
             json=device_ids,
         )
-        self._update_devices_functions_cache()
+        self._clear_devices_functions_cache()
         return response.status_code, response.json()
 
     # ==============================
     # RESERVATIONS
     # ==============================
 
+    def _clear_reservations_functions_cache(self):
+        self.get_reservations_on_date.clear()
+
+    @timeit(logger=logger)
     @auto_process_api_errors
     def add_new_reservation(self, reservation: NewReservation):
         """Add a new reservation using the API."""
-        response = requests.post(
-            f"http://{self.api_host}:{self.api_port}/reservations/add_new_reservation",
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="reservations/add",
             json=reservation.model_dump(mode="json"),
-            timeout=DEFAULT_TIMEOUT,
         )
         self.get_reservations_on_date.clear()
         return response.status_code, response.json()
 
-    @auto_process_api_errors
-    def get_number_of_reservations_on_date(
-            self,
-            date: datetime.date,
-            device_type: DeviceType,
-            location: Location,
-    ):
-        """Get the number of reservations on a specific date using the API."""
-        response = requests.get(
-            f"http://{self.api_host}:{self.api_port}/reservations/get_number_of_reservations_on_date",
-            params={
-                "date": date.strftime("%Y-%m-%d"),
-                "device_type": device_type,
-                "location": location,
-            },
-            timeout=DEFAULT_TIMEOUT,
-        )
-        return response.json()
-
     @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
     @auto_process_api_errors
     def get_reservations_on_date(
             _self,
@@ -249,14 +237,15 @@ class DataService:
     ) -> pd.DataFrame:
         """Get the reservations on a specific date using the API."""
 
-        response = requests.get(
-            f"http://{_self.api_host}:{_self.api_port}/reservations/get_reservations_on_date",
+        response = _self._make_request(
+            request_method=requests.get,
+            url_path="reservations/get_reservations_on_date",
             params={
+                "cne_year": CNEDates.get_cne_year(),
                 "date": date.strftime("%Y-%m-%d"),
                 "device_type": device_type,
                 "exclude_picked_up_reservations": exclude_picked_up_reservations,
             },
-            timeout=DEFAULT_TIMEOUT,
         )
         reservations = response.json()
         reservations = pd.DataFrame([Reservation(**reservation).model_dump() for reservation in reservations])
@@ -334,7 +323,7 @@ class DataService:
             json=change_device_info.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
-        self._update_devices_functions_cache()
+        self._clear_devices_functions_cache()
         self.get_rentals_on_date.clear()
         return response.status_code, response.json()
 
@@ -346,7 +335,7 @@ class DataService:
             json=completed_rental.model_dump(mode="json"),
             timeout=DEFAULT_TIMEOUT,
         )
-        self._update_devices_functions_cache()
+        self._clear_devices_functions_cache()
         self.get_rentals_on_date.clear()
         return response.status_code, response.json()
 

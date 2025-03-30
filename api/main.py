@@ -2,31 +2,24 @@ from datetime import datetime
 from typing import List, Annotated, Optional
 
 from fastapi import FastAPI, HTTPException, File
-from pydantic import constr
 
-from api.routers import devices_router
-from api.src.exceptions import UniqueViolation
+from api.routers import devices_router, reservations_router
 from api.src.rds_service import RDSService
 from api.src.s3_service import S3Service
 from api.src.utils import auto_process_database_errors
-from common.constants import (
-    DeviceType,
-    Location,
-    ReservationStatus,
-    RESERVATION_ID_PATTERN,
-)
+from common.constants import DeviceType
 from common.data_models import (
     ChangeDeviceInfo,
     CompletedRental,
     NewRental,
-    NewReservation,
     RentalSummary,
-    Reservation,
 )
 
 app = FastAPI()
 # add the routers
 app.include_router(devices_router)
+app.include_router(reservations_router)
+
 s3_service = S3Service()
 rds_service = RDSService()
 
@@ -101,57 +94,3 @@ def download_rental_form(rental_id: str) -> Optional[bytes]:
 def upload_rental_form(pdf_bytes: Annotated[bytes, File()], rental_id: str):
     """Upload a rental form to S3"""
     s3_service.upload_rental_form(pdf_bytes=pdf_bytes, rental_id=rental_id)
-
-
-# ==============================
-# RESERVATIONS
-# ==============================
-
-@app.get("/reservations/get_number_of_reservations_on_date")
-@auto_process_database_errors
-def get_number_of_reservations_on_date(date: str, device_type: DeviceType, location: Location) -> int:
-    """Get the number of reservations on a specific date"""
-    date = datetime.strptime(date, "%Y-%m-%d").date()
-    result = rds_service.get_number_of_reservations_on_date(date=date, device_type=device_type, location=location)
-    return result.iloc[0]["number_of_reservations"] if not result.empty else 0
-
-
-@app.get("/reservations/get_reservations_on_date")
-@auto_process_database_errors
-def get_reservations_on_date(
-        date: str,
-        device_type: Optional[DeviceType] = None,
-        exclude_picked_up_reservations: bool = False,
-) -> List[Reservation]:
-    """Get the reservations on a specific date"""
-    date = datetime.strptime(date, "%Y-%m-%d").date()
-    reservations = rds_service.get_reservations_on_date(
-        date=date,
-        device_type=device_type,
-        exclude_picked_up_reservations=exclude_picked_up_reservations,
-    )
-    return [Reservation(**x) for x in reservations.to_dict(orient="records")]
-
-
-@app.post("/reservations/add_new_reservation")
-@auto_process_database_errors
-def insert_new_reservation(reservation: NewReservation) -> constr(to_upper=True, pattern=RESERVATION_ID_PATTERN):
-    """Add a new reservation"""
-    try:
-        return rds_service.insert_new_reservation(reservation=reservation)
-    except UniqueViolation as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-
-
-@app.post("/reservations/update_reservation")
-@auto_process_database_errors
-def update_reservation(reservation: Reservation):
-    """Update reservation"""
-    return rds_service.update_reservation(reservation=reservation)
-
-
-@app.post("/reservations/update_reservation_status")
-@auto_process_database_errors
-def update_reservation_status(reservation_id: str, reservation_status: ReservationStatus):
-    """Update the status of a reservation"""
-    return rds_service.update_reservation_status(reservation_id=reservation_id, reservation_status=reservation_status)
