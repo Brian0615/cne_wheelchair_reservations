@@ -92,6 +92,7 @@ class RentalSummary(BaseModel):
     date: RentalDateField
     device_id: DeviceIDField
     device_type: DeviceTypeField
+    reservation_id: ReservationIDField
     pickup_location: PickupLocationField
     pickup_time: PickupTimeField
 
@@ -119,6 +120,7 @@ class RentalSummary(BaseModel):
 
 class NewRental(BaseModel):
     """Data model for a new rental."""
+    model_config = ConfigDict(extra="forbid", ser_json_bytes="utf8")
 
     cne_year: CNEYearField
     date: RentalDateField
@@ -159,11 +161,13 @@ class NewRental(BaseModel):
 
 class CompletedRental(BaseModel):
     """Data model for a completed rental"""
+    model_config = ConfigDict(extra="forbid", ser_json_bytes="utf8")
 
     cne_year: CNEYearField
     id: RentalIDField
     date: RentalDateField
     device_id: DeviceIDField
+    reservation_id: ReservationIDField
 
     name: NameField
 

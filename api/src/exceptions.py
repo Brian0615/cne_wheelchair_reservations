@@ -14,6 +14,14 @@ class NewDeviceNotFoundException(Exception):
         super().__init__(self.message)
 
 
+class RentalNotFoundOrNotEditableException(Exception):
+    """Exception raised when a rental is not found in the inventory or cannot be edited"""
+
+    def __init__(self, cne_year: int, rental_id: str):
+        self.message = f"Rental {rental_id} (cne_year={cne_year}) not found or cannot be edited"
+        super().__init__(self.message)
+
+
 class ReservationNotFoundOrNotEditableException(Exception):
     """Exception raised when a device is not found in the inventory."""
 

@@ -10,10 +10,11 @@ from api.src.exceptions import (
     DeviceNotFoundException,
     NewDeviceNotFoundException,
     NewReservationNotFoundOrNotEditableException,
-    ReservationNotFoundOrNotEditableException
+    ReservationNotFoundOrNotEditableException,
+    RentalNotFoundOrNotEditableException
 )
 from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus, RentalStatus
-from common.data_models import NewDevice, NewReservation, Reservation, NewRental
+from common.data_models import CompletedRental, NewDevice, NewReservation, Reservation, NewRental
 from common.logger import initialize_logger, timeit
 
 logger = initialize_logger()
@@ -212,6 +213,100 @@ class DynamoDBService:
     # RENTALS
     # ==============================
 
+    @timeit(logger=logger)
+    def complete_rental(self, rental: CompletedRental):
+        """Complete a rental."""
+        transact_items = [
+            {
+                "Update": {
+                    "TableName": self.devices_table.name,
+                    "Key": {"cne_year": rental.cne_year, "id": rental.device_id},
+                    "ConditionExpression": (
+                        "attribute_exists(cne_year) AND attribute_exists(id) "
+                        "AND #status = :rented_status"
+                    ),
+                    "UpdateExpression": "SET #status = :status, #location = :location",
+                    "ExpressionAttributeNames": {
+                        "#status": "status",
+                        "#location": "location",
+                    },
+                    "ExpressionAttributeValues": {
+                        ":rented_status": DeviceStatus.RENTED,
+                        ":status": DeviceStatus.AVAILABLE,
+                        ":location": rental.return_location,
+                    },
+                }
+            },
+            {
+                "Update": {
+                    "TableName": self.rentals_table.name,
+                    "Key": {"cne_year": rental.cne_year, "id": rental.id},
+                    "ConditionExpression": (
+                        "attribute_exists(cne_year) AND attribute_exists(id) "
+                        "AND NOT (#status in (:completed_status))"
+                    ),
+                    "UpdateExpression": (
+                        "SET #status = :status, "
+                        "#return_location = :return_location, "
+                        "#return_time = :return_time, "
+                        "#return_staff_name = :return_staff_name, "
+                        "#return_signature = :return_signature"
+                    ),
+                    "ExpressionAttributeNames": {
+                        "#status": "status",
+                        "#return_location": "return_location",
+                        "#return_time": "return_time",
+                        "#return_staff_name": "return_staff_name",
+                        "#return_signature": "return_signature",
+                    },
+                    "ExpressionAttributeValues": {
+                        ":completed_status": RentalStatus.COMPLETED,
+                        ":status": RentalStatus.COMPLETED,
+                        ":return_location": rental.return_location,
+                        ":return_time": rental.return_time.isoformat(),
+                        ":return_staff_name": rental.return_staff_name,
+                        ":return_signature": rental.return_signature,
+                    },
+                }
+            }
+        ]
+        if rental.reservation_id:
+            transact_items.append(
+                {
+                    "Update": {
+                        "TableName": self.reservations_table.name,
+                        "Key": {"cne_year": rental.cne_year, "id": rental.reservation_id},
+                        "ConditionExpression": (
+                            "attribute_exists(cne_year) AND attribute_exists(id) "
+                            "AND #status = :picked_up_status"
+                        ),
+                        "UpdateExpression": "SET #status = :status",
+                        "ExpressionAttributeNames": {"#status": "status"},
+                        "ExpressionAttributeValues": {
+                            ":picked_up_status": ReservationStatus.PICKED_UP,
+                            ":status": ReservationStatus.COMPLETED,
+                        },
+                    }
+                }
+            )
+
+        try:
+            self.dynamodb.meta.client.transact_write_items(TransactItems=transact_items)
+        except botocore.exceptions.ClientError as exc:
+            if exc.response["Error"]["Code"] == "TransactionCanceledException":
+                cancellation_reasons = exc.response["CancellationReasons"]
+                if cancellation_reasons[0]["Code"] == "ConditionalCheckFailed":
+                    raise NewDeviceNotFoundException(cne_year=rental.cne_year, device_id=rental.device_id) from exc
+                if cancellation_reasons[1]["Code"] == "ConditionalCheckFailed":
+                    raise RentalNotFoundOrNotEditableException(cne_year=rental.cne_year, rental_id=rental.id) from exc
+                if rental.reservation_id and cancellation_reasons[2]["Code"] == "ConditionalCheckFailed":
+                    raise NewReservationNotFoundOrNotEditableException(
+                        cne_year=rental.cne_year,
+                        reservation_id=rental.reservation_id,
+                    ) from exc
+            raise exc
+        logger.info("Completed rental: %s", rental.id)
+
     def get_rentals_on_date(
             self,
             date: datetime.date,
@@ -232,10 +327,10 @@ class DynamoDBService:
             KeyConditionExpression=key_condition_expression,
             FilterExpression=filter_expression,
             ProjectionExpression=(
-                "id, device_id, device_type, pickup_location, pickup_time, #name, phone_number, "
-                "deposit_payment_method, items_left_behind, notes, return_location, return_time"
+                "cne_year, id, #date, device_id, device_type, pickup_location, pickup_time, reservation_id, #name, "
+                "phone_number, deposit_payment_method, items_left_behind, notes, return_location, return_time"
             ),
-            ExpressionAttributeNames={"#name": "name"},
+            ExpressionAttributeNames={"#date": "date", "#name": "name"},
         )
 
         return response.get("Items", [])

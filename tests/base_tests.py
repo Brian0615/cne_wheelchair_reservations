@@ -14,7 +14,7 @@ from streamlit.testing.v1 import AppTest
 
 from api.src.dynamodb_service import DynamoDBService
 from common.constants import DeviceType, DeviceStatus, Location, PaymentMethod, RentalStatus, ReservationStatus
-from common.data_models import NewRental, NewReservation, Reservation
+from common.data_models import CompletedRental, NewRental, NewReservation, Reservation
 from common.utils import get_default_timezone
 from tests.mock_requests import MockRequests
 from ui.src import auth_utils
@@ -94,6 +94,26 @@ class BaseTestCases:
         def _generate_mock_reservation(self, overrides: Optional[dict] = None):
             reservation = self._generate_mock_new_reservation(overrides=overrides)
             return Reservation(**reservation.model_dump())
+
+        @staticmethod
+        def _generate_mock_completed_rental(overrides: Optional[dict] = None):
+            """Generate mock data for a completed rental"""
+            rental_params = {
+                "cne_year": 2025,
+                "id": "W0820001",
+                "date": date(2025, 8, 20),
+                "device_id": "W01",
+                "reservation_id": "W0820001",
+                "name": "Test Name",
+                "return_location": Location.BLC,
+                "return_time": get_default_timezone().localize(datetime(2025, 8, 20, 20, 28)),
+                "return_staff_name": "Test Staff",
+                "return_signature": Signature(signature_data=np.ones((100, 600, 4), dtype=np.uint8)).encode_as_base64(),
+            }
+            if overrides:
+                for key, value in overrides.items():
+                    rental_params[key] = value
+            return CompletedRental(**rental_params)
 
         @staticmethod
         def _generate_mock_new_rental(overrides: Optional[dict] = None):
