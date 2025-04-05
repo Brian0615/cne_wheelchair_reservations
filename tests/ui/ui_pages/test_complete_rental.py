@@ -78,7 +78,8 @@ class TestCompleteRental(BaseTestCases.BaseUIPageTest):
         target="ui.src.constants.CNEDates.get_cne_date_list",
         return_value=[date(2024, 8, 16), date(2024, 9, 2)]
     )
-    def test_complete_rental_form_submission(self, _):
+    @patch.object(CNEDates, "get_cne_year", return_value=2024)
+    def test_complete_rental_form_submission(self, _, __):
         """Test the form submission for completing a rental"""
         with patch(
             target="ui.forms.form_fields.signature_field.st_canvas",

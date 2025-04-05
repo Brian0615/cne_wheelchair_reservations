@@ -1,111 +1,113 @@
-import datetime
-from typing import List, Optional
-
 import pandas as pd
-from pydantic import AwareDatetime, BaseModel, ConfigDict, conint, constr, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, constr, Field, field_validator, model_validator
 
 from common.constants import (
     DeviceType,
-    HoldItem,
     Location,
-    PaymentMethod,
-    RentalStatus,
     DEVICE_ID_PATTERN,
     RENTAL_ID_PATTERN,
-    RESERVATION_ID_PATTERN,
 )
+from common.data_models.fields import (
+    CNEYearField,
+    RentalIDField,
+    RentalDateField,
+    DeviceIDField,
+    DeviceTypeField,
+    ReservationIDField,
+    PickupLocationField,
+    PickupTimeField,
+    RentalStatusField,
+    NameField,
+    PhoneNumberField,
+    AddressField,
+    CityField,
+    ProvinceField,
+    PostalCodeField,
+    CountryField,
+    FeePaymentMethodField,
+    FeePaymentAmountField,
+    DepositPaymentMethodField,
+    DepositPaymentAmountField,
+    ItemsLeftBehindField,
+    NotesField,
+    StaffNameField,
+    SignatureField,
+    ReturnLocationField,
+    ReturnTimeField,
+    ReturnStaffNameField,
+    ReturnSignatureField,
+)
+from common.data_models.validators import check_device_id_and_type, check_reservation_id_and_type, \
+    check_cne_year_and_date
 
 
 class Rental(BaseModel):
     """Data model for a rental"""
     model_config = ConfigDict(extra="forbid", ser_json_bytes="utf8")
 
-    cne_year: conint(ge=2000) = Field(title="CNE Year")
-    id: constr(to_upper=True, pattern=RENTAL_ID_PATTERN) = Field(title="Rental ID")
-    date: datetime.date = Field(title="Rental Date")
-    device_id: constr(to_upper=True, pattern=DEVICE_ID_PATTERN) = Field(title="Device ID")
-    device_type: DeviceType = Field(title="Device Type")
-    reservation_id: Optional[constr(pattern=RESERVATION_ID_PATTERN)] = Field(title="Reservation ID", default=None)
-    pickup_location: Location = Field(title="Pickup Location")
-    pickup_time: AwareDatetime = Field(title="Pickup Time")
-    status: RentalStatus = Field(title="Status")
+    cne_year: CNEYearField
+    id: RentalIDField
+    date: RentalDateField
+    device_id: DeviceIDField
+    device_type: DeviceTypeField
+    reservation_id: ReservationIDField
+    pickup_location: PickupLocationField
+    pickup_time: PickupTimeField
+    status: RentalStatusField
 
-    name: constr(min_length=3) = Field(title="Name")
-    phone_number: constr(min_length=5) = Field(title="Phone Number")
-    address: constr(min_length=5, strip_whitespace=True) = Field(title="Address")
-    city: constr(min_length=5) = Field(title="City")
-    province: constr(min_length=2) = Field(title="Province")
-    postal_code: Optional[constr(min_length=3)] = Field(title="Postal Code", default=None)
-    country: constr(min_length=3) = Field(title="Country")
+    name: NameField
+    phone_number: PhoneNumberField
+    address: AddressField
+    city: CityField
+    province: ProvinceField
+    postal_code: PostalCodeField
+    country: CountryField
 
-    fee_payment_method: PaymentMethod = Field(title="Fee Payment Method")
-    fee_payment_amount: conint(gt=0) = Field(title="Fee Payment Amount")
-    deposit_payment_amount: conint(gt=0) = Field(title="Deposit Payment Amount")
-    deposit_payment_method: PaymentMethod = Field(title="Deposit Payment Method")
-    items_left_behind: List[HoldItem] = Field(title="Items Left Behind", default=[])
-    notes: Optional[str] = Field(title="Notes", default=None)
-    staff_name: constr(min_length=5) = Field(title="Staff Name")
-    signature: bytes = Field(title="Signature")
+    fee_payment_amount: FeePaymentAmountField
+    fee_payment_method: FeePaymentMethodField
+    deposit_payment_amount: DepositPaymentAmountField
+    deposit_payment_method: DepositPaymentMethodField
+    items_left_behind: ItemsLeftBehindField
+    notes: NotesField
+    staff_name: StaffNameField
+    signature: SignatureField
 
-    return_location: Optional[Location] = Field(title="Return Location", default=None)
-    return_time: Optional[AwareDatetime] = Field(title="Return Time", default=None)
-    return_staff_name: Optional[constr(min_length=5)] = Field(title="Return Staff Name", default=None)
-    return_signature: Optional[bytes] = Field(title="Return Signature", default=None)
+    return_location: ReturnLocationField
+    return_time: ReturnTimeField
+    return_staff_name: ReturnStaffNameField
+    return_signature: ReturnSignatureField
 
-    # pylint: disable=no-member
-    @model_validator(mode="after")
-    def check_device_id(self):
-        """Ensure that the device ID matches the device type"""
-        if not self.device_id.startswith(self.device_type.get_prefix()):
-            raise ValueError(f"Device ID ({self.device_id}) and type ({self.device_type}) do not match")
-        return self
-
-    # pylint: disable=no-member
-    @model_validator(mode="after")
-    def check_reservation_id(self):
-        """Ensure that the reservation ID matches the device type"""
-        if self.reservation_id:
-            if not self.reservation_id.startswith(self.device_type.get_prefix()):
-                raise ValueError(f"Reservation ID ({self.reservation_id}) and type ({self.device_type}) do not match")
-        return self
-
-    @model_validator(mode="after")
-    def check_year_and_date(self):
-        """Ensure that the CNE year and the year of the rental date match"""
-        if self.cne_year != self.date.year:
-            raise ValueError(f"CNE Year ({self.cne_year}) and date ({self.date}) do not match")
-        return self
+    # validators
+    cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
+    device_id_and_type_validator = model_validator(mode="after")(check_device_id_and_type)
+    reservation_id_and_type_validator = model_validator(mode="after")(check_reservation_id_and_type)
 
 
-class RentalBase(BaseModel):
-    """Base Data Model for Rentals"""
-
+class RentalSummary(BaseModel):
+    """Data model for a base rental"""
     model_config = ConfigDict(extra="forbid", ser_json_bytes="utf8")
 
-    id: constr(to_upper=True, pattern=RENTAL_ID_PATTERN) = Field(title="Rental ID")
+    cne_year: CNEYearField
+    id: RentalIDField
+    date: RentalDateField
+    device_id: DeviceIDField
+    device_type: DeviceTypeField
+    pickup_location: PickupLocationField
+    pickup_time: PickupTimeField
 
+    name: NameField
+    phone_number: PhoneNumberField
 
-class RentalSummary(Rental):
-    """Data model for a base rental"""
+    deposit_payment_method: DepositPaymentMethodField
+    items_left_behind: ItemsLeftBehindField
+    notes: NotesField
 
-    # make unneeded fields optional and set defaults to None
-    reservation_id: Optional[constr(pattern=RESERVATION_ID_PATTERN)] = Field(title="Reservation ID", default=None)
-    status: Optional[RentalStatus] = Field(title="Status", default=None)
+    return_location: ReturnLocationField
+    return_time: ReturnTimeField
 
-    address: Optional[constr(min_length=5, strip_whitespace=True)] = Field(title="Address", default=None)
-    city: Optional[constr(min_length=5)] = Field(title="City", default=None)
-    province: Optional[constr(min_length=2)] = Field(title="Province", default=None)
-    postal_code: Optional[constr(min_length=3)] = Field(title="Postal Code", default=None)
-    country: Optional[constr(min_length=3)] = Field(title="Country", default=None)
-
-    fee_payment_method: Optional[PaymentMethod] = Field(title="Fee Payment Method", default=None)
-    fee_payment_amount: Optional[conint(gt=0)] = Field(title="Fee Payment Amount", default=None)
-    deposit_payment_amount: Optional[conint(gt=0)] = Field(title="Deposit Payment Amount", default=None)
-    staff_name: Optional[constr(min_length=5)] = Field(title="Staff Name", default=None)
-    signature: Optional[bytes] = Field(title="Signature", default=None)
-
-    return_staff_name: Optional[constr(min_length=5)] = Field(title="Return Staff Name", default=None)
-    return_signature: Optional[bytes] = Field(title="Return Signature", default=None)
+    # validators
+    cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
+    device_id_and_type_validator = model_validator(mode="after")(check_device_id_and_type)
 
     # validator to convert pandas NaT to None
     @field_validator("return_time", mode="before")
@@ -115,20 +117,63 @@ class RentalSummary(Rental):
         return None if pd.isnull(value) else value
 
 
-class NewRental(Rental):
+class NewRental(BaseModel):
     """Data model for a new rental."""
 
-    id: Optional[constr(to_upper=True, pattern=RENTAL_ID_PATTERN)] = Field(title="Rental ID", default=None)
+    cne_year: CNEYearField
+    date: RentalDateField
+    device_id: DeviceIDField
+    device_type: DeviceTypeField
+    reservation_id: ReservationIDField
+    pickup_location: PickupLocationField
+    pickup_time: PickupTimeField
+    status: RentalStatusField
+
+    name: NameField
+    phone_number: PhoneNumberField
+    address: AddressField
+    city: CityField
+    province: ProvinceField
+    postal_code: PostalCodeField
+    country: CountryField
+
+    fee_payment_amount: FeePaymentAmountField
+    fee_payment_method: FeePaymentMethodField
+    deposit_payment_amount: DepositPaymentAmountField
+    deposit_payment_method: DepositPaymentMethodField
+    items_left_behind: ItemsLeftBehindField
+    notes: NotesField
+    staff_name: StaffNameField
+    signature: SignatureField
+
+    return_location: ReturnLocationField
+    return_time: ReturnTimeField
+    return_staff_name: ReturnStaffNameField
+    return_signature: ReturnSignatureField
+
+    # validators
+    cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
+    device_id_and_type_validator = model_validator(mode="after")(check_device_id_and_type)
+    reservation_id_and_type_validator = model_validator(mode="after")(check_reservation_id_and_type)
 
 
-class CompletedRental(RentalBase):
+class CompletedRental(BaseModel):
     """Data model for a completed rental"""
-    name: constr(min_length=3) = Field(title="Name")
-    device_id: constr(to_upper=True, pattern=DEVICE_ID_PATTERN) = Field(title="Device ID")
-    return_location: Optional[Location] = Field(title="Return Location", default=None)
-    return_time: Optional[AwareDatetime] = Field(title="Return Time", default=None)
-    return_staff_name: constr(min_length=5) = Field(title="Return Staff Name")
-    return_signature: bytes = Field(title="Return Signature")
+
+    cne_year: CNEYearField
+    id: RentalIDField
+    date: RentalDateField
+    device_id: DeviceIDField
+
+    name: NameField
+
+    return_location: ReturnLocationField
+    return_time: ReturnTimeField
+    return_staff_name: ReturnStaffNameField
+    return_signature: ReturnSignatureField
+
+    # validators
+    cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
 
 
 class ChangeDeviceInfo(BaseModel):

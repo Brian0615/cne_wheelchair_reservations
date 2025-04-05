@@ -60,6 +60,7 @@ def submit_complete_rental_form(completed_rental: dict):
     """Complete a rental"""
 
     # process signature
+    completed_rental["cne_year"] = CNEDates.get_cne_year()
     completed_rental["return_signature"] = Signature(
         signature_data=completed_rental["return_signature"]
     ).encode_as_base64()

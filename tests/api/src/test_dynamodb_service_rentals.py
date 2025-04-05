@@ -55,7 +55,10 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
         self.service.insert_rental(rental=rental)
         responses = self.service.rentals_table.scan()
         self.assertEqual(len(responses["Items"]), 1)
-        self.assertEqual([Rental(**x) for x in responses["Items"]], [Rental(**rental.model_dump(mode="json"))])
+        self.assertEqual(
+            [Rental(**x) for x in responses["Items"]],
+            [Rental(id="W0820001", **rental.model_dump(mode="json"))],
+        )
 
         with self.assertRaises(
                 NewDeviceNotFoundException,

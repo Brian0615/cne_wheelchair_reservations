@@ -243,7 +243,7 @@ class DynamoDBService:
     @timeit(logger=logger)
     def insert_rental(self, rental: NewRental):
         """Insert a new rental."""
-        rental.id = self._get_new_rental_or_reservation_id(
+        rental_id = self._get_new_rental_or_reservation_id(
             table=self.rentals_table,
             cne_year=rental.cne_year,
             date=rental.date,
@@ -270,7 +270,7 @@ class DynamoDBService:
             {
                 "Put": {
                     "TableName": self.rentals_table.name,
-                    "Item": rental.model_dump(mode="json"),
+                    "Item": {"id": rental_id, **rental.model_dump(mode="json")},
                 }
             },
         ]
@@ -295,7 +295,7 @@ class DynamoDBService:
                             ":completed": ReservationStatus.COMPLETED,
                             ":picked_up": ReservationStatus.PICKED_UP,
                             ":status": ReservationStatus.PICKED_UP,
-                            ":rental_id": rental.id,
+                            ":rental_id": rental_id,
                         },
                     }
                 }
@@ -314,8 +314,8 @@ class DynamoDBService:
                         reservation_id=rental.reservation_id,
                     ) from exc
             raise exc
-        logger.info("Inserted new rental: %s", rental.id)
-        return rental.id
+        logger.info("Inserted new rental: %s", rental_id)
+        return rental_id
 
 
     # ==============================
