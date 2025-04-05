@@ -30,8 +30,7 @@ class ReservationNotFoundOrNotEditableException(Exception):
 
 
 class NewReservationNotFoundOrNotEditableException(Exception):
-    """Exception raised when a device is not found in the inventory."""
-
+    """Exception raised when a reservation is not found in the inventory."""
     def __init__(self, cne_year: int, reservation_id: str):
         self.message = (
             f"Reservation {reservation_id} (cne_year={cne_year}) not found or "
