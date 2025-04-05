@@ -14,7 +14,7 @@ from api.src.exceptions import (
     RentalNotFoundOrNotEditableException
 )
 from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus, RentalStatus
-from common.data_models import CompletedRental, NewDevice, NewReservation, Reservation, NewRental
+from common.data_models import CompletedRental, NewDevice, NewReservation, Reservation, NewRental, ChangeDeviceInfo
 from common.logger import initialize_logger, timeit
 
 logger = initialize_logger()
@@ -84,6 +84,42 @@ class DynamoDBService:
         count = len(response['Items'])
 
         return f"{device_type.get_prefix()}{date.strftime('%m%d')}{str(count + 1).zfill(3)}"
+
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def _form_update_device_transact_dict(
+            self,
+            cne_year: int,
+            device_id: str,
+            update_location: Location,
+            update_status: DeviceStatus,
+            expected_status: Optional[DeviceStatus] = None,
+            expected_type: Optional[DeviceType] = None,
+    ) -> dict:
+        """Form a transaction dictionary to update a device's location and status in DynamoDB."""
+
+        return {
+            "Update": {
+                "TableName": self.devices_table.name,
+                "Key": {"cne_year": cne_year, "id": device_id},
+                "ConditionExpression": (
+                    "attribute_exists(cne_year) AND attribute_exists(id)"
+                    + (" AND #status = :expected_status" if expected_status else "")
+                    + (" AND #type = :expected_type" if expected_type else "")
+                ),
+                "UpdateExpression": "SET #status = :update_status, #location = :update_location",
+                "ExpressionAttributeNames": {
+                    "#status": "status",
+                    "#location": "location",
+                    "#type": "type",
+                },
+                "ExpressionAttributeValues": {
+                    ":update_status": update_status,
+                    ":update_location": update_location,
+                    ":expected_status": expected_status,
+                    ":expected_type": expected_type,
+                }
+            }
+        }
 
     # ==============================
     # DEVICES
@@ -214,29 +250,77 @@ class DynamoDBService:
     # ==============================
 
     @timeit(logger=logger)
+    def change_rental_device(self, change_info: ChangeDeviceInfo):
+        """Change the device of a rental."""
+        transact_items = [
+            self._form_update_device_transact_dict(
+                cne_year=change_info.cne_year,
+                device_id=change_info.old_device_id,
+                update_location=change_info.location,
+                update_status=DeviceStatus.AVAILABLE,
+                expected_status=DeviceStatus.RENTED,
+            ),
+            self._form_update_device_transact_dict(
+                cne_year=change_info.cne_year,
+                device_id=change_info.new_device_id,
+                update_location=change_info.location,
+                update_status=DeviceStatus.RENTED,
+                expected_status=DeviceStatus.AVAILABLE,
+                expected_type=change_info.device_type,
+            ),
+            {  # update rental
+                "Update": {
+                    "TableName": self.rentals_table.name,
+                    "Key": {"cne_year": change_info.cne_year, "id": change_info.id},
+                    "ConditionExpression": (
+                        "attribute_exists(cne_year) AND attribute_exists(id) AND #status = :in_progress_status"
+                    ),
+                    "UpdateExpression": "SET #device_id = :device_id",
+                    "ExpressionAttributeNames": {
+                        "#device_id": "device_id",
+                        "#status": "status",
+                    },
+                    "ExpressionAttributeValues": {
+                        ":device_id": change_info.new_device_id,
+                        ":in_progress_status": RentalStatus.IN_PROGRESS,
+                    },
+                }
+            }
+        ]
+
+        try:
+            self.dynamodb.meta.client.transact_write_items(TransactItems=transact_items)
+        except botocore.exceptions.ClientError as exc:
+            if exc.response["Error"]["Code"] == "TransactionCanceledException":
+                cancellation_reasons = exc.response["CancellationReasons"]
+                if cancellation_reasons[0]["Code"] == "ConditionalCheckFailed":
+                    raise NewDeviceNotFoundException(
+                        cne_year=change_info.cne_year,
+                        device_id=change_info.old_device_id
+                    ) from exc
+                if cancellation_reasons[1]["Code"] == "ConditionalCheckFailed":
+                    raise NewDeviceNotFoundException(
+                        cne_year=change_info.cne_year,
+                        device_id=change_info.new_device_id
+                    ) from exc
+                if cancellation_reasons[2]["Code"] == "ConditionalCheckFailed":
+                    raise RentalNotFoundOrNotEditableException(
+                        cne_year=change_info.cne_year,
+                        rental_id=change_info.id,
+                    ) from exc
+            raise exc
+
+    @timeit(logger=logger)
     def complete_rental(self, rental: CompletedRental):
         """Complete a rental."""
         transact_items = [
-            {
-                "Update": {
-                    "TableName": self.devices_table.name,
-                    "Key": {"cne_year": rental.cne_year, "id": rental.device_id},
-                    "ConditionExpression": (
-                        "attribute_exists(cne_year) AND attribute_exists(id) "
-                        "AND #status = :rented_status"
-                    ),
-                    "UpdateExpression": "SET #status = :status, #location = :location",
-                    "ExpressionAttributeNames": {
-                        "#status": "status",
-                        "#location": "location",
-                    },
-                    "ExpressionAttributeValues": {
-                        ":rented_status": DeviceStatus.RENTED,
-                        ":status": DeviceStatus.AVAILABLE,
-                        ":location": rental.return_location,
-                    },
-                }
-            },
+            self._form_update_device_transact_dict(
+                cne_year=rental.cne_year,
+                device_id=rental.device_id,
+                update_location=rental.return_location,
+                update_status=DeviceStatus.AVAILABLE,
+                expected_status=DeviceStatus.RENTED,
+            ),
             {
                 "Update": {
                     "TableName": self.rentals_table.name,
@@ -346,22 +430,14 @@ class DynamoDBService:
         )
 
         transact_items = [
-            {
-                "Update": {
-                    "TableName": self.devices_table.name,
-                    "Key": {"cne_year": rental.cne_year, "id": rental.device_id},
-                    "ConditionExpression": (
-                        "attribute_exists(cne_year) AND attribute_exists(id) AND #status = :curr_status"
-                    ),
-                    "UpdateExpression": "SET #status = :new_status, #location = :location",
-                    "ExpressionAttributeNames": {"#status": "status", "#location": "location"},
-                    "ExpressionAttributeValues": {
-                        ":curr_status": DeviceStatus.AVAILABLE,
-                        ":new_status": DeviceStatus.RENTED,
-                        ":location": rental.pickup_location,
-                    },
-                }
-            },
+            self._form_update_device_transact_dict(
+                cne_year=rental.cne_year,
+                device_id=rental.device_id,
+                update_location=rental.pickup_location,
+                update_status=DeviceStatus.RENTED,
+                expected_status=DeviceStatus.AVAILABLE,
+                expected_type=rental.device_type,
+            ),
             {
                 "Put": {
                     "TableName": self.rentals_table.name,

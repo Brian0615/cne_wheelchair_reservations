@@ -7,7 +7,7 @@ from api.src.exceptions import (
     NewReservationNotFoundOrNotEditableException,
 )
 from common.constants import DeviceStatus, DeviceType, Location, RentalStatus, ReservationStatus
-from common.data_models import Rental, NewDevice
+from common.data_models import Rental, NewDevice, ChangeDeviceInfo
 from tests.base_tests import BaseTestCases
 
 
@@ -27,6 +27,56 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
         self.assertEqual(self.service.rentals_table.scan()["Items"][0]["status"], RentalStatus.IN_PROGRESS)
         self.assertEqual(self.service.reservations_table.scan()["Items"][0]["status"], ReservationStatus.PICKED_UP)
         self.assertEqual(self.service.devices_table.scan()["Items"][0]["status"], DeviceStatus.RENTED)
+
+    def test_change_rental_device(self):
+        self._setup_in_progress_rental()
+        self.service.add_devices(devices=[
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.AVAILABLE),
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.BACKUP),
+            NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.AVAILABLE),
+        ])
+
+        # try changing to a device that should raise an error
+        for new_device_id, subtest_msg in (
+                ("W05", "Non-Existent Device"),
+                ("S01", "Device of the wrong type"),
+                ("W03", "Device of the wrong status"),
+        ):
+            with self.subTest(msg=subtest_msg):
+                with self.assertRaises(NewDeviceNotFoundException):
+                    self.service.change_rental_device(
+                        change_info=ChangeDeviceInfo(
+                            cne_year=2025,
+                            date=date(2025, 8, 20),
+                            id="W0820001",
+                            device_type=DeviceType.WHEELCHAIR,
+                            location=Location.BLC,
+                            old_device_id="W01",
+                            new_device_id=new_device_id,
+                            staff_name="Test Staff",
+                        )
+
+                    )
+                self.assertEqual(self.service.rentals_table.scan()["Items"][0]["device_id"], "W01")
+                for device in self.service.devices_table.scan()["Items"]:
+                    self.assertEqual(device["status"] == DeviceStatus.RENTED, device["id"] == "W01")
+
+        # try a proper change that should work
+        self.service.change_rental_device(
+            change_info=ChangeDeviceInfo(
+                cne_year=2025,
+                date=date(2025, 8, 20),
+                id="W0820001",
+                device_type=DeviceType.WHEELCHAIR,
+                location=Location.BLC,
+                old_device_id="W01",
+                new_device_id="W02",
+                staff_name="Test Staff",
+            )
+        )
+        self.assertEqual(self.service.rentals_table.scan()["Items"][0]["device_id"], "W02")
+        for device in self.service.devices_table.scan()["Items"]:
+            self.assertEqual(device["status"] == DeviceStatus.RENTED, device["id"] == "W02")
 
     def test_complete_rentals_device(self):
         """Test the complete rentals function if there is an issue with the referenced device"""

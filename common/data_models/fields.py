@@ -48,3 +48,4 @@ ReturnStaffNameField = Annotated[
     StringConstraints(min_length=5), Field(title="Return Staff Name", default=None),
 ]
 ReturnSignatureField = Annotated[Optional[bytes], Field(title="Return Signature", default=None)]
+LocationField = Annotated[Location, Field(title="Location")]

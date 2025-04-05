@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from api.src.dynamodb_service import DynamoDBService
 from api.src.utils import auto_process_database_errors
 from common.constants import DeviceType
-from common.data_models import CompletedRental, NewRental, RentalSummary
+from common.data_models import ChangeDeviceInfo, CompletedRental, NewRental, RentalSummary
 
 db_service = DynamoDBService()
 router = APIRouter(prefix="/rentals", tags=["rentals"])
@@ -19,13 +19,13 @@ def add_new_rental(new_rental: NewRental):
     return db_service.insert_rental(rental=new_rental)
 
 
-# @router.post("/change_device")
-# @auto_process_database_errors
-# def change_rental_device(change_device_info: ChangeDeviceInfo):
-#     """Change the device of a rental"""
-#     return db_service.change_rental_device(change_device_info=change_device_info)
-#
-#
+@router.post("/change_device")
+@auto_process_database_errors
+def change_rental_device(change_device_info: ChangeDeviceInfo):
+    """Change the device of a rental"""
+    return db_service.change_rental_device(change_info=change_device_info)
+
+
 @router.post("/complete_rental")
 @auto_process_database_errors
 def complete_rental(completed_rental: CompletedRental):

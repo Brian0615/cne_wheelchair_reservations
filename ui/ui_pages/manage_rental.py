@@ -21,7 +21,9 @@ if rental_id is None:
 
 with st.expander(f"Update Rental {rental_data['device_type'].value}", expanded=True):
     change_device_info = {
-        "rental_id": rental_id,
+        "cne_year": rental_data["cne_year"],
+        "date": rental_data["date"],
+        "id": rental_id,
         "device_type": rental_data["device_type"],
         "old_device_id": rental_data["device_id"],
     }
