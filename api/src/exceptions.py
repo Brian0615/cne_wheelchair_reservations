@@ -23,8 +23,7 @@ class RentalNotFoundOrNotEditableException(Exception):
 
 
 class ReservationNotFoundOrNotEditableException(Exception):
-    """Exception raised when a device is not found in the inventory."""
-
+    """Exception raised when a reservation is not found in the inventory."""
     def __init__(self, message: str):
         self.message = message
         super().__init__(self.message)
