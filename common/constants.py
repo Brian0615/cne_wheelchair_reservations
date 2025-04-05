@@ -1,8 +1,8 @@
 from enum import StrEnum, auto
 
-DEVICE_ID_PATTERN = r"^[S|W][0-9]{2}$"
-RENTAL_ID_PATTERN = r"^[S|W]0[8-9][0-9]{2}[0-9]{3}$"
-RESERVATION_ID_PATTERN = r"^[S|W]0[8-9][0-9]{2}[0-9]{3}$"
+DEVICE_ID_PATTERN = r"^[SW][0-9]{2}$"
+RENTAL_ID_PATTERN = r"^[SW]0[8-9][0-9]{2}[0-9]{3}$"
+RESERVATION_ID_PATTERN = r"^[SW]0[8-9][0-9]{2}[0-9]{3}$"
 WALK_IN_RESERVATION_ID = "Walk-In (No Reservation)"
 
 

@@ -1,38 +1,38 @@
-from typing import Annotated
-
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from common.data_models.fields import (
-    CNEYearField,
-    RentalIDField,
-    RentalDateField,
-    DeviceIDField,
-    DeviceTypeField,
-    ReservationIDField,
-    PickupLocationField,
-    PickupTimeField,
-    RentalStatusField,
-    NameField,
-    PhoneNumberField,
     AddressField,
     CityField,
-    ProvinceField,
-    PostalCodeField,
+    CNEYearField,
     CountryField,
-    FeePaymentMethodField,
-    FeePaymentAmountField,
-    DepositPaymentMethodField,
     DepositPaymentAmountField,
+    DepositPaymentMethodField,
+    DeviceIDField,
+    DeviceTypeField,
+    FeePaymentAmountField,
+    FeePaymentMethodField,
     ItemsLeftBehindField,
+    LocationField,
+    NameField,
+    NewDeviceIDField,
     NotesField,
-    StaffNameField,
-    SignatureField,
+    OldDeviceIDField,
+    PhoneNumberField,
+    PickupLocationField,
+    PickupTimeField,
+    PostalCodeField,
+    ProvinceField,
+    RentalDateField,
+    RentalIDField,
+    RentalStatusField,
+    ReservationIDField,
     ReturnLocationField,
-    ReturnTimeField,
-    ReturnStaffNameField,
     ReturnSignatureField,
-    LocationField
+    ReturnStaffNameField,
+    ReturnTimeField,
+    SignatureField,
+    StaffNameField,
 )
 from common.data_models.validators import check_device_id_and_type, check_reservation_id_and_type, \
     check_cne_year_and_date
@@ -46,8 +46,8 @@ class ChangeDeviceInfo(BaseModel):
     id: RentalIDField
     device_type: DeviceTypeField
     location: LocationField
-    old_device_id: Annotated[DeviceIDField, Field(title="Old Device ID")]
-    new_device_id: Annotated[DeviceIDField, Field(title="New Device ID")]
+    old_device_id: OldDeviceIDField
+    new_device_id: NewDeviceIDField
     staff_name: StaffNameField
 
 
