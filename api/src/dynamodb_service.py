@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from functools import wraps
 from typing import List, Optional
@@ -16,6 +17,7 @@ from api.src.exceptions import (
 from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus, RentalStatus
 from common.data_models import CompletedRental, NewDevice, NewReservation, Reservation, NewRental, ChangeDeviceInfo
 from common.logger import initialize_logger, timeit
+from common.utils import read_secret
 
 logger = initialize_logger()
 
@@ -24,7 +26,11 @@ class DynamoDBService:
     """Service class to interact with DynamoDB."""
 
     def __init__(self):
-        self.dynamodb = boto3.resource('dynamodb')
+        self.dynamodb = boto3.resource(
+            'dynamodb',
+            aws_access_key_id=read_secret(os.getenv("AWS_ACCESS_KEY_ID")),
+            aws_secret_access_key=read_secret(os.getenv("AWS_SECRET_ACCESS_KEY")),
+        )
         self.devices_table = self.dynamodb.Table('cne_devices')
         self.rentals_table = self.dynamodb.Table('cne_rentals')
         self.reservations_table = self.dynamodb.Table('cne_reservations')
