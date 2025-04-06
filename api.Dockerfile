@@ -22,7 +22,6 @@ ENV PATH="/venv/bin:$PATH"
 RUN apt-get update && apt-get install -y curl
 
 # copy the rest of the files into there
-COPY admin_tools/ /app/admin_tools/
 COPY api/ /app/api/
 COPY common/ /app/common/
 COPY ui/ /app/ui/

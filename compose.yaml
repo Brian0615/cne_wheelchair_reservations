@@ -9,10 +9,6 @@ services:
       AWS_SECRET_ACCESS_KEY: /run/secrets/aws_secret_access_key
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
       CNE_YEAR: ${CNE_YEAR}
-      POSTGRES_DATABASE: cne
-      POSTGRES_HOST: /run/secrets/postgres_host
-      POSTGRES_PORT: /run/secrets/postgres_port
-      POSTGRES_USERNAME: /run/secrets/postgres_username
       S3_BUCKET: ${S3_BUCKET}
     healthcheck:
       test: curl -f http://localhost:8595/health || exit 1
@@ -29,9 +25,8 @@ services:
     secrets:
       - aws_access_key_id
       - aws_secret_access_key
-      - postgres_host
-      - postgres_port
-      - postgres_username
+    volumes:
+      - ~/.aws:/root/.aws:ro
   autoheal:
     image: willfarrell/autoheal
     environment:
@@ -70,11 +65,5 @@ secrets:
     environment: AWS_ACCESS_KEY_ID
   aws_secret_access_key:
     environment: AWS_SECRET_ACCESS_KEY
-  postgres_host:
-    environment: POSTGRES_HOST
-  postgres_port:
-    environment: POSTGRES_PORT
-  postgres_username:
-    environment: POSTGRES_USERNAME
   pdf_password:
     environment: PDF_PASSWORD

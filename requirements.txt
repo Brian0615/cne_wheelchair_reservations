@@ -1,4 +1,4 @@
-boto3>=1.36,<1.37
+boto3>=1.37.28,<1.38
 certifi>=2024.8
 fastapi[standard]>=0.115,<1
 matplotlib>=3.9,<4
