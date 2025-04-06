@@ -35,5 +35,5 @@ class TestDynamoDBServiceHelpers(BaseTestCases.BaseDynamoDBServiceTest):
                     "#type = :expected_type" in result["ConditionExpression"],
                     expected_type is not None
                 )
-                self.assertEqual(result["ExpressionAttributeValues"][":expected_status"], expected_status)
-                self.assertEqual(result["ExpressionAttributeValues"][":expected_type"], expected_type)
+                self.assertEqual(result["ExpressionAttributeValues"].get(":expected_status"), expected_status)
+                self.assertEqual(result["ExpressionAttributeValues"].get(":expected_type"), expected_type)

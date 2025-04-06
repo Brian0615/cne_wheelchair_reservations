@@ -101,29 +101,30 @@ class DynamoDBService:
             expected_status: Optional[DeviceStatus] = None,
             expected_type: Optional[DeviceType] = None,
     ) -> dict:
-        """Form a transaction dictionary to update a device's location and status in DynamoDB."""
+        """
+        Form a transaction dictionary to update a device's location and status in DynamoDB,
+        optionally checking for an expected current status and type for the device
+        """
+
+        condition_expression = "attribute_exists(cne_year) AND attribute_exists(id)"
+        expression_attribute_names = {"#status": "status", "#location": "location"}
+        expression_attribute_values = {":update_status": update_status, ":update_location": update_location}
+        if expected_status:
+            condition_expression += " AND #status = :expected_status"
+            expression_attribute_values[":expected_status"] = expected_status
+        if expected_type:
+            condition_expression += " AND #type = :expected_type"
+            expression_attribute_names["#type"] = "type"
+            expression_attribute_values[":expected_type"] = expected_type
 
         return {
             "Update": {
                 "TableName": self.devices_table.name,
                 "Key": {"cne_year": cne_year, "id": device_id},
-                "ConditionExpression": (
-                    "attribute_exists(cne_year) AND attribute_exists(id)"
-                    + (" AND #status = :expected_status" if expected_status else "")
-                    + (" AND #type = :expected_type" if expected_type else "")
-                ),
+                "ConditionExpression": condition_expression,
                 "UpdateExpression": "SET #status = :update_status, #location = :update_location",
-                "ExpressionAttributeNames": {
-                    "#status": "status",
-                    "#location": "location",
-                    "#type": "type",
-                },
-                "ExpressionAttributeValues": {
-                    ":update_status": update_status,
-                    ":update_location": update_location,
-                    ":expected_status": expected_status,
-                    ":expected_type": expected_type,
-                }
+                "ExpressionAttributeNames": expression_attribute_names,
+                "ExpressionAttributeValues": expression_attribute_values,
             }
         }
 
