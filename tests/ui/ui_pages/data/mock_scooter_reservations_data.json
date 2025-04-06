@@ -1,5 +1,6 @@
 [
   {
+    "cne_year": 2025,
     "id": "S0830001",
     "date": "2024-08-30",
     "device_type": "Scooter",
@@ -11,6 +12,7 @@
     "notes": ""
   },
   {
+    "cne_year": 2025,
     "id": "S0830002",
     "date": "2024-08-30",
     "device_type": "Scooter",
@@ -22,6 +24,7 @@
     "notes": ""
   },
   {
+    "cne_year": 2025,
     "id": "S0830003",
     "date": "2024-08-30",
     "device_type": "Scooter",
@@ -33,6 +36,7 @@
     "notes": ""
   },
   {
+    "cne_year": 2025,
     "id": "S0830004",
     "date": "2024-08-30",
     "device_type": "Scooter",
@@ -44,6 +48,7 @@
     "notes": ""
   },
   {
+    "cne_year": 2025,
     "id": "S0830005",
     "date": "2024-08-30",
     "device_type": "Scooter",
@@ -55,6 +60,7 @@
     "notes": ""
   },
   {
+    "cne_year": 2025,
     "id": "S0830006",
     "date": "2024-08-30",
     "device_type": "Scooter",

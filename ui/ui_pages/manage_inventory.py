@@ -23,15 +23,15 @@ def display_no_device_in_inventory_message(device_type: DeviceType):
 
 
 @st.dialog("Add Scooters")
-def add_scooters(inventory: pd.DataFrame):
+def add_scooters():
     """Add scooters to the inventory."""
-    return add_devices(data_service, DeviceType.SCOOTER, inventory)
+    return add_devices(data_service, DeviceType.SCOOTER)
 
 
 @st.dialog("Add Wheelchairs")
-def add_wheelchairs(inventory: pd.DataFrame):
+def add_wheelchairs():
     """Add wheelchairs to the inventory."""
-    return add_devices(data_service, DeviceType.WHEELCHAIR, inventory)
+    return add_devices(data_service, DeviceType.WHEELCHAIR)
 
 
 @st.dialog("Update Scooter Status")
@@ -90,7 +90,6 @@ def display_manage_options(device_type: DeviceType):
         icon=":material/add_circle:",
         use_container_width=True,
         on_click=add_scooters if device_type == DeviceType.SCOOTER else add_wheelchairs,
-        args=(scooter_inventory if device_type == DeviceType.SCOOTER else wheelchair_inventory,),
         key=f"manage_inventory_add_{device_type.lower()}s",
     )
     status_col.button(

@@ -1,59 +1,69 @@
 [
   {
+    "cne_year": 2025,
     "id": "W01",
     "type": "Wheelchair",
     "status": "Available",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "W02",
     "type": "Wheelchair",
     "status": "Available",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "W03",
     "type": "Wheelchair",
     "status": "Available",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "W04",
     "type": "Wheelchair",
     "status": "Backup",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "W05",
     "type": "Wheelchair",
     "status": "Backup",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "W06",
     "type": "Wheelchair",
     "status": "Backup",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "W07",
     "type": "Wheelchair",
     "status": "Rented",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "W08",
     "type": "Wheelchair",
     "status": "Rented",
     "location": "PG"
   },
   {
+    "cne_year": 2025,
     "id": "W09",
     "type": "Wheelchair",
     "status": "Rented",
     "location": "BLC"
   },
   {
+    "cne_year": 2025,
     "id": "W10",
     "type": "Wheelchair",
     "status": "Rented",

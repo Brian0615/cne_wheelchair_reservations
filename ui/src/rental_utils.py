@@ -2,10 +2,11 @@ from datetime import datetime
 
 import streamlit as st
 
-from common.constants import DeviceType, WALK_IN_RESERVATION_ID
+from common.constants import DeviceType, WALK_IN_RESERVATION_ID, RentalStatus
 from common.data_models import CompletedRental, NewRental, ChangeDeviceInfo
 from common.utils import get_default_timezone
 from ui.forms import NewRentalForm
+from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.signature import Signature
 from ui.src.utils import clear_session_state_for_form, process_validation_errors
@@ -59,6 +60,7 @@ def submit_complete_rental_form(completed_rental: dict):
     """Complete a rental"""
 
     # process signature
+    completed_rental["cne_year"] = CNEDates.get_cne_year()
     completed_rental["return_signature"] = Signature(
         signature_data=completed_rental["return_signature"]
     ).encode_as_base64()
@@ -91,13 +93,12 @@ def submit_complete_rental_form(completed_rental: dict):
 def submit_new_rental_form(new_rental: dict):
     """Submit the new rental form"""
 
-    # process signature
-    new_rental["signature"] = Signature(signature_data=new_rental["signature"]).encode_as_base64()
-
-    # update pickup time
+    new_rental["cne_year"] = CNEDates.get_cne_year()
     new_rental["pickup_time"] = get_default_timezone().localize(
         datetime.combine(new_rental["date"], new_rental["pickup_time"])
     )
+    new_rental["signature"] = Signature(signature_data=new_rental["signature"]).encode_as_base64()
+    new_rental["status"] = RentalStatus.IN_PROGRESS
 
     # don't put reservation ID if walk-in
     if new_rental["reservation_id"] == WALK_IN_RESERVATION_ID:

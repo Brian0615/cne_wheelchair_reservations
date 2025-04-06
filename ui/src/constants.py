@@ -11,10 +11,15 @@ class CNEDates:
     __CNE_DURATION_DAYS = 18
 
     @classmethod
+    def get_cne_year(cls):
+        """Get the CNE year from the environment variable or the current year"""
+        return int(os.getenv("CNE_YEAR", datetime.now(tz=get_default_timezone()).year))
+
+    @classmethod
     def get_cne_start_end_dates(cls) -> Tuple[datetime, datetime]:
         """Get the start and end dates of the CNE for a given year. If no year is provided, the current year is used."""
         # get first Monday of September by taking Sept 7 and subtracting the weekday
-        end_date = datetime(int(os.getenv("CNE_YEAR", datetime.now(tz=get_default_timezone()).year)), 9, 7)
+        end_date = datetime(cls.get_cne_year(), 9, 7)
         end_date = end_date - timedelta(days=end_date.weekday())
         start_date = end_date - timedelta(days=CNEDates.__CNE_DURATION_DAYS - 1)
         return start_date, end_date

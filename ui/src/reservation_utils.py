@@ -7,6 +7,7 @@ from common.constants import ReservationStatus
 from common.data_models.reservation import Reservation, NewReservation
 from common.utils import get_default_timezone
 from ui.forms.reservation_form import ReservationForm
+from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import process_validation_errors
 
@@ -39,6 +40,9 @@ def submit_new_reservation_form(reservation: dict):
     reservation["reservation_time"] = get_default_timezone().localize(
         datetime.combine(reservation["date"], reservation["reservation_time"])
     )
+    reservation["cne_year"] = CNEDates.get_cne_year()
+    if reservation["device_type"]:
+        reservation["status"] = ReservationStatus.get_default_reservation_status(device_type=reservation["device_type"])
 
     reservation = NewReservation(**reservation)
     status_code, result = DataService().add_new_reservation(reservation=reservation)

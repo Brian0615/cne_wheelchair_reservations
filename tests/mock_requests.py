@@ -22,19 +22,21 @@ class MockRequests:
     def mock_requests_get(self, url, *args, **kwargs):  # pylint: disable=unused-argument
         """Mock the requests.get method"""
         if "get_full_inventory" in url:
-            return Mock(json=Mock(return_value=self.mock_inventory_data))
+            return Mock(status_code=200, json=Mock(return_value=self.mock_inventory_data))
         if "get_available_devices" in url:
             return Mock(
+                status_code=200,
                 json=Mock(
                     return_value=[
-                        x["id"] for x in self.mock_inventory_data if Device(**x).status == DeviceStatus.AVAILABLE
+                        x["id"] for x in self.mock_inventory_data
+                        if Device(**x).status == DeviceStatus.AVAILABLE
                     ]
                 )
             )
         if "get_reservations_on_date" in url:
-            return Mock(json=Mock(return_value=self.mock_reservations_data))
+            return Mock(status_code=200, json=Mock(return_value=self.mock_reservations_data))
         if "get_rentals_on_date" in url:
-            return Mock(json=Mock(return_value=self.mock_rentals_data))
+            return Mock(status_code=200, json=Mock(return_value=self.mock_rentals_data))
         raise ValueError(f"Unsupported API url for mocking requests.get: {url}")
 
     @staticmethod

@@ -9,7 +9,6 @@ from ui.src.data_service import DataService
 from ui.src.rental_utils import submit_complete_rental_form
 from ui.src.utils import display_validation_errors, get_rental_selection
 
-
 initialize_page(page_header="Complete Rental")
 data_service = DataService()
 
@@ -25,10 +24,10 @@ if rental_id is None:
 form = CompleteRentalForm(key_prefix="complete_rental", rental_info=RentalSummary(**rental_data))
 form.initialize_form()
 completed_rental_info, is_submitted = form.render_form()
-completed_rental_info["id"] = rental_id
-completed_rental_info["name"] = rental_data["name"]
-completed_rental_info["device_id"] = rental_data["device_id"]
 
+for field in ["date", "id", "name", "device_id", "reservation_id"]:
+    if field not in completed_rental_info:
+        completed_rental_info[field] = rental_data[field]
 
 # form submission or errors
 errors = st.session_state.get("complete_rental_errors")

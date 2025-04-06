@@ -12,7 +12,7 @@ st.header("Welcome!")
 
 data_to_display = ["Reservations", "Rentals"]
 for tab, data_type, get_data_func, display_data_func in zip(
-        st.tabs(data_to_display),
+        st.tabs([f"Today's {x}" for x in data_to_display]),
         data_to_display,
         [data_service.get_reservations_on_date, data_service.get_rentals_on_date],
         [display_reservations_table, display_rentals_table],
@@ -26,5 +26,5 @@ for tab, data_type, get_data_func, display_data_func in zip(
             )
         else:
             for device_type in DeviceType:
-                st.subheader(f"Today's {device_type} {data_type}")
+                st.subheader(f"{device_type} {data_type}")
                 display_data_func(data, device_type=device_type)

@@ -16,8 +16,10 @@ from ui.forms.reservation_form import ReservationForm
 class TestReservationUtils(TestCase):
     """Test the reservation utils"""
 
+    # pylint: disable=duplicate-code
     def setUp(self):
         self.mock_reservation = Reservation(
+            cne_year=2025,
             id="S0901001",
             date=date(2025, 9, 1),
             device_type=DeviceType.SCOOTER,

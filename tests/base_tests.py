@@ -1,25 +1,154 @@
 import json
 import os
-import unittest
+from datetime import date, datetime
 from typing import List, Optional
+from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
+import boto3
+import numpy as np
 import requests
 import streamlit as st
+from moto import mock_aws
 from streamlit.testing.v1 import AppTest
 
-from common.constants import DeviceType, DeviceStatus, Location
+from api.src.dynamodb_service import DynamoDBService
+from common.constants import DeviceType, DeviceStatus, Location, PaymentMethod, RentalStatus, ReservationStatus
+from common.data_models import CompletedRental, NewRental, NewReservation, Reservation
 from common.utils import get_default_timezone
 from tests.mock_requests import MockRequests
 from ui.src import auth_utils
 from ui.src.constants import CNEDates
+from ui.src.signature import Signature
 
 
 # pylint: disable=too-few-public-methods
 class BaseTestCases:
     """Shared Test Cases"""
 
-    class BaseFormFieldTest(unittest.TestCase):
+    @mock_aws
+    class BaseDynamoDBServiceTest(TestCase):
+        """Shared Test Cases for DynamoDB Service"""
+        __DEFAULT_TABLE_KEY_SCHEMA = [
+            {"AttributeName": "cne_year", "KeyType": "HASH"},
+            {"AttributeName": "id", "KeyType": "RANGE"}
+        ]
+        __DEFAULT_ATTRIBUTE_DEFINITIONS = [
+            {"AttributeName": "cne_year", "AttributeType": "N"},
+            {"AttributeName": "id", "AttributeType": "S"}
+        ]
+        __DEFAULT_PROVISIONED_THROUGHPUT = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
+
+        @classmethod
+        def setUpClass(cls):
+            cls.dynamodb = boto3.resource("dynamodb", region_name="us-east-2")
+            cls.devices_table = None
+            cls.rentals_table = None
+            cls.reservations_table = None
+            cls.service = DynamoDBService()
+
+        def setUp(self):
+            if self.devices_table is not None:
+                self.dynamodb.meta.client.delete_table(TableName="cne_devices")
+            if self.rentals_table is not None:
+                self.dynamodb.meta.client.delete_table(TableName="cne_rentals")
+            if self.reservations_table is not None:
+                self.dynamodb.meta.client.delete_table(TableName="cne_reservations")
+            self.devices_table = self.dynamodb.create_table(
+                TableName="cne_devices",
+                KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
+                AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
+                ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
+            )
+            self.rentals_table = self.dynamodb.create_table(
+                TableName="cne_rentals",
+                KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
+                AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
+                ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
+            )
+            self.reservations_table = self.dynamodb.create_table(
+                TableName="cne_reservations",
+                KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
+                AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
+                ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
+            )
+
+        @staticmethod
+        def _generate_mock_new_reservation(overrides: Optional[dict] = None):
+            reservation_params = {
+                "cne_year": 2025,
+                "date": date(2025, 8, 20),
+                "device_type": DeviceType.SCOOTER,
+                "location": Location.BLC,
+                "reservation_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 30)),
+                "name": "Test Name",
+                "phone_number": "1234567890",
+                "notes": "",
+                "status": ReservationStatus.PENDING,
+            }
+            if overrides:
+                for key, value in overrides.items():
+                    reservation_params[key] = value
+            return NewReservation(**reservation_params)
+
+        def _generate_mock_reservation(self, overrides: Optional[dict] = None):
+            reservation = self._generate_mock_new_reservation(overrides=overrides)
+            return Reservation(**reservation.model_dump())
+
+        @staticmethod
+        def _generate_mock_completed_rental(overrides: Optional[dict] = None):
+            """Generate mock data for a completed rental"""
+            rental_params = {
+                "cne_year": 2025,
+                "id": "W0820001",
+                "date": date(2025, 8, 20),
+                "device_id": "W01",
+                "reservation_id": "W0820001",
+                "name": "Test Name",
+                "return_location": Location.BLC,
+                "return_time": get_default_timezone().localize(datetime(2025, 8, 20, 20, 28)),
+                "return_staff_name": "Test Staff",
+                "return_signature": Signature(signature_data=np.ones((100, 600, 4), dtype=np.uint8)).encode_as_base64(),
+            }
+            if overrides:
+                for key, value in overrides.items():
+                    rental_params[key] = value
+            return CompletedRental(**rental_params)
+
+        @staticmethod
+        def _generate_mock_new_rental(overrides: Optional[dict] = None):
+            rental_params = {
+                "cne_year": 2025,
+                "date": date(2025, 8, 20),
+                "device_id": "W01",
+                "device_type": DeviceType.WHEELCHAIR,
+                "reservation_id": "W0820001",
+                "pickup_location": Location.BLC,
+                "pickup_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 28)),
+                "status": RentalStatus.IN_PROGRESS,
+                "name": "Test Name",
+                "phone_number": "1234567890",
+                "address": "1234 Test St",
+                "city": "Test City",
+                "province": "Test Province",
+                "postal_code": "A1B2C3",
+                "country": "Canada",
+                "fee_payment_method": PaymentMethod.CREDIT_CARD,
+                "fee_payment_amount": 50,
+                "deposit_payment_method": PaymentMethod.CASH,
+                "deposit_payment_amount": 100,
+                "items_left_behind": [],
+                "notes": None,
+                "staff_name": "Test Staff",
+                "signature": Signature(signature_data=np.ones((100, 600, 4), dtype=np.uint8)).encode_as_base64(),
+            }
+            if overrides:
+                for key, value in overrides.items():
+                    rental_params[key] = value
+            return NewRental(**rental_params)
+
+
+    class BaseFormFieldTest(TestCase):
         """Shared Test Cases for Form Fields"""
 
         def setUp(self):
@@ -114,7 +243,7 @@ class BaseTestCases:
             with self.assertRaises(KeyError):
                 _ = at.session_state["test_key"]
 
-    class BaseUIPageTest(unittest.TestCase):
+    class BaseUIPageTest(TestCase):
         """Shared Test Cases for UI Pages"""
 
         def setUp(self):

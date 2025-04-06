@@ -32,7 +32,7 @@ if rental_info.get("date") and rental_info.get("device_type"):
             st.session_state["new_rental_reservations"] = reservations_list
             fields_refreshed = True
 if rental_info.get("pickup_location") and rental_info.get("device_type"):
-    available_devices = data_service.get_available_devices(
+    available_devices = data_service.get_available_device_ids(
         device_type=rental_info["device_type"],
         location=rental_info["pickup_location"],
     )

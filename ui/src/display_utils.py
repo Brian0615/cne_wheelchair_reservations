@@ -72,16 +72,15 @@ def display_reservations_table(reservations: pd.DataFrame, device_type: DeviceTy
         data=reservations.set_index("id"),
         column_config={
             "id": st.column_config.TextColumn(label="ID"),
-            "date": None,
-            "device_type": None,
             "name": st.column_config.TextColumn(label="Name"),
             "phone_number": st.column_config.TextColumn(label="Phone Number"),
-            "location": st.column_config.TextColumn(label="Location", width="small"),
-            "reservation_time": st.column_config.DatetimeColumn(label="Time", width="small", format="hh:mm a"),
-            "status": st.column_config.TextColumn(label="Status", width="medium"),
+            "location": st.column_config.TextColumn(label="Location"),
+            "reservation_time": st.column_config.DatetimeColumn(label="Time", format="hh:mm a"),
+            "status": st.column_config.TextColumn(label="Status"),
             "rental_id": st.column_config.TextColumn(label="Rental ID"),
-            "notes": st.column_config.TextColumn(label="Notes", width="medium"),
+            "notes": st.column_config.TextColumn(label="Notes"),
         },
+        column_order=["id", "name", "phone_number", "location", "reservation_time", "status", "rental_id", "notes"],
         use_container_width=True,
     )
 
@@ -104,9 +103,7 @@ def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
         data=rentals.set_index("id"),
         column_config={
             "id": st.column_config.TextColumn(label="ID"),
-            "date": None,
-            "device_type": None,
-            "name": st.column_config.TextColumn(label="Name", width="medium"),
+            "name": st.column_config.TextColumn(label="Name"),
             "phone_number": st.column_config.TextColumn(label="Phone Number"),
             "device_id": st.column_config.TextColumn(label=device_id_label, width="small"),
             "pickup_location": st.column_config.TextColumn(label="Pickup Location"),
@@ -117,6 +114,10 @@ def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
             "items_left_behind": st.column_config.ListColumn(label="Items Left Behind"),
             "notes": st.column_config.TextColumn(label="Notes"),
         },
+        column_order=[
+            "id", "name", "phone_number", "device_id", "pickup_location", "pickup_time", "deposit_payment_method",
+            "return_location", "return_time", "items_left_behind", "notes"
+        ],
         use_container_width=True,
     )
 

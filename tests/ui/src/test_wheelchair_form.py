@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytz
 
-from common.constants import PaymentMethod, DeviceType, Location
+from common.constants import DeviceType, Location, PaymentMethod, RentalStatus
 from common.data_models.rental import NewRental
 from ui.src.signature import Signature
 from ui.src.wheelchair_form import WheelchairForm
@@ -22,13 +22,15 @@ class TestWheelchairForm(unittest.TestCase):
         # create fake rental data
         # pylint: disable=no-value-for-parameter
         rental_data = NewRental(
+            cne_year=2021,
             date=datetime(2021, 8, 1),
             name="John Doe",
             phone_number="123-456-789",
             device_type=DeviceType.WHEELCHAIR,
-            device_id="W123",
+            device_id="W12",
             pickup_location=Location.BLC,
             pickup_time=pytz.UTC.localize(datetime(2021, 8, 1, 12, 0)),
+            status=RentalStatus.IN_PROGRESS,
             address="123 Fake St",
             city="Toronto",
             province="Ontario",
