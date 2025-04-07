@@ -3,12 +3,18 @@ from typing import Optional
 
 import boto3
 
+from common.utils import read_secret
+
 
 class S3Service:
     """Service class to interact with AWS S3"""
 
     def __init__(self):
-        self.s3_client = boto3.client("s3")
+        self.s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=read_secret(os.environ["AWS_ACCESS_KEY_ID"]),
+            aws_secret_access_key=read_secret(os.environ["AWS_SECRET_ACCESS_KEY"]),
+        )
         self.bucket = os.environ["S3_BUCKET"]
 
     def upload_rental_form(self, pdf_bytes: bytes, rental_id: str):
