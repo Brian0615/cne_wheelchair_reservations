@@ -8,6 +8,7 @@ import jwt
 import requests
 import streamlit as st
 
+from common.utils import read_secret
 from ui.auth.base_authenticator import BaseAuthenticator
 
 
@@ -35,6 +36,15 @@ class CognitoAuthenticator(BaseAuthenticator):
     A class for handling authentication using AWS Cognito in a Streamlit application.
     """
 
+    def __init__(self):
+        self.aws_region = os.environ["AWS_REGION"]
+        self.aws_alb_arn = read_secret(os.environ["AWS_ALB_ARN"])
+        self.aws_cognito_client_id = read_secret(os.environ["AWS_COGNITO_CLIENT_ID"])
+        self.aws_cognito_domain = os.environ["AWS_COGNITO_DOMAIN"]
+        self.aws_cognito_redirect_uri = os.environ["AWS_COGNITO_REDIRECT_URI"]
+        self.aws_cognito_user_pool_id = read_secret(os.environ["AWS_COGNITO_USER_POOL_ID"])
+        super().__init__()
+
     def _initialize_authenticator(self) -> Any:
         """
         Initializes the authenticator. This method is not implemented for Cognito.
@@ -44,8 +54,8 @@ class CognitoAuthenticator(BaseAuthenticator):
         """
         return None
 
-    # pylint: disable=fixme
-    def login(self):
+    # pylint: disable=unused-argument,fixme
+    def login(self, rendered: bool = False) -> bool:
         """
         Handles the login process by validating the user through ALB headers.
 
@@ -73,8 +83,7 @@ class CognitoAuthenticator(BaseAuthenticator):
             key="logout_button",
         )
 
-    @staticmethod
-    def _on_logout(*args, **kwargs):
+    def _on_logout(self, *args, **kwargs):
         """
         Handles the logout process by clearing session state and redirecting the user.
 
@@ -86,13 +95,16 @@ class CognitoAuthenticator(BaseAuthenticator):
 
         # logout user from Cognito
         logout_url = (
-            f"https://{os.environ['AWS_COGNITO_DOMAIN']}/logout?" +
+            f"{self.aws_cognito_domain}/logout?" +
             urlencode({
-                "client_id": os.environ["AWS_COGNITO_CLIENT_ID"],
-                "redirect_uri": os.environ["AWS_COGNITO_REDIRECT_URI"]
+                "client_id": self.aws_cognito_client_id,
+                "logout_uri": self.aws_cognito_redirect_uri,
             })
         )
         st.write(f'<meta http-equiv="refresh" content="0; url={logout_url}">', unsafe_allow_html=True)
+
+    def _get_expected_cognito_issuer(self) -> str:
+        return f"https://cognito-idp.{self.aws_region}.amazonaws.com/{self.aws_cognito_user_pool_id}"
 
     def _process_alb_headers(self) -> str:
         """
@@ -119,33 +131,26 @@ class CognitoAuthenticator(BaseAuthenticator):
 
         # Step 3: Get the payload
         payload = jwt.decode(encoded_jwt, pub_key, options={"verify_signature": True}, algorithms=['ES256'])
-        if payload["iss"] != (
-                f"https://cognito-idp.{os.environ['AWS_REGION']}.amazonaws.com/{os.environ['AWS_COGNITO_USER_POOL_ID']}"
-        ):
+        if payload["iss"] != self._get_expected_cognito_issuer():
             raise CognitoAuthenticationError("Invalid issuer for JWT token")
 
         return payload["username"]
 
-    @staticmethod
-    def _validate_jwt_headers(headers: dict):
+    def _validate_jwt_headers(self, headers: dict):
         """Validates JWT headers for signer, issuer, and client."""
-        if headers['signer'] != os.environ["AWS_ALB_ARN"]:
+        if headers["signer"] != os.environ["AWS_ALB_ARN"]:
             raise CognitoAuthenticationError("Invalid signer for JWT token")
-        if (
-            headers["iss"]
-            != f"https://cognito-idp.{os.environ['AWS_REGION']}.amazonaws.com/{os.environ['AWS_COGNITO_USER_POOL_ID']}"
-        ):
+        if headers["iss"] != self._get_expected_cognito_issuer():
             raise CognitoAuthenticationError("Invalid issuer for JWT token")
-        if headers["client"] != os.environ["AWS_COGNITO_CLIENT_ID"]:
+        if headers["client"] != self.aws_cognito_client_id:
             raise CognitoAuthenticationError("Invalid client for JWT token")
 
-    @staticmethod
-    def _fetch_public_key(kid: str) -> str:
+    def _fetch_public_key(self, kid: str) -> str:
         """Fetches the public key for the given key ID."""
         try:
             return requests.get(
-                url=f"https://public-keys.auth.elb.{os.environ['AWS_REGION']}.amazonaws.com/{kid}",
-                timeout=5
+                url=f"https://public-keys.auth.elb.{self.aws_region}.amazonaws.com/{kid}",
+                timeout=5,
             ).text
         except requests.RequestException as exc:
             raise CognitoAuthenticationError("Failed to fetch public key for JWT token") from exc
