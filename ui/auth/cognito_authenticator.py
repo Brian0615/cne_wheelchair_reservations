@@ -1,5 +1,3 @@
-import base64
-import json
 import os
 from typing import Any
 from urllib.parse import urlencode
@@ -122,7 +120,7 @@ class CognitoAuthenticator(BaseAuthenticator):
             raise CognitoAuthenticationError("Missing x-amzn-oidc-data header") from exc
 
         # Step 1: Validate the signer
-        jwt_headers = json.loads(base64.b64decode(encoded_jwt.split('.')[0]).decode("utf-8"))
+        jwt_headers = jwt.get_unverified_header(encoded_jwt)
         self._validate_jwt_headers(headers=jwt_headers)
 
         # Step 2: Get the key id from JWT headers (the kid field), and get the public key
@@ -130,15 +128,16 @@ class CognitoAuthenticator(BaseAuthenticator):
         pub_key = self._fetch_public_key(kid=kid)
 
         # Step 3: Get the payload
-        payload = jwt.decode(encoded_jwt, pub_key, options={"verify_signature": True}, algorithms=['ES256'])
-        if payload["iss"] != self._get_expected_cognito_issuer():
-            raise CognitoAuthenticationError("Invalid issuer for JWT token")
+        try:
+            payload = jwt.decode(encoded_jwt, pub_key, algorithms=['ES256'], issuer=self._get_expected_cognito_issuer())
+        except jwt.InvalidIssuerError as exc:
+            raise CognitoAuthenticationError("Invalid issuer for JWT token") from exc
 
         return payload["username"]
 
     def _validate_jwt_headers(self, headers: dict):
         """Validates JWT headers for signer, issuer, and client."""
-        if headers["signer"] != os.environ["AWS_ALB_ARN"]:
+        if headers["signer"] != self.aws_alb_arn:
             raise CognitoAuthenticationError("Invalid signer for JWT token")
         if headers["iss"] != self._get_expected_cognito_issuer():
             raise CognitoAuthenticationError("Invalid issuer for JWT token")
