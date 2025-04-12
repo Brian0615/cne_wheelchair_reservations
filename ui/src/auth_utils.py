@@ -49,8 +49,18 @@ def login(rendered: bool = False):
     """
 
     if os.getenv("DEV_MODE", default="False") in [True, 'True', 'true']:
-        with st.expander("Session State"):
-            st.write(st.session_state)
+        with st.expander("Developer Details"):
+            session_state_tab, headers_tab, query_params_tab, cookies_tab = st.tabs(
+                ["Session State", "Headers", "Query Params", "Cookies"]
+            )
+            with session_state_tab:
+                st.write(st.session_state)
+            with headers_tab:
+                st.write(st.context.headers)
+            with query_params_tab:
+                st.write(st.query_params)
+            with cookies_tab:
+                st.write(st.context.cookies)
     authenticator = initialize_authenticator()
     try:
         authenticator.login(
