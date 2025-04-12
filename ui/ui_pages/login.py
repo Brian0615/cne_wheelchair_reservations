@@ -1,8 +1,8 @@
 import streamlit as st
 
-from ui.src.auth_utils import login
+from ui.src.auth_utils import initialize_page
 
-st.set_page_config(layout="centered")
+initialize_page(render_login=True)
 
 # check if already logged in
 if st.session_state.get("authentication_status", None) is True:
@@ -13,5 +13,3 @@ if st.session_state.get("authentication_status", None) is True:
         **Not {st.session_state['username']}?** Use the Logout button in the sidebar.
         """
     )
-
-login(rendered=True)

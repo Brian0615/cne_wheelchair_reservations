@@ -2,96 +2,39 @@ import os
 from typing import Optional
 
 import streamlit as st
-import streamlit_authenticator as st_auth
-import yaml
+
+from ui.auth.local_authenticator import LocalAuthenticator
 
 
-def load_auth_config():
-    """Load the authentication config file for the UI"""
-    try:
-        with open(os.environ["AUTH_CONFIG_PATH"], "r", encoding="utf-8") as config_file:
-            return yaml.safe_load(config_file)
-    except KeyError:
-        st.error("**Authentication Error**: Authentication config filepath not provided.")
-        raise
-    except FileNotFoundError:
-        st.error("**Authentication Error**: Authentication config file not found.")
-        raise
+def initialize_page(page_header: Optional[str] = None, render_login: bool = False):
+    """Initialize a Streamlit page with login and optional header."""
 
+    st.set_page_config(layout="centered" if render_login else "wide")
 
-def initialize_authenticator() -> st_auth.Authenticate:
-    """Initialize the Streamlit authenticator"""
+    # developer mode details
+    if os.getenv("DEV_MODE", default="False").lower() == "true":
+        with st.expander("Developer Details", expanded=False):
+            tabs = st.tabs(["Session State", "Headers", "Query Params", "Cookies"])
+            tabs[0].write(st.session_state)
+            tabs[1].write(st.context.headers)
+            tabs[2].write(st.query_params)
+            tabs[3].write(st.context.cookies)
 
-    if "authenticator" in st.session_state:
-        return st.session_state["authenticator"]
-
-    auth_config = load_auth_config()
-    authenticator = st_auth.Authenticate(
-        credentials=os.environ["AUTH_CONFIG_PATH"],
-        cookie_name=auth_config['cookie']['name'],
-        cookie_key=auth_config['cookie']['key'],
-        cookie_expiry_days=auth_config['cookie']['expiry_days'],
-        auto_hash=True,
-    )
-    st.session_state["authenticator"] = authenticator
-    return authenticator
-
-
-def login(rendered: bool = False):
-    """
-    Login Helper
-     - If rendered is True, the login widget will be rendered
-     - rendered should be False for all other pages, in which case the user will be redirected to the login page
-       if not authenticated
-
-    Args:
-        rendered (bool, optional): Whether the login page is rendered. Defaults to False.
-    """
-
-    if os.getenv("DEV_MODE", default="False") in [True, 'True', 'true']:
-        with st.expander("Developer Details"):
-            session_state_tab, headers_tab, query_params_tab, cookies_tab = st.tabs(
-                ["Session State", "Headers", "Query Params", "Cookies"]
-            )
-            with session_state_tab:
-                st.write(st.session_state)
-            with headers_tab:
-                st.write(st.context.headers)
-            with query_params_tab:
-                st.write(st.query_params)
-            with cookies_tab:
-                st.write(st.context.cookies)
-    authenticator = initialize_authenticator()
-    try:
-        authenticator.login(
-            location="main" if rendered else "unrendered",
-            max_login_attempts=5,
-        )
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        st.error(e)
-
-    authentication_status = st.session_state.get("authentication_status", None)
-    match authentication_status:
-        case True:
-            st.sidebar.write(f"Welcome, **{st.session_state['username']}**!")
-            authenticator.logout(button_name=":material/logout: Logout", location="sidebar")
-            if rendered:  # only on login page, rerun to redirect to home page
-                st.rerun()
-        case False:
-            st.error('Username/password is incorrect')
-            st.stop()
+    # authentication setup
+    match os.getenv("AUTH_METHOD", default="local"):
+        case "local":
+            authenticator = LocalAuthenticator()
         case _:
-            if not rendered:  # redirect to login page if not on login page
-                st.switch_page("ui/ui_pages/login.py")
-            else:
-                st.warning('Please enter your username and password')
+            raise ValueError("Invalid authentication method. Supported methods: local, cognito")
+
+    # handle authentication
+    if not authenticator.login(rendered=render_login):
+        if render_login:
             st.stop()
+        st.switch_page("ui/ui_pages/login.py")
 
-
-def initialize_page(page_header: Optional[str] = None):
-    """Initialize a Streamlit page with login module and header"""
-
-    st.set_page_config(layout="wide")
-    login()
+    if render_login:
+        st.rerun()
+    authenticator.render_logout()
     if page_header:
         st.header(page_header)
