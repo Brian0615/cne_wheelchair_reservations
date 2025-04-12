@@ -3,6 +3,7 @@ from typing import Optional
 
 import streamlit as st
 
+from ui.auth.cognito_authenticator import CognitoAuthenticator
 from ui.auth.local_authenticator import LocalAuthenticator
 
 
@@ -24,6 +25,8 @@ def initialize_page(page_header: Optional[str] = None, render_login: bool = Fals
     match os.getenv("AUTH_METHOD", default="local"):
         case "local":
             authenticator = LocalAuthenticator()
+        case "cognito":
+            authenticator = CognitoAuthenticator()
         case _:
             raise ValueError("Invalid authentication method. Supported methods: local, cognito")
 

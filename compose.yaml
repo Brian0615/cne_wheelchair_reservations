@@ -43,7 +43,13 @@ services:
     environment:
       API_HOST: api
       API_PORT: 8595
-      AUTH_CONFIG_PATH: /auth_config.yml
+      AWS_ALB_ARN: ${AWS_ALB_ARN}
+      AWS_COGNITO_DOMAIN: ${AWS_COGNITO_DOMAIN}
+      AWS_COGNITO_USER_POOL_ID: ${AWS_COGNITO_USER_POOL}
+      AWS_REGION: ${AWS_REGION};
+      AWS_COGNITO_APP_CLIENT_ID: ${AWS_COGNITO_APP_CLIENT_ID}
+      AWS_COGNITO_REDIRECT_URI: ${AWS_COGNITO_REDIRECT_URI}
+      AUTHENTICATION_METHOD: cognito
       CNE_YEAR: ${CNE_YEAR}
       PDF_PASSWORD: /run/secrets/pdf_password
     image: brianlammm/cne_ui
