@@ -32,6 +32,12 @@ class LocalAuthenticator(BaseAuthenticator):
             st.error(f"**Authentication Error**: {str(e)}")
             raise
 
+    def get_current_user(self) -> str:
+        return st.session_state["username"]
+
+    def is_authenticated(self) -> bool:
+        return st.session_state.get("authentication_status", False) is True
+
     def login(self, rendered: bool = False) -> bool:
         """Handle user login"""
         try:
@@ -45,7 +51,6 @@ class LocalAuthenticator(BaseAuthenticator):
 
         status = st.session_state.get("authentication_status")
         if status is True:
-            st.sidebar.write(f"Welcome, **{st.session_state['username']}**!")
             return True
         if status is False:
             st.error("Username/password is incorrect")

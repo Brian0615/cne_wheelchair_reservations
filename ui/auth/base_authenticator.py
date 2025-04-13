@@ -45,6 +45,37 @@ class BaseAuthenticator:
         Subclasses can override this method to load authentication-related configurations.
         """
 
+    def get_current_user(self) -> str:
+        """
+        Retrieves the username of the currently authenticated user.
+
+        This method must be implemented by subclasses to return the username
+        of the user currently logged in. If no user is authenticated, the
+        method should handle this scenario appropriately.
+
+        Returns:
+            str: The username of the currently authenticated user.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in a subclass.
+        """
+        raise NotImplementedError("Subclasses must implement get_current_user method")
+
+    def is_authenticated(self) -> bool:
+        """
+        Checks if the user is currently authenticated.
+
+        This method must be implemented by subclasses to provide the logic
+        for determining whether a user is authenticated.
+
+        Returns:
+            bool: True if the user is authenticated, False otherwise.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in a subclass.
+        """
+        raise NotImplementedError("Subclasses must implement is_authenticated method")
+
     def login(self) -> bool:
         """
         Placeholder method for handling user login.

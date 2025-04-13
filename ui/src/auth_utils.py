@@ -7,6 +7,16 @@ from ui.auth.cognito_authenticator import CognitoAuthenticator
 from ui.auth.local_authenticator import LocalAuthenticator
 
 
+def get_authenticator():
+    match os.getenv("AUTH_METHOD", default="local"):
+        case "local":
+            return LocalAuthenticator()
+        case "cognito":
+            return CognitoAuthenticator()
+        case _:
+            raise ValueError("Invalid authentication method. Supported methods: local, cognito")
+
+
 def initialize_page(page_header: Optional[str] = None, render_login: bool = False):
     """Initialize a Streamlit page with login and optional header."""
 
@@ -22,13 +32,7 @@ def initialize_page(page_header: Optional[str] = None, render_login: bool = Fals
             tabs[3].write(st.context.cookies)
 
     # authentication setup
-    match os.getenv("AUTH_METHOD", default="local"):
-        case "local":
-            authenticator = LocalAuthenticator()
-        case "cognito":
-            authenticator = CognitoAuthenticator()
-        case _:
-            raise ValueError("Invalid authentication method. Supported methods: local, cognito")
+    authenticator = get_authenticator()
 
     # handle authentication
     if not authenticator.login(rendered=render_login):
@@ -38,6 +42,9 @@ def initialize_page(page_header: Optional[str] = None, render_login: bool = Fals
 
     if render_login:
         st.rerun()
+    st.sidebar.write(f"Welcome, **{authenticator.get_current_user()}**!")
     authenticator.render_logout()
     if page_header:
         st.header(page_header)
+
+    return authenticator

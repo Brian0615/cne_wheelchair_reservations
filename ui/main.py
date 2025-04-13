@@ -1,7 +1,11 @@
 import streamlit as st
 
+from ui.src.auth_utils import get_authenticator
+
+authenticator = get_authenticator()
+
 # determine pages to display depending on authentication status
-if st.session_state.get("authentication_status", None) is True:  # already authenticated
+if authenticator.is_authenticated():
     # default pages
     pages = {
         "Home": [

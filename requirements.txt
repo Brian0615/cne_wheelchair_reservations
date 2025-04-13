@@ -12,5 +12,6 @@ pymupdf>=1.25,<2
 seaborn>=0.13,<1
 streamlit>=1.42
 streamlit-authenticator>=0.4,<0.5
+streamlit-cognito-auth
 streamlit-drawable-canvas
 streamlit-extras
