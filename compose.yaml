@@ -43,12 +43,11 @@ services:
     environment:
       API_HOST: api
       API_PORT: 8595
-      AWS_ALB_ARN: /run/secrets/aws_alb_arn
-      AWS_COGNITO_DOMAIN: ${AWS_COGNITO_DOMAIN}
-      AWS_COGNITO_USER_POOL_ID: /run/secrets/aws_cognito_user_pool_id
+      AWS_ACCESS_KEY_ID: /run/secrets/aws_access_key_id
+      AWS_SECRET_ACCESS_KEY: /run/secrets/aws_secret_access_key
       AWS_COGNITO_CLIENT_ID: /run/secrets/aws_cognito_client_id
-      AWS_COGNITO_REDIRECT_URI: ${AWS_COGNITO_REDIRECT_URI}
-      AWS_REGION: ${AWS_REGION}
+      AWS_COGNITO_CLIENT_SECRET: /run/secrets/aws_cognito_client_secret
+      AWS_COGNITO_USER_POOL_ID: /run/secrets/aws_cognito_user_pool_id
       AUTH_METHOD: cognito
       CNE_YEAR: ${CNE_YEAR}
       PDF_PASSWORD: /run/secrets/pdf_password
@@ -56,17 +55,19 @@ services:
     ports:
       - "80:8095"  # left side is the host port (external), right side is the container port
     secrets:
-      - aws_alb_arn
+      - aws_access_key_id
+      - aws_secret_access_key
       - aws_cognito_client_id
+      - aws_cognito_client_secret
       - aws_cognito_user_pool_id
       - pdf_password
 
 # noinspection ComposeUnknownKeys
 secrets:
-  aws_alb_arn:
-    environment: AWS_ALB_ARN
   aws_cognito_client_id:
     environment: AWS_COGNITO_CLIENT_ID
+  aws_cognito_client_secret:
+    environment: AWS_COGNITO_CLIENT_SECRET
   aws_cognito_user_pool_id:
     environment: AWS_COGNITO_USER_POOL_ID
   aws_access_key_id:
