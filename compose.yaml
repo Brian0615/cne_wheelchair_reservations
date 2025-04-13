@@ -50,6 +50,7 @@ services:
       AWS_COGNITO_USER_POOL_ID: /run/secrets/aws_cognito_user_pool_id
       AUTH_METHOD: cognito
       CNE_YEAR: ${CNE_YEAR}
+      DEV_MODE: ${DEV_MODE}
       PDF_PASSWORD: /run/secrets/pdf_password
     image: brianlammm/cne_ui
     ports:
