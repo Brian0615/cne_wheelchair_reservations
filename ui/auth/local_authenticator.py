@@ -76,4 +76,4 @@ class LocalAuthenticator(BaseAuthenticator):
             "roles",
             "name",
         ]:
-            st.session_state[field] = None
+            del st.session_state[field]

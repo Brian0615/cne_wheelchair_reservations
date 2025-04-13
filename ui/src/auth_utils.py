@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Union
 
 import streamlit as st
 
@@ -7,7 +7,24 @@ from ui.auth.cognito_authenticator import CognitoAuthenticator
 from ui.auth.local_authenticator import LocalAuthenticator
 
 
-def get_authenticator():
+def get_authenticator() -> Union[LocalAuthenticator, CognitoAuthenticator]:
+    """
+    Retrieve the appropriate authenticator based on the authentication method.
+
+    This function determines the authentication method to use by reading the
+    `AUTH_METHOD` environment variable. It supports two methods:
+    - "local": Uses the `LocalAuthenticator` for local authentication.
+    - "cognito": Uses the `CognitoAuthenticator` for AWS Cognito-based authentication.
+
+    If an invalid or unsupported authentication method is specified, a `ValueError`
+    is raised.
+
+    Returns:
+        BaseAuthenticator: An instance of the appropriate authenticator class.
+
+    Raises:
+        ValueError: If the `AUTH_METHOD` environment variable contains an invalid value.
+    """
     match os.getenv("AUTH_METHOD", default="local"):
         case "local":
             return LocalAuthenticator()

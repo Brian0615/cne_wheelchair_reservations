@@ -30,6 +30,7 @@ class CognitoAuthenticatorBase(ABC):
         use_cookies: use cookies to save credentials.
     """
 
+    # pylint: disabel=too-many-arguments
     def __init__(
             self,
             pool_id: str,
@@ -86,10 +87,9 @@ class CognitoAuthenticatorBase(ABC):
             self.cookie_manager.set_credentials(credentials=credentials)
             logger.info("Successfully logged in")
             return True
-        else:
-            logger.info("Could not log in")
-            self._set_state_logout()
-            return False
+        logger.info("Could not log in")
+        self._set_state_logout()
+        return False
 
     def _set_state_logout(self) -> None:
         self.session_manager.reset_credentials()
@@ -101,13 +101,13 @@ class CognitoAuthenticatorBase(ABC):
         session_state_credentials = self.session_manager.load_credentials()
         if session_state_credentials:
             logged_in = self._set_state_login(credentials=session_state_credentials)
-            logger.info(f"Logged in with session state credentials: {logged_in}")
+            logger.info("Logged in with session state credentials: %s", logged_in)
         else:
-            logger.info(f"No credentials in session state")
+            logger.info("No credentials in session state")
         if not logged_in:
-            logger.info(f"Logging in from cookies")
+            logger.info("Logging in from cookies")
             logged_in = self._login_from_cookies()
-            logger.info(f"Logged in with cookies credentials: {logged_in}")
+            logger.info("Logged in with cookies credentials: %s", logged_in)
         logger.info("_login_from_saved_credentials finished")
         return logged_in
 
@@ -137,6 +137,7 @@ class CognitoAuthenticatorBase(ABC):
         return self.session_manager.get_email()
 
     def get_credentials(self) -> Optional[Credentials]:
+        """Retrieve user credentials"""
         return self.session_manager.load_credentials()
 
 
@@ -222,7 +223,7 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
             return False
 
         except Exception as e:
-            logger.exception(f"Unknown exception during login: {e}")
+            logger.exception("Unknown exception during login: %s", e)
             self._set_state_logout()
             raise e
 
@@ -257,13 +258,13 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
         try:
             tokens = aws_srp.set_new_password_challenge(new_password=new_password)
 
-        except self.client.exceptions.NotAuthorizedException as e:
+        except self.client.exceptions.NotAuthorizedException:
             logger.info("Password reset not authorized")
             self._set_state_logout()
             return False
 
         except Exception as e:
-            logger.exception(f"Unknown exception during password reset: {e}")
+            logger.exception("Unknown exception during password reset: %s", e)
             self._set_state_logout()
             raise e
 
@@ -274,6 +275,7 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
                 self.session_manager.clear_reset_password_session()
             return logged_in
 
+    # pylint: disable=too-many-return-statements
     def login(self) -> bool:
 
         form_placeholder = st.empty()

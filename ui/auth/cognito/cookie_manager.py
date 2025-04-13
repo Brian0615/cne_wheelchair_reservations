@@ -2,6 +2,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
+import extra_streamlit_components as stx
 import streamlit as st
 from pydantic import ValidationError
 
@@ -45,12 +46,6 @@ class CognitoAuthCookieManager(CognitoAuthCookieManagerBase):
     """Cognito authenticator cookie manager that saves credentials to browser cookies."""
 
     def __init__(self) -> None:
-        try:
-            import extra_streamlit_components as stx  # type: ignore
-        except ImportError:
-            raise RuntimeError(
-                "To use cookies you must install `pip install extra-streamlit-components`"
-            )
         self.cookie_manager = stx.CookieManager()
 
     def set_credentials(self, credentials: Credentials) -> None:
@@ -75,9 +70,9 @@ class CognitoAuthCookieManager(CognitoAuthCookieManagerBase):
                 return
             try:
                 self.cookie_manager.delete(name, key=key)
-                logger.info(f"deleted cookie: {name}")
+                logger.info("deleted cookie: %s", name)
             except KeyError:
-                logger.warning(f"Requested to delete non existing cookie: {name}")
+                logger.warning(f"Requested to delete non existing cookie: %s", name)
 
         logger.info("reset_credentials start")
         delete_cookie("id_token")
