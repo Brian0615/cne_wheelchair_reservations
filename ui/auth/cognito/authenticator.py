@@ -206,17 +206,17 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
         try:
             tokens = aws_srp.authenticate_user()
 
-        except pycognito.exceptions.ForceChangePasswordException as e:
+        except pycognito.exceptions.ForceChangePasswordException:
             logger.info("Force password reset")
             self._set_reset_password_session(username, password)
             return False
 
-        except self.client.exceptions.PasswordResetRequiredException as e:
+        except self.client.exceptions.PasswordResetRequiredException:
             logger.info("Password reset required")
             self._set_state_logout()
             return False
 
-        except self.client.exceptions.NotAuthorizedException as e:
+        except self.client.exceptions.NotAuthorizedException:
             logger.info("Login not authorized")
             self._set_state_logout()
             return False
@@ -230,9 +230,11 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
             credentials = Credentials.from_tokens(tokens)
             return self._set_state_login(credentials=credentials)
 
-    def _set_reset_password_session(self,
-                                    reset_password_username: str, reset_password_password: str
-                                    ) -> None:
+    def _set_reset_password_session(
+            self,
+            reset_password_username: str,
+            reset_password_password: str
+    ) -> None:
         logger.info("Set password reset state")
         self.session_manager.set_reset_password_session(
             reset_password_username, reset_password_password
