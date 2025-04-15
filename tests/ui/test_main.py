@@ -44,6 +44,7 @@ class TestMain(unittest.TestCase):
 
         at = AppTest.from_file(TestMain.__APP_PATH)
         at.session_state["authentication_status"] = True
+        at.session_state["roles"] = []
         at.run()
         page_list = st.navigation.call_args.kwargs["pages"]
         page_list = sum(page_list.values(), [])

@@ -43,24 +43,34 @@ services:
     environment:
       API_HOST: api
       API_PORT: 8595
-      AUTH_CONFIG_PATH: /auth_config.yml
+      AWS_ACCESS_KEY_ID: /run/secrets/aws_access_key_id
+      AWS_SECRET_ACCESS_KEY: /run/secrets/aws_secret_access_key
+      AWS_COGNITO_CLIENT_ID: /run/secrets/aws_cognito_client_id
+      AWS_COGNITO_CLIENT_SECRET: /run/secrets/aws_cognito_client_secret
+      AWS_COGNITO_USER_POOL_ID: /run/secrets/aws_cognito_user_pool_id
+      AUTH_METHOD: cognito
       CNE_YEAR: ${CNE_YEAR}
+      DEV_MODE: ${DEV_MODE}
       PDF_PASSWORD: /run/secrets/pdf_password
     image: brianlammm/cne_ui
     ports:
       - "80:8095"  # left side is the host port (external), right side is the container port
     secrets:
+      - aws_access_key_id
+      - aws_secret_access_key
+      - aws_cognito_client_id
+      - aws_cognito_client_secret
+      - aws_cognito_user_pool_id
       - pdf_password
-    volumes:
-      - type: bind
-        source: ${AUTH_CONFIG_PATH}
-        target: /auth_config.yml
-
-volumes:
-  auth_config:
 
 # noinspection ComposeUnknownKeys
 secrets:
+  aws_cognito_client_id:
+    environment: AWS_COGNITO_CLIENT_ID
+  aws_cognito_client_secret:
+    environment: AWS_COGNITO_CLIENT_SECRET
+  aws_cognito_user_pool_id:
+    environment: AWS_COGNITO_USER_POOL_ID
   aws_access_key_id:
     environment: AWS_ACCESS_KEY_ID
   aws_secret_access_key:

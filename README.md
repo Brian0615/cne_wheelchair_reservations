@@ -62,6 +62,11 @@ docker run --env-file api.env brianlammm/cne_api
 |:-------------------|:----------------------------------------------------------------|
 | `API_HOST`         | The host of the API                                             |
 | `API_PORT`         | The port of the API                                             |
+| `AUTH_METHOD`      | The authentication method to use (either `local` or `cognito`)  |
 | `AUTH_CONFIG_PATH` | The path to the authentication configuration file for Streamlit |
 | `CNE_YEAR`         | The year of the CNE                                             |
 | `PDF_PASSWORD`     | The password for locking PDF permissions                        |
+
+**Authentication Methods for UI**
+* **Local**: uses Streamlit Authenticator with credentials stored in a local file provided by `AUTH_CONFIG_PATH`
+* **Cognito**: uses AWS Cognito for authentication (and `AUTH_CONFIG_PATH` is not used)

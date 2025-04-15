@@ -17,7 +17,7 @@ from common.constants import DeviceType, DeviceStatus, Location, PaymentMethod, 
 from common.data_models import CompletedRental, NewRental, NewReservation, Reservation
 from common.utils import get_default_timezone
 from tests.mock_requests import MockRequests
-from ui.src import auth_utils
+from ui.auth.local_authenticator import LocalAuthenticator
 from ui.src.constants import CNEDates
 from ui.src.signature import Signature
 
@@ -263,7 +263,7 @@ class BaseTestCases:
 
         def test_unauthenticated_user(self):
             """Test if unauthenticated user is redirected to login page."""
-            with patch.object(auth_utils, "initialize_authenticator"):
+            with patch.object(LocalAuthenticator, "login", return_value=False):
                 # mock the switch_page method so we can check whether the user was redirected to login
                 st.switch_page = MagicMock()
 
@@ -288,7 +288,7 @@ class BaseTestCases:
             with patch.object(requests, "get", side_effect=mock_requests.mock_requests_get):
                 with patch.object(requests, "post", side_effect=mock_requests.mock_requests_post):
                     with patch.object(requests, "put", side_effect=mock_requests.mock_requests_put):
-                        with patch.object(auth_utils, "initialize_authenticator"):
+                        with patch.object(LocalAuthenticator, "login", return_value=True):
                             if at is None:
                                 at = self.init_authenticated_app_test()
                             at.run()
