@@ -13,6 +13,7 @@ pydantic-extra-types>=2.8,<3
 pymupdf>=1.25,<2
 seaborn>=0.13,<1
 streamlit>=1.42
+streamlit-authenticator
 streamlit-cognito-auth
 streamlit-drawable-canvas
 streamlit-extras
