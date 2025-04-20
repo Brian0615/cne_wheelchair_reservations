@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 import streamlit as st
 import streamlit_authenticator as st_auth
@@ -34,6 +35,16 @@ class LocalAuthenticator(BaseAuthenticator):
 
     def get_current_user(self) -> str:
         return st.session_state["username"]
+
+    def get_current_user_groups(self) -> List[str]:
+        """Get the current user's group"""
+        return st.session_state.get("roles", [])
+
+    def is_admin_user(self):
+        return "admin" in self.get_current_user_groups()
+
+    def is_editor_user(self):
+        return self.is_admin_user() or "editor" in self.get_current_user_groups()
 
     def is_authenticated(self) -> bool:
         return st.session_state.get("authentication_status", False) is True

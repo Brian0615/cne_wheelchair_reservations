@@ -23,24 +23,20 @@ if authenticator.is_authenticated():
     }
 
     # add privileged pages
-    if "admin" in st.session_state.get("roles", []):
-        pages["Rentals"].append(
-            st.Page("ui_pages/manage_rental.py", title="Manage Rental", icon=":material/settings:")
-        )
-        pages["Reservations"].append(
-            st.Page("ui_pages/manage_reservations.py", title="Manage Reservations", icon=":material/settings:")
-        )
+    if authenticator.is_admin_user():
+        pages["Reservations"] += [
+            st.Page("ui_pages/new_reservation.py", title="New Reservation", icon=":material/add_circle:"),
+            st.Page("ui_pages/manage_reservations.py", title="Manage Reservations", icon=":material/settings:"),
+        ]
         pages["Inventory"].append(
             st.Page("ui_pages/manage_inventory.py", title="Manage Inventory", icon=":material/settings:")
         )
-    if "editor" in st.session_state.get("roles", []):
+    if authenticator.is_editor_user():
         pages["Rentals"] += [
             st.Page("ui_pages/new_rental.py", title="New Rental", icon=":material/add_circle:"),
+            st.Page("ui_pages/manage_rental.py", title="Manage Rental", icon=":material/settings:"),
             st.Page("ui_pages/complete_rental.py", title="Complete Rental", icon=":material/check_circle:"),
         ]
-        pages["Reservations"].append(
-            st.Page("ui_pages/new_reservation.py", title="New Reservation", icon=":material/add_circle:")
-        )
 
 else:  # not authenticated
     pages = {
