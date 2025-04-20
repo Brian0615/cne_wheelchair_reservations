@@ -361,7 +361,7 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
             username=username,
             password=password,
         )
-        logger.info("_login was called, result: {%s}", is_logged_in)
+        logger.info("_login was called, result: %s", is_logged_in)
 
         if self.session_manager.is_reset_password_session():
             status_container.info("Password reset is required")
