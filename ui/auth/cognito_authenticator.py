@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from typing import Any, List
 
 import streamlit as st
 
@@ -12,15 +12,6 @@ class CognitoAuthenticator(BaseAuthenticator):
     """
     A class for handling authentication using AWS Cognito in a Streamlit application.
     """
-
-    # def __init__(self):
-    # self.aws_region = os.environ["AWS_REGION"]
-    # self.aws_alb_arn = read_secret(os.environ["AWS_ALB_ARN"])
-    # self.aws_cognito_client_id = read_secret(os.environ["AWS_COGNITO_CLIENT_ID"])
-    # self.aws_cognito_domain = os.environ["AWS_COGNITO_DOMAIN"]
-    # self.aws_cognito_redirect_uri = os.environ["AWS_COGNITO_REDIRECT_URI"]
-    # self.aws_cognito_user_pool_id = read_secret(os.environ["AWS_COGNITO_USER_POOL_ID"])
-    # super().__init__()
 
     def _initialize_authenticator(self) -> Any:
         """
@@ -38,6 +29,33 @@ class CognitoAuthenticator(BaseAuthenticator):
 
     def get_current_user(self) -> str:
         return self.authenticator.get_username()
+
+    def get_current_user_groups(self) -> List[str]:
+        """
+        Retrieves the groups of the currently authenticated user.
+
+        Returns:
+            List[str]: A list of groups the user belongs to.
+        """
+        return self.authenticator.get_user_groups()
+
+    def is_admin_user(self) -> bool:
+        """
+        Checks if the current user is an admin.
+
+        Returns:
+            bool: True if the user is an admin, False otherwise.
+        """
+        return "cne-admin" in self.get_current_user_groups()
+
+    def is_editor_user(self) -> bool:
+        """
+        Checks if the current user is an editor.
+
+        Returns:
+            bool: True if the user is an editor, False otherwise.
+        """
+        return self.is_admin_user() or "cne-editor" in self.get_current_user_groups()
 
     def is_authenticated(self) -> bool:
         return self.authenticator.is_logged_in()

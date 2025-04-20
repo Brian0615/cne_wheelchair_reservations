@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 import streamlit as st
 
@@ -60,6 +60,52 @@ class BaseAuthenticator:
             NotImplementedError: If the method is not implemented in a subclass.
         """
         raise NotImplementedError("Subclasses must implement get_current_user method")
+
+    def get_current_user_groups(self) -> List[str]:
+        """
+        Retrieves the groups of the currently authenticated user.
+
+        This method must be implemented by subclasses to return the groups
+        of the user currently logged in. If no user is authenticated, the
+        method should handle this scenario appropriately.
+
+        Returns:
+            List[str]: A list of groups for the currently authenticated user.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in a subclass.
+        """
+        raise NotImplementedError("Subclasses must implement get_current_user_group method")
+
+    def is_admin_user(self) -> bool:
+        """
+        Checks if the current user is an admin.
+
+        This method must be implemented by subclasses to provide the logic
+        for determining whether a user is an admin.
+
+        Returns:
+            bool: True if the user is an admin, False otherwise.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in a subclass.
+        """
+        raise NotImplementedError("Subclasses must implement is_admin_user method")
+
+    def is_editor_user(self) -> bool:
+        """
+        Checks if the current user is an editor.
+
+        This method must be implemented by subclasses to provide the logic
+        for determining whether a user is an editor.
+
+        Returns:
+            bool: True if the user is an editor, False otherwise.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in a subclass.
+        """
+        raise NotImplementedError("Subclasses must implement is_editor_user method")
 
     def is_authenticated(self) -> bool:
         """

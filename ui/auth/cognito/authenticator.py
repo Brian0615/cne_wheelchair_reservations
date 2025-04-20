@@ -1,7 +1,7 @@
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import boto3
 import pycognito  # type: ignore
@@ -30,7 +30,7 @@ class CognitoAuthenticatorBase(ABC):
         use_cookies: use cookies to save credentials.
     """
 
-    # pylint: disabel=too-many-arguments
+    # pylint: disable=too-many-arguments
     def __init__(
             self,
             pool_id: str,
@@ -54,6 +54,30 @@ class CognitoAuthenticatorBase(ABC):
         self.cookie_manager = (
             CognitoAuthCookieManager() if use_cookies else CognitoAuthCookieManagerNoop()
         )
+
+    def _get_user_groups(self, username: str) -> list[str]:
+        """
+        Retrieves the groups that a user belongs to.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            list[str]: A list of group names the user belongs to.
+        """
+        try:
+            response = self.client.admin_list_groups_for_user(
+                UserPoolId=self.pool_id,
+                Username=username
+            )
+            groups = [group["GroupName"] for group in response.get("Groups", [])]
+            return groups
+        except self.client.exceptions.UserNotFoundException:
+            logger.error("User not found: %s", username)
+            return []
+        except Exception as e:
+            logger.exception("Error retrieving groups for user %s: %s", username, e)
+            raise
 
     def _login_from_cookies(self) -> bool:
         credentials = self.cookie_manager.load_credentials()
@@ -83,7 +107,8 @@ class CognitoAuthenticatorBase(ABC):
                 email = user.email
             except AttributeError:
                 email = None
-            self.session_manager.set_logged_in(username=claims["username"], email=email)
+            groups = self._get_user_groups(username=claims["username"])
+            self.session_manager.set_logged_in(username=claims["username"], email=email, groups=groups)
             self.cookie_manager.set_credentials(credentials=credentials)
             logger.info("Successfully logged in")
             return True
@@ -129,11 +154,15 @@ class CognitoAuthenticatorBase(ABC):
         return self.session_manager.is_logged_in()
 
     def get_username(self) -> Optional[str]:
-        """Gets the user name of the current user, if he is logged in."""
+        """Gets the user name of the current user, if they are logged in."""
         return self.session_manager.get_username()
 
+    def get_user_groups(self) -> List[str]:
+        """Get the groups of the current user, if they are logged in."""
+        return self.session_manager.get_groups()
+
     def get_email(self) -> Optional[str]:
-        """Gets the email of the current user, if he is logged in."""
+        """Gets the email of the current user, if they are logged in."""
         return self.session_manager.get_email()
 
     def get_credentials(self) -> Optional[Credentials]:
@@ -332,7 +361,7 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
             username=username,
             password=password,
         )
-        logger.info(f"_login was called, result: {is_logged_in}")
+        logger.info("_login was called, result: {%s}", is_logged_in)
 
         if self.session_manager.is_reset_password_session():
             status_container.info("Password reset is required")

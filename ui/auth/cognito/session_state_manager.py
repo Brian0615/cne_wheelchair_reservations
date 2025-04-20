@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, List
 
 import streamlit as st
 from pydantic import ValidationError
@@ -62,17 +62,19 @@ class CognitoAuthSessionStateManager:
             return None
 
     @staticmethod
-    def set_logged_in(username: Optional[str], email: Optional[str]) -> None:
+    def set_logged_in(username: Optional[str], email: Optional[str], groups: Optional[List[str]]) -> None:
         """Sets the logged in flag and the username in streamlit session state."""
         st.session_state["auth_state"] = "logged_in"
         st.session_state["auth_username"] = username
         st.session_state["auth_email"] = email
+        st.session_state["auth_groups"] = groups
 
     @staticmethod
     def set_logged_out() -> None:
         """Clears the logged in flag from streamlit session state."""
         st.session_state["auth_state"] = "logged_out"
         st.session_state["auth_username"] = ""
+        st.session_state["auth_groups"] = []
 
     @staticmethod
     def is_logged_in() -> bool:
@@ -88,6 +90,11 @@ class CognitoAuthSessionStateManager:
     def get_email() -> Optional[str]:
         """Returns the email saved in streamlit session state."""
         return st.session_state.get("auth_email") or None
+
+    @staticmethod
+    def get_groups() -> Optional[List[str]]:
+        """Returns the groups saved in streamlit session state."""
+        return st.session_state.get("auth_groups") or []
 
     @staticmethod
     def set_reset_password_session(
