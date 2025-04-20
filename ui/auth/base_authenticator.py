@@ -75,7 +75,7 @@ class BaseAuthenticator:
         Raises:
             NotImplementedError: If the method is not implemented in a subclass.
         """
-        raise NotImplementedError("Subclasses must implement get_current_user_group method")
+        raise NotImplementedError("Subclasses must implement get_current_user_groups method")
 
     def is_admin_user(self) -> bool:
         """
