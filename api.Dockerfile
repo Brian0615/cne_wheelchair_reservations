@@ -9,6 +9,7 @@ WORKDIR /app
 COPY requirements.txt /app
 RUN python3 -m venv /venv
 ENV PATH="/venv/bin:$PATH"
+RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ===== SECOND STAGE (COPY FILES) =====
