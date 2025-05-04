@@ -1,0 +1,79 @@
+name: cne_wheelchair_reservations
+
+services:
+  api:
+    build:
+      dockerfile: api.Dockerfile
+    environment:
+      AWS_ACCESS_KEY_ID: /run/secrets/aws_access_key_id
+      AWS_SECRET_ACCESS_KEY: /run/secrets/aws_secret_access_key
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      CNE_YEAR: ${CNE_YEAR}
+      S3_BUCKET: ${S3_BUCKET}
+    healthcheck:
+      test: curl -f http://localhost:8595/health || exit 1
+      interval: 15s
+      retries: 3
+      start_period: 15s
+      timeout: 5s
+    image: brianlammm/cne_api:develop
+    labels:
+      autoheal-app: true
+    ports:
+      - "8595:8595"   # left side is the host port (external), right side is the container port (internal, used by UI)
+    restart: on-failure
+    secrets:
+      - aws_access_key_id
+      - aws_secret_access_key
+    volumes:
+      - ~/.aws:/root/.aws:ro
+  autoheal:
+    image: willfarrell/autoheal
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal-app
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  ui:
+    build:
+      dockerfile: ui.Dockerfile
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      API_HOST: api
+      API_PORT: 8595
+      AWS_ACCESS_KEY_ID: /run/secrets/aws_access_key_id
+      AWS_SECRET_ACCESS_KEY: /run/secrets/aws_secret_access_key
+      AWS_COGNITO_CLIENT_ID: /run/secrets/aws_cognito_client_id
+      AWS_COGNITO_CLIENT_SECRET: /run/secrets/aws_cognito_client_secret
+      AWS_COGNITO_USER_POOL_ID: /run/secrets/aws_cognito_user_pool_id
+      AUTH_METHOD: cognito
+      CNE_YEAR: ${CNE_YEAR}
+      DEV_MODE: ${DEV_MODE}
+      PDF_PASSWORD: /run/secrets/pdf_password
+    image: brianlammm/cne_ui:develop
+    ports:
+      - "80:8095"  # left side is the host port (external), right side is the container port
+    secrets:
+      - aws_access_key_id
+      - aws_secret_access_key
+      - aws_cognito_client_id
+      - aws_cognito_client_secret
+      - aws_cognito_user_pool_id
+      - pdf_password
+
+# noinspection ComposeUnknownKeys
+secrets:
+  aws_cognito_client_id:
+    environment: AWS_COGNITO_CLIENT_ID
+  aws_cognito_client_secret:
+    environment: AWS_COGNITO_CLIENT_SECRET
+  aws_cognito_user_pool_id:
+    environment: AWS_COGNITO_USER_POOL_ID
+  aws_access_key_id:
+    environment: AWS_ACCESS_KEY_ID
+  aws_secret_access_key:
+    environment: AWS_SECRET_ACCESS_KEY
+  pdf_password:
+    environment: PDF_PASSWORD
