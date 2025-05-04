@@ -4,6 +4,9 @@ services:
   api:
     build:
       dockerfile: api.Dockerfile
+      platforms:
+        - linux/arm64
+        - linux/amd64
     environment:
       AWS_ACCESS_KEY_ID: /run/secrets/aws_access_key_id
       AWS_SECRET_ACCESS_KEY: /run/secrets/aws_secret_access_key
@@ -37,6 +40,9 @@ services:
   ui:
     build:
       dockerfile: ui.Dockerfile
+      platforms:
+        - linux/arm64
+        - linux/amd64
     depends_on:
       api:
         condition: service_started
