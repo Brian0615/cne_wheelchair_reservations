@@ -17,8 +17,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: develop
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -33,11 +31,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Extract Docker metadata for API
+      - name: Docker metadata
         id: meta_api
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/cne_api
+          images: |
+            ${{ secrets.DOCKER_USERNAME }}/cne_api
+            ${{ secrets.DOCKER_USERNAME }}/cne_ui
 
       - name: Build and push API Docker image
         uses: docker/build-push-action@v6
@@ -45,17 +45,11 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta_api.outputs.tags }}
-          labels: ${{ steps.meta_api.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           file: api.Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Extract Docker metadata for UI
-        id: meta_ui
-        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934
-        with:
-          images: ${{ secrets.DOCKER_USERNAME }}/cne_ui
 
       - name: Build and push UI Docker image
         uses: docker/build-push-action@v6
@@ -63,8 +57,8 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta_ui.outputs.tags }}
-          labels: ${{ steps.meta_ui.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           file: ui.Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
