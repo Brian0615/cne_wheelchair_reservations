@@ -30,4 +30,4 @@ COPY ui/ /app/ui/
 # start API (note: port needs to match the "internal" port in compose.yaml)
 WORKDIR /app
 ENV PYTHONPATH=/app
-CMD ["uvicorn", "run", "api.main:app", "--host", "0.0.0.0", "--port", "8595"]
+CMD ["fastapi", "run", "api/main.py", "--host", "0.0.0.0", "--port", "8595"]
