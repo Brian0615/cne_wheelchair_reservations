@@ -1,0 +1,41 @@
+name: Unit Tests
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      API_HOST: localhost
+      API_PORT: 9999
+      AUTH_CONFIG_PATH: /fake_auth_config.yml
+      AWS_ACCESS_KEY_ID: FAKE_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: FAKE_SECRET_ACCESS_KEY
+      AWS_DEFAULT_REGION: us-east-1
+      CNE_YEAR: 2025
+      PDF_PASSWORD: fakepassword123
+      S3_BUCKET: fake-s3-bucket
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: |
+          python -m unittest discover
