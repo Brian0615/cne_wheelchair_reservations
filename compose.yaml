@@ -19,7 +19,7 @@ services:
       retries: 3
       start_period: 15s
       timeout: 5s
-    image: brianlammm/cne_api
+    image: brianlammm/cne_api:develop
     labels:
       autoheal-app: true
     ports:
@@ -58,7 +58,7 @@ services:
       CNE_YEAR: ${CNE_YEAR}
       DEV_MODE: ${DEV_MODE}
       PDF_PASSWORD: /run/secrets/pdf_password
-    image: brianlammm/cne_ui
+    image: brianlammm/cne_ui:develop
     ports:
       - "80:8095"  # left side is the host port (external), right side is the container port
     secrets:

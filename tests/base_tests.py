@@ -263,18 +263,19 @@ class BaseTestCases:
 
         def test_unauthenticated_user(self):
             """Test if unauthenticated user is redirected to login page."""
-            with patch.object(LocalAuthenticator, "login", return_value=False):
-                # mock the switch_page method so we can check whether the user was redirected to login
-                st.switch_page = MagicMock()
+            with patch.object(LocalAuthenticator, "_initialize_authenticator"):
+                with patch.object(LocalAuthenticator, "login", return_value=False):
+                    # mock the switch_page method so we can check whether the user was redirected to login
+                    st.switch_page = MagicMock()
 
-                at = AppTest.from_file(self.page_path)
-                at.run()
-                st.switch_page.assert_called_once_with("ui/ui_pages/login.py")
+                    at = AppTest.from_file(self.page_path)
+                    at.run()
+                    st.switch_page.assert_called_once_with("ui/ui_pages/login.py")
 
         def init_authenticated_app_test(self):
             """Initialize an AppTest instance assuming the user is already authenticated"""
             st.cache_data.clear()  # clear the cache before starting a new test
-            at = AppTest.from_file(self.page_path, default_timeout=1000000)
+            at = AppTest.from_file(self.page_path, default_timeout=10)
             at.session_state["authentication_status"] = True
             at.session_state["username"] = "test_user"
             return at
@@ -289,9 +290,11 @@ class BaseTestCases:
                 with patch.object(requests, "post", side_effect=mock_requests.mock_requests_post):
                     with patch.object(requests, "put", side_effect=mock_requests.mock_requests_put):
                         with patch.object(LocalAuthenticator, "login", return_value=True):
-                            if at is None:
-                                at = self.init_authenticated_app_test()
-                            at.run()
+                            with patch.object(LocalAuthenticator, "_initialize_authenticator"):
+                                with patch.object(LocalAuthenticator, "get_current_user", return_value="test_user"):
+                                    if at is None:
+                                        at = self.init_authenticated_app_test()
+                                    at.run()
             if not allow_errors:
                 self.assertEqual(0, len(at.error), f"Error running AppTest: {at.error.values}")
             return at

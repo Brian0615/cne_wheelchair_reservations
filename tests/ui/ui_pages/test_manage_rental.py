@@ -32,8 +32,7 @@ class TestManageRental(BaseTestCases.BaseUIPageTest):
             "No Available Devices" in at.warning[0].value,
             msg="A warning should be displayed if there are no available devices"
         )
-        # assert is set to 1 because the logout button is always displayed
-        self.assertEqual(len(at.button), 1, "Submit button should not be displayed if there are no available devices")
+        self.assertEqual(len(at.button), 0, "Submit button should not be displayed if there are no available devices")
 
     def test_cache_clear_after_form_submission(self):
         """Test that the rentals list refreshes after a change"""
