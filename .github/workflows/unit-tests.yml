@@ -2,8 +2,9 @@ name: Unit Tests
 
 on:
   push:
-    - develop
-    - main
+    branches:
+      - main
+      - develop
   pull_request:
 
 jobs:
