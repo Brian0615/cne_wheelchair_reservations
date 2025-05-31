@@ -118,7 +118,7 @@ class NewRentalForm(BaseForm):
 
         # Renter Information Section of Form
         with st.container(border=True):
-            st.header("Renter Information")
+            st.subheader("Renter Information")
             col1, col2 = st.columns([2, 1])
             with col1:
                 result["name"] = self.fields["name"].render_field()
