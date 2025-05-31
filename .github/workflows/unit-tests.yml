@@ -14,7 +14,7 @@ jobs:
       AUTH_CONFIG_PATH: /fake_auth_config.yml
       AWS_ACCESS_KEY_ID: FAKE_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: FAKE_SECRET_ACCESS_KEY
-      AWS_DEFAULT_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-2
       CNE_YEAR: 2025
       PDF_PASSWORD: fakepassword123
       S3_BUCKET: fake-s3-bucket
@@ -35,4 +35,4 @@ jobs:
 
       - name: Run unit tests
         run: |
-          python -m unittest discover
+          python -m unittest discover -s ./tests -t .
