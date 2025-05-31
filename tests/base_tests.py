@@ -269,13 +269,13 @@ class BaseTestCases:
                     st.switch_page = MagicMock()
 
                     at = AppTest.from_file(self.page_path)
-                    at.run(timeout=1000000)
+                    at.run()
                     st.switch_page.assert_called_once_with("ui/ui_pages/login.py")
 
         def init_authenticated_app_test(self):
             """Initialize an AppTest instance assuming the user is already authenticated"""
             st.cache_data.clear()  # clear the cache before starting a new test
-            at = AppTest.from_file(self.page_path, default_timeout=1000000)
+            at = AppTest.from_file(self.page_path, default_timeout=10)
             at.session_state["authentication_status"] = True
             at.session_state["username"] = "test_user"
             return at
