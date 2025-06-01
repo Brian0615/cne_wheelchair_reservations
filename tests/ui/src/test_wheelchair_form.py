@@ -25,7 +25,7 @@ class TestWheelchairForm(unittest.TestCase):
             cne_year=2021,
             date=datetime(2021, 8, 1),
             name="John Doe",
-            phone_number="123-456-789",
+            phone_number="416-937-2830",
             device_type=DeviceType.WHEELCHAIR,
             device_id="W12",
             pickup_location=Location.BLC,

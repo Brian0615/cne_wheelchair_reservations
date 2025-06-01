@@ -6,7 +6,7 @@ from common.constants import DeviceType, Location
 from common.data_models import Reservation
 from common.utils import get_default_timezone
 from ui.forms.base_form import BaseForm
-from ui.forms.form_fields import ButtonField, DateField, SelectboxField, TextField, TimeField
+from ui.forms.form_fields import ButtonField, DateField, PhoneNumberField, SelectboxField, TextField, TimeField
 from ui.src.constants import CNEDates
 
 
@@ -42,7 +42,7 @@ class ReservationForm(BaseForm):
                 label="Name",
                 default_value=existing_reservation.name if existing_reservation else None
             ),
-            "phone_number": TextField(
+            "phone_number": PhoneNumberField(
                 key=f"{key_prefix}_phone_number",
                 label="Phone Number",
                 default_value=existing_reservation.phone_number if existing_reservation else None

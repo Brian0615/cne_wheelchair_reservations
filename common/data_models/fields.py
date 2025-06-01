@@ -2,6 +2,7 @@ import datetime
 from typing import Annotated, List, Optional
 
 from pydantic import Field, StringConstraints, AwareDatetime, conint
+from pydantic_extra_types.phone_numbers import PhoneNumber, PhoneNumberValidator
 
 from common.constants import (
     RENTAL_ID_PATTERN,
@@ -30,7 +31,7 @@ NameField = Annotated[str, StringConstraints(min_length=3), Field(title="Name")]
 NewDeviceIDField = Annotated[DeviceIDField, Field(title="New Device ID")]
 NotesField = Annotated[Optional[str], Field(title="Notes", default=None)]
 OldDeviceIDField = Annotated[DeviceIDField, Field(title="Old Device ID")]
-PhoneNumberField = Annotated[str, StringConstraints(min_length=5), Field(title="Phone Number")]
+PhoneNumberField = Annotated[PhoneNumber, PhoneNumberValidator(default_region="CA"), Field(title="Phone Number")]
 PickupLocationField = Annotated[Location, Field(title="Pickup Location")]
 PickupTimeField = Annotated[AwareDatetime, Field(title="Pickup Time")]
 PostalCodeField = Annotated[Optional[str], StringConstraints(min_length=3), Field(title="Postal Code", default=None)]

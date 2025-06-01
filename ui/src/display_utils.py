@@ -67,6 +67,9 @@ def display_reservations_table(reservations: pd.DataFrame, device_type: DeviceTy
     # Note: utc=True to force tz-aware timestamps
     reservations["reservation_time"] = coerce_pandas_aware_datetime(reservations["reservation_time"])
 
+    # remove tel: prefix from phone numbers
+    reservations["phone_number"] = reservations["phone_number"].str.replace(r"^tel:", "", regex=True)
+
     # display reservations
     st.dataframe(
         data=reservations.set_index("id"),
@@ -95,6 +98,9 @@ def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
     # Note: utc=True to force tz-aware timestamps
     for time_col in ["pickup_time", "return_time"]:
         rentals[time_col] = coerce_pandas_aware_datetime(rentals[time_col])
+
+    # remove tel: prefix from phone numbers
+    rentals["phone_number"] = rentals["phone_number"].str.replace(r"^tel:", "", regex=True)
 
     device_id_label = f"{DeviceType.get_short_label(device_type)} ID"
 

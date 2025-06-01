@@ -10,6 +10,7 @@ from common.constants import (
     RENTAL_ID_PATTERN,
     RESERVATION_ID_PATTERN,
 )
+from common.data_models.fields import PhoneNumberField
 
 
 class Reservation(BaseModel):
@@ -23,7 +24,7 @@ class Reservation(BaseModel):
     location: Location = Field(title="Pickup Location")
     reservation_time: AwareDatetime = Field(title="Reservation Time")
     name: constr(min_length=5, strip_whitespace=True) = Field(title="Name")
-    phone_number: constr(min_length=5) = Field(title="Phone Number")
+    phone_number: PhoneNumberField = Field(title="Phone Number")
     notes: Optional[str] = Field(title="Additional Notes", default="N/A")
     status: ReservationStatus = Field(title="Status")
     rental_id: Optional[constr(to_upper=True, pattern=RENTAL_ID_PATTERN)] = Field(title="Rental ID", default=None)

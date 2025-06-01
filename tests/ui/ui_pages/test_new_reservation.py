@@ -35,7 +35,7 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
         at.selectbox(key="new_reservation_device_type").select(DeviceType.SCOOTER)
         at.selectbox(key="new_reservation_location").select(Location.BLC)
         at.text_input(key="new_reservation_name").set_value("John Doe")
-        at.text_input(key="new_reservation_phone_number").set_value("123-456-7890")
+        at.text_input(key="new_reservation_phone_number").set_value("416-937-2830")
         at.time_input(key="new_reservation_time").set_value(time(11, 30))
 
         with patch.object(
@@ -53,7 +53,7 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
                         device_type=DeviceType.SCOOTER,
                         location=Location.BLC,
                         name="John Doe",
-                        phone_number="123-456-7890",
+                        phone_number="416-937-2830",
                         reservation_time=get_default_timezone().localize(
                             datetime.combine(CNEDates.get_default_date(), time(hour=11, minute=30))
                         ),  # check that the time gets converted properly
