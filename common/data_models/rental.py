@@ -34,8 +34,12 @@ from common.data_models.fields import (
     SignatureField,
     StaffNameField,
 )
-from common.data_models.validators import check_device_id_and_type, check_reservation_id_and_type, \
-    check_cne_year_and_date
+from common.data_models.validators import (
+    check_cne_year_and_date,
+    check_country_code,
+    check_device_id_and_type,
+    check_reservation_id_and_type,
+)
 
 
 class ChangeDeviceInfo(BaseModel):
@@ -88,6 +92,7 @@ class NewRental(BaseModel):
 
     # validators
     cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
+    country_validator = field_validator("country", mode="before")(check_country_code)
     device_id_and_type_validator = model_validator(mode="after")(check_device_id_and_type)
     reservation_id_and_type_validator = model_validator(mode="after")(check_reservation_id_and_type)
 

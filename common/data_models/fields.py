@@ -2,6 +2,7 @@ import datetime
 from typing import Annotated, List, Optional
 
 from pydantic import Field, StringConstraints, AwareDatetime, conint
+from pydantic_extra_types.country import CountryAlpha3
 from pydantic_extra_types.phone_numbers import PhoneNumber, PhoneNumberValidator
 
 from common.constants import (
@@ -18,7 +19,7 @@ from common.constants import (
 AddressField = Annotated[str, StringConstraints(min_length=5, strip_whitespace=True), Field(title="Address")]
 CNEYearField = Annotated[int, Field(title="CNE Year", gt=2000)]
 CityField = Annotated[str, StringConstraints(min_length=5), Field(title="City")]
-CountryField = Annotated[str, StringConstraints(min_length=3), Field(title="Country")]
+CountryField = Annotated[CountryAlpha3, Field(title="Country")]
 DepositPaymentMethodField = Annotated[PaymentMethod, Field(title="Deposit Payment Method")]
 DepositPaymentAmountField = Annotated[conint(gt=0), Field(title="Deposit Payment Amount")]
 DeviceIDField = Annotated[str, StringConstraints(to_upper=True, pattern=DEVICE_ID_PATTERN), Field(title="Device ID")]
