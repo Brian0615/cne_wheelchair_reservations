@@ -1,5 +1,5 @@
 import datetime
-from typing import Annotated, Optional, List
+from typing import Annotated, List, Optional
 
 from pydantic import Field, StringConstraints, AwareDatetime, conint
 
