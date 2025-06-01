@@ -130,7 +130,7 @@ class BaseTestCases:
                 "phone_number": "4168202370",
                 "address": "1234 Test St",
                 "city": "Test City",
-                "province": "Test Province",
+                "province": "Ontario",
                 "postal_code": "A1B2C3",
                 "country": "Canada",
                 "fee_payment_method": PaymentMethod.CREDIT_CARD,

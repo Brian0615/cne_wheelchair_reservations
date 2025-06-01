@@ -19,6 +19,31 @@ def check_country_code(country: str):
         raise ValueError(f"Invalid country name: {country}") from exc
 
 
+def check_province_state(model):
+    """Validate that the province/state is provided for Canada or US"""
+
+    # Only apply for Canada or US
+    if model.country not in {"CAN", "USA"}:
+        return model
+
+    subdivisions = pycountry.subdivisions.get(country_code=pycountry.countries.lookup(model.country).alpha_2)
+    if not subdivisions:
+        raise ValueError(f"No subdivisions found for country code: {model.country}")
+
+    province_input = model.province.strip().upper()
+    code_map = {sub.code.split('-')[1].upper(): sub.code.split('-')[1] for sub in subdivisions}
+    name_map = {sub.name.upper(): sub.code.split('-')[1] for sub in subdivisions}
+
+    if province_input in code_map:
+        model.province = code_map[province_input]
+    elif province_input in name_map:
+        model.province = name_map[province_input]
+    else:
+        raise ValueError(f"Invalid province/state '{model.province}' for {model.country}")
+
+    return model
+
+
 def check_device_id_and_type(model):
     """Validate that the device ID and type match"""
     if not model.device_id.startswith(model.device_type.get_prefix()):
