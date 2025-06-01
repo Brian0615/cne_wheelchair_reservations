@@ -34,6 +34,7 @@ class LocalAuthenticator(BaseAuthenticator):
             raise
 
     def get_current_user(self) -> str:
+        """Get the current user's username"""
         return st.session_state["username"]
 
     def get_current_user_groups(self) -> List[str]:
@@ -41,12 +42,15 @@ class LocalAuthenticator(BaseAuthenticator):
         return st.session_state.get("roles", [])
 
     def is_admin_user(self):
+        """Check if the current user is an admin"""
         return "admin" in self.get_current_user_groups()
 
     def is_editor_user(self):
+        """Check if the current user is an editor"""
         return self.is_admin_user() or "editor" in self.get_current_user_groups()
 
     def is_authenticated(self) -> bool:
+        """Check if the user is authenticated"""
         return st.session_state.get("authentication_status", False) is True
 
     def login(self, rendered: bool = False) -> bool:
@@ -77,14 +81,6 @@ class LocalAuthenticator(BaseAuthenticator):
             callback=self._on_logout,
         )
 
-    @staticmethod
-    def _on_logout(*args, **kwargs):
+    def _on_logout(self):
         """Clear session state on logout"""
-        for field in [
-            "authentication_status",
-            "username",
-            "email",
-            "roles",
-            "name",
-        ]:
-            del st.session_state[field]
+        self._clear_session_state()

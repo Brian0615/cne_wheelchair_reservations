@@ -28,6 +28,7 @@ class CognitoAuthenticator(BaseAuthenticator):
         )
 
     def get_current_user(self) -> str:
+        """Retrieves the username of the currently authenticated user."""
         return self.authenticator.get_username()
 
     def get_current_user_groups(self) -> List[str]:
@@ -58,6 +59,7 @@ class CognitoAuthenticator(BaseAuthenticator):
         return self.is_admin_user() or "cne-editor" in self.get_current_user_groups()
 
     def is_authenticated(self) -> bool:
+        """ Checks if the user is authenticated."""
         return self.authenticator.is_logged_in()
 
     # pylint: disable=unused-argument,fixme
@@ -70,12 +72,25 @@ class CognitoAuthenticator(BaseAuthenticator):
         """
         return self.authenticator.login()
 
+    def _on_logout(self):
+        self._clear_session_state(
+            keep_keys={
+                "auth_id_token",
+                "auth_access_token",
+                "auth_refresh_token",
+                "auth_expires_in",
+                "auth_token_type",
+                "auth_reset_password_session",
+            }
+        )
+        self.authenticator.logout()
+
     def render_logout(self):
         """
         Renders a logout button in the Streamlit sidebar.
         """
         st.sidebar.button(
             ":material/logout: Logout",
-            on_click=self.authenticator.logout,
+            on_click=self._on_logout,
             key="logout_button",
         )
