@@ -1,5 +1,5 @@
 import os
-from typing import Any, List
+from typing import Any, List, Set
 
 import streamlit as st
 
@@ -12,6 +12,15 @@ class CognitoAuthenticator(BaseAuthenticator):
     """
     A class for handling authentication using AWS Cognito in a Streamlit application.
     """
+    __SESSION_STATE_KEEP_KEYS: Set[str] = {
+        "auth_state",
+        "auth_id_token",
+        "auth_access_token",
+        "auth_refresh_token",
+        "auth_expires_in",
+        "auth_token_type",
+        "auth_reset_password_session",
+    }
 
     def _initialize_authenticator(self) -> Any:
         """
@@ -73,16 +82,7 @@ class CognitoAuthenticator(BaseAuthenticator):
         return self.authenticator.login()
 
     def _on_logout(self):
-        self._clear_session_state(
-            keep_keys={
-                "auth_id_token",
-                "auth_access_token",
-                "auth_refresh_token",
-                "auth_expires_in",
-                "auth_token_type",
-                "auth_reset_password_session",
-            }
-        )
+        self._clear_session_state(keep_keys=self.__SESSION_STATE_KEEP_KEYS)
         self.authenticator.logout()
 
     def render_logout(self):
