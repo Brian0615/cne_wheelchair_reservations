@@ -163,7 +163,7 @@ class BaseAuthenticator:
         This method can be used to reset the session state, typically after a user logs out.
         """
         if keep_keys is None:
-            keep_keys = {}
+            keep_keys = set()
         keep_keys.add("authenticator")
 
         for key, _ in st.session_state.items():
