@@ -173,14 +173,15 @@ class CognitoAuthenticatorBase(ABC):
 class CognitoAuthenticator(CognitoAuthenticatorBase):
     """Authenticates the user with Cognito using custom streamlit UI elements."""
 
-    def _show_login_form(self, placeholder):
+    @staticmethod
+    def _show_login_form(placeholder):
         with placeholder:
             cols = st.columns([1, 3, 1])
             with cols[1]:
                 with st.form("login_form"):
                     st.subheader("Login")
-                    username = st.text_input("Username")
-                    password = st.text_input("Password", type="password")
+                    username = st.text_input("Username", key="cognito_login_form_username")
+                    password = st.text_input("Password", type="password", key="cognito_login_form_password")
                     login_submitted = st.form_submit_button("Login")
                     status_container = st.container()
 
@@ -355,6 +356,9 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
         )
         if not login_submitted:
             logger.info("Login button was not pushed yet")
+            return False
+        if not username or not password:
+            status_container.error("Username and/or password is empty")
             return False
 
         is_logged_in = self._login(
