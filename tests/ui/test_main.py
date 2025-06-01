@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import streamlit as st
 from streamlit.testing.v1 import AppTest
@@ -19,25 +19,28 @@ class TestMain(unittest.TestCase):
         # mock the navigation method so we can check the pages
         st.navigation = Mock()
 
-        with patch.object(LocalAuthenticator, "_initialize_authenticator"):
-            with patch.object(LocalAuthenticator, "login", return_value=False):
-                # test for when user has never authenticated yet
-                at = AppTest.from_file(TestMain.__APP_PATH)
-                at.run()
-                page_list = st.navigation.call_args.kwargs["pages"]
-                page_list = sum(page_list.values(), [])
-                assert len(page_list) == 1 and page_list[0].title == "Login", \
-                    "Only the login page should be available when unauthenticated."
+        with patch.multiple(
+                LocalAuthenticator,
+                _initialize_authenticator=MagicMock(),
+                login=MagicMock(return_value=False),
+        ):
+            # test for when user has never authenticated yet
+            at = AppTest.from_file(TestMain.__APP_PATH)
+            at.run()
+            page_list = st.navigation.call_args.kwargs["pages"]
+            page_list = sum(page_list.values(), [])
+            assert len(page_list) == 1 and page_list[0].title == "Login", \
+                "Only the login page should be available when unauthenticated."
 
-                # test for after user logs out
-                at = AppTest.from_file(TestMain.__APP_PATH)
-                at.session_state["authentication_status"] = False
-                at.run()
+            # test for after user logs out
+            at = AppTest.from_file(TestMain.__APP_PATH)
+            at.session_state["authentication_status"] = False
+            at.run()
 
-                page_list = st.navigation.call_args.kwargs["pages"]
-                page_list = sum(page_list.values(), [])
-                assert len(page_list) == 1 and page_list[0].title == "Login", \
-                    "Only the login page should be available when unauthenticated."
+            page_list = st.navigation.call_args.kwargs["pages"]
+            page_list = sum(page_list.values(), [])
+            assert len(page_list) == 1 and page_list[0].title == "Login", \
+                "Only the login page should be available when unauthenticated."
 
     @staticmethod
     def test_main_authenticated():
@@ -46,14 +49,17 @@ class TestMain(unittest.TestCase):
         # mock the navigation method so we can check the pages
         st.navigation = Mock()
 
-        with patch.object(LocalAuthenticator, "_initialize_authenticator"):
-            with patch.object(LocalAuthenticator, "login", return_value=True):
-                at = AppTest.from_file(TestMain.__APP_PATH)
-                at.session_state["authentication_status"] = True
-                at.session_state["roles"] = []
-                at.run()
-                page_list = st.navigation.call_args.kwargs["pages"]
-                page_list = sum(page_list.values(), [])
-                assert len(page_list) >= 1, "At least one page should be available when authenticated."
-                assert not any(page.title == "Login" for page in page_list), \
-                    "The login page should not be available when authenticated."
+        with patch.multiple(
+                LocalAuthenticator,
+                _initialize_authenticator=MagicMock(),
+                login=MagicMock(return_value=False),
+        ):
+            at = AppTest.from_file(TestMain.__APP_PATH)
+            at.session_state["authentication_status"] = True
+            at.session_state["roles"] = []
+            at.run()
+            page_list = st.navigation.call_args.kwargs["pages"]
+            page_list = sum(page_list.values(), [])
+            assert len(page_list) >= 1, "At least one page should be available when authenticated."
+            assert not any(page.title == "Login" for page in page_list), \
+                "The login page should not be available when authenticated."
