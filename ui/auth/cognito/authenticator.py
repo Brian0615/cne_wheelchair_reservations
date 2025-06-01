@@ -355,7 +355,7 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
             form_placeholder
         )
         if not login_submitted:
-            logger.info("Login button was not pushed yet")
+            logger.debug("Login button was not pushed yet")
             return False
         if not username or not password:
             status_container.error("Username and/or password is empty")

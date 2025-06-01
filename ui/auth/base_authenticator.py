@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Set
 
 import streamlit as st
 
@@ -147,11 +147,25 @@ class BaseAuthenticator:
         """
         raise NotImplementedError("Subclasses must implement render_logout method")
 
-    @staticmethod
-    def _on_logout(*args, **kwargs):
+    def _on_logout(self):
         """
         Static method to handle logout actions.
 
         Can be overridden by subclasses to clear session state or perform other
         logout-related tasks.
         """
+
+    @staticmethod
+    def _clear_session_state(keep_keys: Set[str] = None):
+        """
+        Clears the Streamlit session state.
+
+        This method can be used to reset the session state, typically after a user logs out.
+        """
+        if keep_keys is None:
+            keep_keys = {}
+        keep_keys.add("authenticator")
+
+        for key, _ in st.session_state.items():
+            if key not in keep_keys:
+                del st.session_state[key]
