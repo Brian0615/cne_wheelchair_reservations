@@ -15,6 +15,7 @@ jobs:
       API_HOST: localhost
       API_PORT: 9999
       AUTH_CONFIG_PATH: /fake_auth_config.yml
+      AUTH_METHOD: local
       AWS_ACCESS_KEY_ID: FAKE_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: FAKE_SECRET_ACCESS_KEY
       AWS_DEFAULT_REGION: us-east-2
