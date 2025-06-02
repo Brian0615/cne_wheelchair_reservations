@@ -21,7 +21,7 @@ class TestReservationForm(TestCase):
             date=date(2025, 9, 1),
             device_type=DeviceType.SCOOTER,
             name="John Doe",
-            phone_number="123-456-7890",
+            phone_number="+1 437-293-0384",
             location=Location.BLC,
             reservation_time=get_default_timezone().localize(datetime(2025, 9, 1, 15, 30)),
             status=ReservationStatus.RESERVED,
