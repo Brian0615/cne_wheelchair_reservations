@@ -40,6 +40,7 @@ from common.data_models.validators import (
     check_device_id_and_type,
     check_province_state,
     check_reservation_id_and_type,
+    check_postal_code,
 )
 
 
@@ -92,6 +93,7 @@ class NewRental(BaseModel):
     return_signature: ReturnSignatureField
 
     # validators
+    check_postal_code_validator = model_validator(mode="after")(check_postal_code)
     cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
     country_validator = field_validator("country", mode="before")(check_country_code)
     province_validator = model_validator(mode="after")(check_province_state)
@@ -157,6 +159,7 @@ class Rental(BaseModel):
     return_signature: ReturnSignatureField
 
     # validators
+    check_postal_code_validator = model_validator(mode="after")(check_postal_code)
     cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
     province_validator = model_validator(mode="after")(check_province_state)
     device_id_and_type_validator = model_validator(mode="after")(check_device_id_and_type)

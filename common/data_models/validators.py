@@ -1,3 +1,5 @@
+import re
+
 import pycountry
 
 
@@ -17,6 +19,41 @@ def check_country_code(country: str):
         return pycountry.countries.lookup(country).alpha_3
     except LookupError as exc:
         raise ValueError(f"Invalid country name: {country}") from exc
+
+
+def check_device_id_and_type(model):
+    """Validate that the device ID and type match"""
+    if not model.device_id.startswith(model.device_type.get_prefix()):
+        raise ValueError(f"Device ID ({model.device_id}) and type ({model.device_type}) do not match")
+    return model
+
+
+def check_postal_code(model):
+    """Format postal code according to country standards
+
+    For Canadian postal codes:
+    - Format as A1A 1A1 (uppercase letters, single space in the middle)
+    - Validate format matches letter-number-letter number-letter-number
+    """
+    if model.postal_code is None:
+        return None
+
+    # Strip whitespace and convert to uppercase
+    postal_code = model.postal_code.strip().upper()
+
+    # If country is provided and is Canada, apply Canadian postal code formatting
+    if model.country == "CAN":
+        # Remove all spaces and non-alphanumeric characters
+        postal_code = re.sub(r'[^A-Z0-9]', '', postal_code)
+
+        # Check if the postal code follows the Canadian format (letter-number-letter-number-letter-number)
+        if not re.match(r'^[A-Z][0-9][A-Z][0-9][A-Z][0-9]$', postal_code):
+            raise ValueError(f"Invalid Canadian postal code format: {postal_code}")
+
+        # Format as A1A 1A1 with a space in the middle
+        model.postal_code = f"{postal_code[:3]} {postal_code[3:]}"
+
+    return model
 
 
 def check_province_state(model):
@@ -41,13 +78,6 @@ def check_province_state(model):
     else:
         raise ValueError(f"Invalid province/state '{model.province}' for {model.country}")
 
-    return model
-
-
-def check_device_id_and_type(model):
-    """Validate that the device ID and type match"""
-    if not model.device_id.startswith(model.device_type.get_prefix()):
-        raise ValueError(f"Device ID ({model.device_id}) and type ({model.device_type}) do not match")
     return model
 
 

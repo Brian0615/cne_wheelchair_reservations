@@ -1,9 +1,10 @@
 import unittest
+from typing import Optional
 from unittest.mock import patch, MagicMock
 
 from pydantic import BaseModel
 
-from common.data_models.validators import check_country_code, check_province_state
+from common.data_models.validators import check_country_code, check_province_state, check_postal_code
 
 
 # pylint: disable=too-few-public-methods
@@ -11,6 +12,12 @@ class MockModel(BaseModel):
     """Mock model for testing validators."""
     country: str
     province: str
+
+
+class MockPostalModel(BaseModel):
+    """Mock model for testing postal code validators."""
+    country: str
+    postal_code: Optional[str] = None
 
 
 class TestValidators(unittest.TestCase):
@@ -172,3 +179,75 @@ class TestValidators(unittest.TestCase):
         model = MockModel(country="CAN", province="ON")
         with self.assertRaises(ValueError):
             check_province_state(model)
+
+    def test_check_postal_code_none(self):
+        """Test check_postal_code with None postal code."""
+        model = MockPostalModel(country="CAN", postal_code=None)
+        result = check_postal_code(model)
+        self.assertIsNone(result)
+
+    def test_check_postal_code_valid_canadian(self):
+        """Test check_postal_code with valid Canadian postal codes."""
+        # Test with properly formatted postal code
+        model = MockPostalModel(country="CAN", postal_code="A1A 1A1")
+        result = check_postal_code(model)
+        self.assertEqual(result.postal_code, "A1A 1A1")
+
+        # Test with no space
+        model = MockPostalModel(country="CAN", postal_code="A1A1A1")
+        result = check_postal_code(model)
+        self.assertEqual(result.postal_code, "A1A 1A1")
+
+        # Test with lowercase
+        model = MockPostalModel(country="CAN", postal_code="a1a1a1")
+        result = check_postal_code(model)
+        self.assertEqual(result.postal_code, "A1A 1A1")
+
+        # Test with extra spaces
+        model = MockPostalModel(country="CAN", postal_code="  A1A  1A1  ")
+        result = check_postal_code(model)
+        self.assertEqual(result.postal_code, "A1A 1A1")
+
+        # Test with hyphens
+        model = MockPostalModel(country="CAN", postal_code="A1A-1A1")
+        result = check_postal_code(model)
+        self.assertEqual(result.postal_code, "A1A 1A1")
+
+    def test_check_postal_code_invalid_canadian(self):
+        """Test check_postal_code with invalid Canadian postal codes."""
+        # Test with invalid format (wrong pattern)
+        model = MockPostalModel(country="CAN", postal_code="A11A11")
+        with self.assertRaises(ValueError):
+            check_postal_code(model)
+
+        # Test with invalid format (too short)
+        model = MockPostalModel(country="CAN", postal_code="A1A1A")
+        with self.assertRaises(ValueError):
+            check_postal_code(model)
+
+        # Test with invalid format (too long)
+        model = MockPostalModel(country="CAN", postal_code="A1A1A1A")
+        with self.assertRaises(ValueError):
+            check_postal_code(model)
+
+        # Test with invalid format (wrong character types)
+        model = MockPostalModel(country="CAN", postal_code="AAA111")
+        with self.assertRaises(ValueError):
+            check_postal_code(model)
+
+    def test_check_postal_code_non_canadian(self):
+        """Test check_postal_code with non-Canadian postal codes."""
+        # Test with US postal code
+        model = MockPostalModel(country="USA", postal_code="12345")
+        result = check_postal_code(model)
+        self.assertEqual(result.postal_code, "12345")
+
+        # Test with UK postal code
+        model = MockPostalModel(country="GBR", postal_code="SW1A 1AA")
+        result = check_postal_code(model)
+        self.assertEqual(result.postal_code, "SW1A 1AA")
+
+        # Test with empty string
+        model = MockPostalModel(country="USA", postal_code="")
+        result = check_postal_code(model)
+        self.assertEqual(result.postal_code, "")
