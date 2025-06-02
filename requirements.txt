@@ -9,6 +9,7 @@ pandera>=0.20,<1
 phonenumbers>=8.13,<10
 plotly>=5.24,<6
 pycognito>=2024.5,<2025
+pycountry>=24.6.1,<25
 pydantic>=2.10,<3
 pydantic-extra-types>=2.9,<3
 pymupdf>=1.25,<2
