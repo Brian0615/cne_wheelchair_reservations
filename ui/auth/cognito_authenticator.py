@@ -33,7 +33,7 @@ class CognitoAuthenticator(BaseAuthenticator):
             pool_id=read_secret(os.environ["AWS_COGNITO_USER_POOL_ID"]),
             app_client_id=read_secret(os.environ["AWS_COGNITO_CLIENT_ID"]),
             app_client_secret=read_secret(os.environ["AWS_COGNITO_CLIENT_SECRET"]),
-            use_cookies=False
+            use_cookies=False,
         )
 
     def get_current_user(self) -> str:

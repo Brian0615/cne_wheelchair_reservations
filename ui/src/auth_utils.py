@@ -25,7 +25,7 @@ def get_authenticator() -> Union[LocalAuthenticator, CognitoAuthenticator]:
     Raises:
         ValueError: If the `AUTH_METHOD` environment variable contains an invalid value.
     """
-    match os.getenv("AUTH_METHOD", default="local"):
+    match os.getenv("AUTH_METHOD", default="cognito"):
         case "local":
             return LocalAuthenticator()
         case "cognito":

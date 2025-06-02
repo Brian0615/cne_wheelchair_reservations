@@ -9,16 +9,17 @@ def initialize_logger(log_level: int = logging.DEBUG) -> logging.Logger:
     logger = logging.getLogger(inspect.stack()[1].frame.f_globals["__name__"])
     logger.setLevel(log_level)
 
-    # Create a console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(log_level)
+    if not logger.hasHandlers():
+        # Create a console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(log_level)
 
-    # Create a formatter and set it for handlers
-    formatter = logging.Formatter('%(asctime)s - %(name)s [%(levelname)s]: %(message)s')
-    console_handler.setFormatter(formatter)
+        # Create a formatter and set it for handlers
+        formatter = logging.Formatter('%(asctime)s - %(name)s [%(levelname)s]: %(message)s')
+        console_handler.setFormatter(formatter)
 
-    # Add the handlers to the logger
-    logger.addHandler(console_handler)
+        # Add the handlers to the logger
+        logger.addHandler(console_handler)
 
     return logger
 
