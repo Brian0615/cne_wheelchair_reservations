@@ -5,6 +5,7 @@ import streamlit as st
 
 from ui.auth.cognito_authenticator import CognitoAuthenticator
 from ui.auth.local_authenticator import LocalAuthenticator
+from version import APP_VERSION
 
 
 def get_authenticator() -> Union[LocalAuthenticator, CognitoAuthenticator]:
@@ -37,7 +38,12 @@ def get_authenticator() -> Union[LocalAuthenticator, CognitoAuthenticator]:
 def initialize_page(page_header: Optional[str] = None, render_login: bool = False):
     """Initialize a Streamlit page with login and optional header."""
 
-    st.set_page_config(layout="centered" if render_login else "wide")
+    st.set_page_config(
+        layout="centered" if render_login else "wide",
+        menu_items={
+            "About": f"**CNE Wheelchair Reservations** v{APP_VERSION}"
+        }
+    )
 
     # developer mode details
     if os.getenv("DEV_MODE", default="False").lower() == "true" and not render_login:

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Optional
 
 from fastapi import FastAPI, HTTPException, File
@@ -21,7 +21,7 @@ s3_service = S3Service()
 @app.get("/health")
 def health_check():
     """Health check"""
-    return {"status": "ok", "time": datetime.now().isoformat()}
+    return {"status": "ok", "time": datetime.now(timezone.utc).isoformat()}
 
 
 # ==============================
