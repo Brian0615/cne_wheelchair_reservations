@@ -2,9 +2,9 @@ name: Docker
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "develop", "main" ]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*-dev' ]
+    tags: [ 'v*.*.*', 'v*.*.*-dev' ]
 
 jobs:
   build_and_push:
@@ -31,11 +31,27 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Extract version from version.py
+        id: extract_version
+        run: |
+          VERSION=$(grep -oP 'APP_VERSION = "\K[^"]+' version.py)
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            VERSION_TAG="${VERSION}-dev"
+          else
+            VERSION_TAG="${VERSION}"
+          fi
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION, Tag: $VERSION_TAG"
+
       - name: Extract Docker metadata for API
         id: meta_api
         uses: docker/metadata-action@v3
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/cne_api
+          tags: |
+            type=raw,value=latest-${{ github.ref_name }},enable=${{ contains(github.ref, 'refs/heads/') }}
+            type=raw,value=${{ env.VERSION_TAG }},enable=true
 
       - name: Build and push API Docker image
         uses: docker/build-push-action@v6
@@ -54,6 +70,9 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/cne_ui
+          tags: |
+            type=raw,value=latest-${{ github.ref_name }},enable=${{ contains(github.ref, 'refs/heads/') }}
+            type=raw,value=${{ env.VERSION_TAG }},enable=true
 
       - name: Build and push UI Docker image
         uses: docker/build-push-action@v6

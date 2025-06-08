@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y curl
 COPY api/ /app/api/
 COPY common/ /app/common/
 COPY ui/ /app/ui/
+COPY version.py /app/version.py
 
 # start UI
 WORKDIR /app
