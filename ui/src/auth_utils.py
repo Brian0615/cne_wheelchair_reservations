@@ -40,7 +40,7 @@ def initialize_page(page_header: Optional[str] = None, render_login: bool = Fals
     st.set_page_config(layout="centered" if render_login else "wide")
 
     # developer mode details
-    if os.getenv("DEV_MODE", default="False").lower() == "true":
+    if os.getenv("DEV_MODE", default="False").lower() == "true" and not render_login:
         with st.expander("Developer Details", expanded=False):
             tabs = st.tabs(["Session State", "Headers", "Query Params", "Cookies"])
             tabs[0].write(st.session_state)
