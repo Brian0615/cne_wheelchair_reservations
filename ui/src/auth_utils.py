@@ -2,6 +2,7 @@ import os
 from typing import Optional, Union
 
 import streamlit as st
+from streamlit.errors import StreamlitAPIException
 
 from ui.auth.cognito_authenticator import CognitoAuthenticator
 from ui.auth.local_authenticator import LocalAuthenticator
@@ -61,7 +62,10 @@ def initialize_page(page_header: Optional[str] = None, render_login: bool = Fals
     if not authenticator.login(rendered=render_login):
         if render_login:
             st.stop()
-        st.switch_page("ui/ui_pages/login.py")
+        try:
+            st.switch_page("ui/ui_pages/login.py")
+        except StreamlitAPIException:
+            st.rerun()
 
     if render_login:
         st.rerun()

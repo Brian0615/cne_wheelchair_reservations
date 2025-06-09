@@ -35,3 +35,13 @@ class NewReservation(Reservation):
     model_config = ConfigDict(extra="forbid")
 
     id: Optional[constr(to_upper=True, pattern=RESERVATION_ID_PATTERN)] = Field(title="Reservation ID", default=None)
+
+
+class ReservationCount(BaseModel):
+    """Data validation class for reservation counts"""
+    model_config = ConfigDict(extra="forbid")
+
+    date: datetime.date = Field(title="Reservation Date")
+    device_type: DeviceType = Field(title="Reservation Type")
+    location: Location = Field(title="Pickup Location")
+    count: conint(ge=0) = Field(title="Reservation Count")

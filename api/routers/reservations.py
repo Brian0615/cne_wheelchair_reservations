@@ -7,10 +7,18 @@ from pydantic import constr
 from api.src.dynamodb_service import DynamoDBService
 from api.src.utils import auto_process_database_errors
 from common.constants import DeviceType, RESERVATION_ID_PATTERN, ReservationStatus
-from common.data_models import NewReservation, Reservation
+from common.data_models import NewReservation, Reservation, ReservationCount
 
 db_service = DynamoDBService()
 router = APIRouter(prefix="/reservations", tags=["reservations"])
+
+
+@router.get("/get_reservation_count")
+@auto_process_database_errors
+def get_reservation_count(cne_year: int) -> List[ReservationCount]:
+    """Get the reservation counts for a specific date"""
+    counts = db_service.get_reservation_count(cne_year)
+    return [ReservationCount(**x) for x in counts.to_dict(orient="records")]
 
 
 @router.get("/get_reservations_on_date")
