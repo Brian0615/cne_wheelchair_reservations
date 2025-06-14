@@ -30,7 +30,7 @@ if reservation_info and reservation_info.get("date") and reservation_info.get("d
         reservation_counts = data_service.get_reservation_count()
         num_existing = reservation_counts[
             (reservation_counts["date"].dt.date == reservation_info["date"])
-            & (reservation_counts["device_type"] == DeviceType(reservation_info["device_type"]))
+            & (reservation_counts["device_type"] == reservation_info["device_type"])
             ]["count"].sum() if not reservation_counts.empty else 0
         num_available = int(reservation_limit) - num_existing
         if num_available <= 0:
