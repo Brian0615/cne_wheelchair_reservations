@@ -86,7 +86,7 @@ class DataService:
     # HELPER FUNCTIONS
     # ==============================
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments
     def _make_request(
             self,
             request_method: Callable,
@@ -140,12 +140,15 @@ class DataService:
     @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @timeit(logger=logger)
     @auto_process_api_errors
-    def get_available_device_ids(_self, device_type: DeviceType, location: Location):
-        """Get the available devices of a specific type at a specific location using the API."""
+    def get_available_device_ids(_self, device_type: DeviceType, location: Optional[Location] = None):
+        """Get the available devices of a specific type at a specific location using the API (location optional)."""
+        params = {"cne_year": CNEDates.get_cne_year(), "device_type": device_type}
+        if location is not None:
+            params["location"] = location
         response = _self._make_request(
             request_method=requests.get,
             url_path="devices/get_available_devices",
-            params={"cne_year": CNEDates.get_cne_year(), "device_type": device_type, "location": location},
+            params=params,
         )
         return response.json()
 

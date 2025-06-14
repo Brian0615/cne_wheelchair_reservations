@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter
 from pydantic import constr
@@ -22,9 +22,9 @@ def add_devices(devices: List[NewDevice]):
 def get_available_device_ids(
         cne_year: int,
         device_type: DeviceType,
-        location: Location,
+        location: Optional[Location] = None,
 ) -> List[constr(pattern=DEVICE_ID_PATTERN)]:
-    """Get the available devices of a specific type at a specific location"""
+    """Get the available devices of a specific type at a specific location (location optional)"""
     return db_service.get_available_device_ids(cne_year=cne_year, device_type=device_type, location=location)
 
 

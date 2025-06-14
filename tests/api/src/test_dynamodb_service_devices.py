@@ -60,6 +60,13 @@ class TestDynamoDBServiceDevices(BaseTestCases.BaseDynamoDBServiceTest):
         available_device_ids = self.service.get_available_device_ids(2025, DeviceType.WHEELCHAIR, Location.PG)
         self.assertEqual(sorted(available_device_ids), ["W02", "W03"])
 
+        # New test: location not specified
+        available_device_ids = self.service.get_available_device_ids(2025, DeviceType.SCOOTER)
+        self.assertEqual(sorted(available_device_ids), ["S01", "S03"])
+
+        available_device_ids = self.service.get_available_device_ids(2025, DeviceType.WHEELCHAIR)
+        self.assertEqual(sorted(available_device_ids), ["W02", "W03"])
+
     def test_get_full_inventory(self):
         devices = [
             NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.AVAILABLE),
