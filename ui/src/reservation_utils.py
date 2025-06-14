@@ -1,9 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Union
 
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
-from common.constants import ReservationStatus
+from common.constants import ReservationStatus, DeviceType
 from common.data_models.reservation import Reservation, NewReservation
 from common.utils import get_default_timezone
 from ui.forms.reservation_form import ReservationForm
@@ -72,3 +75,88 @@ def update_reservation_status(reservation: Reservation, status: ReservationStatu
     status_code = DataService().update_reservation_status(reservation_id=reservation.id, status=status)
     if status_code == 200:
         display_success_dialog(reservation_id=reservation.id, reservation=reservation, is_update=True)
+
+
+def create_reservation_availability_chart(reservation_counts: pd.DataFrame, device_type: DeviceType, limit: int):
+    """
+    Create a heatmap chart showing reservation availability for a specific device type.
+    Args:
+        reservation_counts (pd.DataFrame): DataFrame containing reservation counts with
+          columns 'date', 'device_type', and 'count'.
+        device_type (str): The type of device for which to create the availability chart.
+        limit (int): The maximum number of reservations allowed for the device type.
+    """
+    # get all dates for the calendar
+    start_date, end_date = CNEDates.get_cne_start_end_dates()
+    reservation_df = pd.DataFrame(
+        data={
+            "date": pd.date_range(
+                start=start_date - timedelta(days=start_date.weekday() + 1 % 7),
+                end=end_date + timedelta(days=(5 - end_date.weekday()) % 7),
+                freq='D',
+            )
+        }
+    )
+
+    reservation_df = pd.merge(
+        reservation_df,
+        reservation_counts[reservation_counts["device_type"] == device_type].groupby(by="date")["count"].sum(),
+        on="date",
+        how="left",
+    )
+    reservation_df["label"] = np.where(
+        reservation_df["date"].between(start_date, end_date),
+        reservation_df["date"].dt.strftime("%b %d"),
+        "",
+    )
+    reservation_df["availability"] = 1 - (reservation_df["count"] / limit)
+    reservation_df["remaining"] = limit - reservation_df["count"]
+    warning_level = max(0.2 * limit, 2.0) / limit  # Ensure at least 1 reservation is considered for warning
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=reservation_df["availability"].values.reshape(-1, 7)[::-1],
+            text=reservation_df["label"].values.reshape(-1, 7)[::-1],
+            texttemplate="%{text}",
+            textfont={"size": 14},
+            customdata=np.dstack((
+                reservation_df["date"].dt.strftime("%b %d, %Y").values.reshape(-1, 7)[::-1],
+                reservation_df["count"].fillna(0).values.reshape(-1, 7)[::-1],
+                reservation_df["remaining"].fillna(0).values.reshape(-1, 7)[::-1]
+            )),
+            hovertemplate="""
+                <b>%{customdata[0]}</b><br>
+                Reservations: %{customdata[1]}<br>
+                Remaining: %{customdata[2]}<extra></extra>
+            """,
+            colorscale=[
+                [0, "#DF4E46"],
+                [0.01, "#F5AB4B"],
+                [warning_level, "#F5AB4B"],
+                [warning_level + 0.01, "#479825"],
+                [1, "#479825"]
+            ],
+            zmin=0,
+            zmax=1,
+            showscale=False,
+            xgap=5,
+            ygap=5,
+        )
+    )
+    fig.update_xaxes(
+        showline=False,
+        showgrid=False,
+        zeroline=False,
+        tickmode="array",
+        tickvals=list(range(7)),
+        ticktext=["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        tickfont={"size": 14}
+    )
+    fig.update_yaxes(showline=False, showgrid=False, zeroline=False, showticklabels=False, title=None)
+    # Make cells square by setting aspect ratio and remove top margin
+    fig.update_layout(
+        autosize=True,
+        height=350,
+        margin={"t": 10, "b": 40, "l": 40, "r": 40},  # Reduce top margin
+    )
+    st.plotly_chart(fig)

@@ -15,7 +15,8 @@ if authenticator.is_authenticated():
             st.Page("ui_pages/view_rentals.py", title="View Rentals", icon=":material/manage_search:"),
         ],
         "Reservations": [
-            st.Page("ui_pages/reservations_summary.py", title="Reservations Summary", icon=":material/dashboard:"),
+            st.Page("ui_pages/reservation_availability.py", title="Reservation Availability",
+                    icon=":material/event_available:"),
             st.Page("ui_pages/view_reservations.py", title="View Reservations", icon=":material/manage_search:"),
         ],
         "Inventory": [
