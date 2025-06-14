@@ -1,5 +1,4 @@
 # pylint: disable=invalid-name
-import numpy as np
 import streamlit as st
 
 from common.constants import DeviceType
@@ -32,10 +31,7 @@ if rental_info.get("date") and rental_info.get("device_type"):
             st.session_state["new_rental_reservations"] = reservations_list
             fields_refreshed = True
 if rental_info.get("pickup_location") and rental_info.get("device_type"):
-    available_devices = data_service.get_available_device_ids(
-        device_type=rental_info["device_type"],
-        location=rental_info["pickup_location"],
-    )
+    available_devices = data_service.get_available_device_ids(device_type=rental_info["device_type"])
     if available_devices != st.session_state.get("new_rental_available_devices"):
         st.session_state["new_rental_available_devices"] = available_devices
         fields_refreshed = True
@@ -66,14 +62,6 @@ if is_submitted:
     allow_submission = True
     if not rental_info["id_verified"]:
         st.error("**ID Not Verified**: Please confirm that the renter's ID has been verified.")
-        allow_submission = False
-    if not np.count_nonzero(np.max(rental_info["signature"], axis=-1)) > 500:
-        st.info(
-            """
-            **Signature Required**: Before submitting, please ensure that you have read and agreed to the 
-            terms and conditions by signing in the box above.
-            """
-        )
         allow_submission = False
 
     if allow_submission:

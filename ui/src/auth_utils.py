@@ -73,5 +73,6 @@ def initialize_page(page_header: Optional[str] = None, render_login: bool = Fals
     authenticator.render_logout()
     if page_header:
         st.header(page_header)
+    st.sidebar.caption(f"v{APP_VERSION}")
 
     return authenticator

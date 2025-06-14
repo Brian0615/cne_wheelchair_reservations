@@ -64,7 +64,6 @@ class TestRentalForm(TestCase):
             "fee_payment_method": None,
             "deposit_payment_method": None,
             "staff_name": None,
-            "signature": None,
         }.items():
             self.assertEqual(at.session_state[f"{self.mock_prefix}_{field}"], value)
 

@@ -13,7 +13,6 @@ from ui.forms.form_fields import (
     SelectboxField,
     TextField,
     TimeField,
-    SignatureField,
 )
 
 
@@ -75,7 +74,6 @@ class NewRentalForm(BaseForm):
                 label="Items Left Behind by Renter",
                 options=HoldItem,
             ),
-            "signature": SignatureField(key=f"{key_prefix}_signature", label="Signature"),
             "id_verified": CheckboxField(key=f"{key_prefix}_id_verified", label="ID Verified?"),
             "submit": ButtonField(
                 key=f"{key_prefix}_submit",
@@ -161,13 +159,6 @@ class NewRentalForm(BaseForm):
                 result["staff_name"] = self.fields["staff_name"].render_field()
             with col2:
                 result["items_left_behind"] = self.fields["items_left_behind"].render_field()
-
-        # Terms and Conditions Section of Form
-        with st.container(border=True):
-            st.subheader("Terms and Conditions")
-            st.markdown("Insert Terms and Conditions here...")
-            st.markdown("By signing below, I agree to the terms and conditions above.")
-            result["signature"] = self.fields["signature"].render_field()
 
         is_submitted = self.fields["submit"].render_field()
 

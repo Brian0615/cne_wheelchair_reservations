@@ -93,7 +93,7 @@ class DynamoDBService:
 
         return f"{device_type.get_prefix()}{date.strftime('%m%d')}{str(count + 1).zfill(3)}"
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments
     def _form_update_device_transact_dict(
             self,
             cne_year: int,
@@ -169,20 +169,28 @@ class DynamoDBService:
         logger.info("Added devices to the inventory: %s", devices)
 
     @timeit(logger=logger)
-    def get_available_device_ids(self, cne_year: int, device_type: DeviceType, location: Location):
+    def get_available_device_ids(
+            self,
+            cne_year: int,
+            device_type: DeviceType,
+            location: Optional[Location] = None,
+    ) -> List[str]:
         """Get the available devices of a specific type at a specific location"""
         response = self.devices_table.scan(
-            FilterExpression="cne_year = :year AND #type = :type AND #location = :location AND #status = :status",
+            FilterExpression=(
+                    "cne_year = :year AND #type = :type AND #status = :status"
+                    + (" AND #location = :location" if location else "")
+            ),
             ExpressionAttributeNames={
                 "#type": "type",
-                "#location": "location",
-                "#status": "status"
+                "#status": "status",
+                **({"#location": "location"} if location else {})
             },
             ExpressionAttributeValues={
                 ":year": cne_year,
                 ":type": device_type,
-                ":location": location,
-                ":status": DeviceStatus.AVAILABLE
+                ":status": DeviceStatus.AVAILABLE,
+                **({":location": location} if location else {})
             }
         )
         return [item["id"] for item in response["Items"]]
@@ -342,15 +350,13 @@ class DynamoDBService:
                         "SET #status = :status, "
                         "#return_location = :return_location, "
                         "#return_time = :return_time, "
-                        "#return_staff_name = :return_staff_name, "
-                        "#return_signature = :return_signature"
+                        "#return_staff_name = :return_staff_name "
                     ),
                     "ExpressionAttributeNames": {
                         "#status": "status",
                         "#return_location": "return_location",
                         "#return_time": "return_time",
                         "#return_staff_name": "return_staff_name",
-                        "#return_signature": "return_signature",
                     },
                     "ExpressionAttributeValues": {
                         ":completed_status": RentalStatus.COMPLETED,
@@ -358,7 +364,6 @@ class DynamoDBService:
                         ":return_location": rental.return_location,
                         ":return_time": rental.return_time.isoformat(),
                         ":return_staff_name": rental.return_staff_name,
-                        ":return_signature": rental.return_signature,
                     },
                 }
             }
