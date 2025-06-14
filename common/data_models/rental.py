@@ -28,10 +28,8 @@ from common.data_models.fields import (
     RentalStatusField,
     ReservationIDField,
     ReturnLocationField,
-    ReturnSignatureField,
     ReturnStaffNameField,
     ReturnTimeField,
-    SignatureField,
     StaffNameField,
 )
 from common.data_models.validators import (
@@ -85,12 +83,10 @@ class NewRental(BaseModel):
     items_left_behind: ItemsLeftBehindField
     notes: NotesField
     staff_name: StaffNameField
-    signature: SignatureField
 
     return_location: ReturnLocationField
     return_time: ReturnTimeField
     return_staff_name: ReturnStaffNameField
-    return_signature: ReturnSignatureField
 
     # validators
     check_postal_code_validator = model_validator(mode="after")(check_postal_code)
@@ -116,7 +112,6 @@ class CompletedRental(BaseModel):
     return_location: ReturnLocationField
     return_time: ReturnTimeField
     return_staff_name: ReturnStaffNameField
-    return_signature: ReturnSignatureField
 
     # validators
     cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
@@ -151,12 +146,10 @@ class Rental(BaseModel):
     items_left_behind: ItemsLeftBehindField
     notes: NotesField
     staff_name: StaffNameField
-    signature: SignatureField
 
     return_location: ReturnLocationField
     return_time: ReturnTimeField
     return_staff_name: ReturnStaffNameField
-    return_signature: ReturnSignatureField
 
     # validators
     check_postal_code_validator = model_validator(mode="after")(check_postal_code)

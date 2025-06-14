@@ -91,7 +91,7 @@ class DynamoDBService:
 
         return f"{device_type.get_prefix()}{date.strftime('%m%d')}{str(count + 1).zfill(3)}"
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments
     def _form_update_device_transact_dict(
             self,
             cne_year: int,
@@ -340,15 +340,13 @@ class DynamoDBService:
                         "SET #status = :status, "
                         "#return_location = :return_location, "
                         "#return_time = :return_time, "
-                        "#return_staff_name = :return_staff_name, "
-                        "#return_signature = :return_signature"
+                        "#return_staff_name = :return_staff_name "
                     ),
                     "ExpressionAttributeNames": {
                         "#status": "status",
                         "#return_location": "return_location",
                         "#return_time": "return_time",
                         "#return_staff_name": "return_staff_name",
-                        "#return_signature": "return_signature",
                     },
                     "ExpressionAttributeValues": {
                         ":completed_status": RentalStatus.COMPLETED,
@@ -356,7 +354,6 @@ class DynamoDBService:
                         ":return_location": rental.return_location,
                         ":return_time": rental.return_time.isoformat(),
                         ":return_staff_name": rental.return_staff_name,
-                        ":return_signature": rental.return_signature,
                     },
                 }
             }
