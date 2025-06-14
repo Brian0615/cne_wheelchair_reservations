@@ -93,7 +93,7 @@ def create_reservation_availability_chart(reservation_counts: pd.DataFrame, devi
     reservation_df = pd.DataFrame(
         data={
             "date": pd.date_range(
-                start=start_date - timedelta(days=start_date.weekday() + 1 % 7),
+                start=start_date - timedelta(days=(start_date.weekday() + 1) % 7),
                 end=end_date + timedelta(days=(5 - end_date.weekday()) % 7),
                 freq='D',
             )
