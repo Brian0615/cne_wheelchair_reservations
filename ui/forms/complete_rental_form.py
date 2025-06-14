@@ -12,7 +12,6 @@ from ui.forms.form_fields import (
     TimeField,
     SelectboxField,
     TextField,
-    SignatureField,
 )
 
 
@@ -35,7 +34,7 @@ class CompleteRentalForm(BaseForm):
                 label="Return Location",
                 options=Location,
             ),
-            "return_signature": SignatureField(key=f"{key_prefix}_return_signature", label="Signature"),
+            # "return_signature": SignatureField(key=f"{key_prefix}_return_signature", label="Signature"),
             "return_staff_name": TextField(key=f"{key_prefix}_staff_name", label="Staff Name"),
             "deposit_received": CheckboxField(
                 key=f"{key_prefix}_deposit_received",
@@ -66,18 +65,13 @@ class CompleteRentalForm(BaseForm):
             with col4:
                 result["return_staff_name"] = self.fields["return_staff_name"].render_field()
 
-            st.write(
-                f"**By checking the box(es) and signing below I, {self.rental_info.name}, "
-                f"confirm that the following have been returned to me:**"
-            )
+            st.write("**Please confirm below that the following have been returned to the renter:**")
 
             check_items = True
             if self.rental_info.items_left_behind:
                 check_items = self.fields["items_left_behind"].render_field()
             check_deposit = self.fields["deposit_received"].render_field()
             result["check_items_deposit"] = check_items and check_deposit
-
-            result["return_signature"] = self.fields["return_signature"].render_field()
 
             is_submitted = self.fields["submit"].render_field(
                 disabled=any([

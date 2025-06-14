@@ -4,7 +4,6 @@ import pymupdf
 
 from common.data_models.rental import NewRental
 from common.utils import read_secret
-from ui.src.signature import Signature
 
 
 # pylint: disable=too-few-public-methods
@@ -55,14 +54,10 @@ class WheelchairForm:
                 except KeyError:
                     pass
 
-            # insert the signature
-            signature = Signature.decode_from_base64(self.rental_data.signature)
-            height, width, _ = signature.size
-            page.insert_image(pymupdf.Rect(78, 360, 78 + width * 29 / height, 389), stream=signature.to_bytes())
-            page.insert_image(pymupdf.Rect(78, 690, 78 + width * 29 / height, 719), stream=signature.to_bytes())
-
+            # pylint: disable=no-member
             pdf_perm = int(pymupdf.PDF_PERM_PRINT)  # only allow print, and disable other PDF permissions
 
+            # pylint: disable=no-member
             return pdf.tobytes(
                 deflate=True,
                 garbage=4,

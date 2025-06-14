@@ -1,5 +1,4 @@
 # pylint: disable=invalid-name
-import numpy as np
 import streamlit as st
 
 from common.constants import DeviceType
@@ -66,14 +65,6 @@ if is_submitted:
     allow_submission = True
     if not rental_info["id_verified"]:
         st.error("**ID Not Verified**: Please confirm that the renter's ID has been verified.")
-        allow_submission = False
-    if not np.count_nonzero(np.max(rental_info["signature"], axis=-1)) > 500:
-        st.info(
-            """
-            **Signature Required**: Before submitting, please ensure that you have read and agreed to the 
-            terms and conditions by signing in the box above.
-            """
-        )
         allow_submission = False
 
     if allow_submission:

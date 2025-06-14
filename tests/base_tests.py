@@ -6,7 +6,6 @@ from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
 import boto3
-import numpy as np
 import requests
 import streamlit as st
 from moto import mock_aws
@@ -19,7 +18,6 @@ from common.utils import get_default_timezone
 from tests.mock_requests import MockRequests
 from ui.auth.local_authenticator import LocalAuthenticator
 from ui.src.constants import CNEDates
-from ui.src.signature import Signature
 
 
 # pylint: disable=too-few-public-methods
@@ -108,7 +106,6 @@ class BaseTestCases:
                 "return_location": Location.BLC,
                 "return_time": get_default_timezone().localize(datetime(2025, 8, 20, 20, 28)),
                 "return_staff_name": "Test Staff",
-                "return_signature": Signature(signature_data=np.ones((100, 600, 4), dtype=np.uint8)).encode_as_base64(),
             }
             if overrides:
                 for key, value in overrides.items():
@@ -140,7 +137,6 @@ class BaseTestCases:
                 "items_left_behind": [],
                 "notes": None,
                 "staff_name": "Test Staff",
-                "signature": Signature(signature_data=np.ones((100, 600, 4), dtype=np.uint8)).encode_as_base64(),
             }
             if overrides:
                 for key, value in overrides.items():
