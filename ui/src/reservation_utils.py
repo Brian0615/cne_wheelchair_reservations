@@ -10,7 +10,7 @@ from common.constants import ReservationStatus, DeviceType
 from common.data_models.reservation import Reservation, NewReservation
 from common.utils import get_default_timezone
 from ui.forms.reservation_form import ReservationForm
-from ui.src.constants import CNEDates
+from ui.src.constants import CNEDates, Colour
 from ui.src.data_service import DataService
 from ui.src.utils import process_validation_errors
 
@@ -37,14 +37,16 @@ def display_success_dialog(reservation_id: str, reservation: Union[NewReservatio
 
 
 @process_validation_errors(error_key="new_reservation_form_errors")
-def submit_new_reservation_form(reservation: dict):
+def submit_new_reservation_form(reservation: dict, is_waitlisted: bool):
     """Submit the reservation form"""
 
     reservation["reservation_time"] = get_default_timezone().localize(
         datetime.combine(reservation["date"], reservation["reservation_time"])
     )
     reservation["cne_year"] = CNEDates.get_cne_year()
-    if reservation["device_type"]:
+    if is_waitlisted:
+        reservation["status"] = ReservationStatus.WAITLISTED
+    else:
         reservation["status"] = ReservationStatus.get_default_reservation_status(device_type=reservation["device_type"])
 
     reservation = NewReservation(**reservation)
@@ -109,9 +111,18 @@ def create_reservation_availability_chart(reservation_counts: pd.DataFrame, devi
         reservation_df["date"].dt.strftime("%b %d"),
         "",
     )
-    reservation_df["availability"] = 1 - (reservation_df["count"] / limit)
-    reservation_df["remaining"] = limit - reservation_df["count"]
+    reservation_df["availability"] = (1 - (reservation_df["count"] / limit)).clip(lower=0, upper=1)
+    reservation_df["remaining"] = (limit - reservation_df["count"]).clip(lower=0)
     warning_level = max(0.2 * limit, 2.0) / limit  # Ensure at least 1 reservation is considered for warning
+
+    # Fixed colour scale: 0 = red, (0, warning_level] = yellow, (warning_level, 1] = green
+    colorscale = [
+        [0.0, Colour.RESERVATIONS_NONE],
+        [1e-6, Colour.RESERVATIONS_LOW if warning_level > 0 else Colour.RESERVATIONS_AVAILABLE],
+        [warning_level, Colour.RESERVATIONS_LOW],
+        [min(1.0, warning_level + 1e-6), Colour.RESERVATIONS_AVAILABLE],
+        [1.0, Colour.RESERVATIONS_AVAILABLE]
+    ]
 
     fig = go.Figure(
         data=go.Heatmap(
@@ -124,18 +135,12 @@ def create_reservation_availability_chart(reservation_counts: pd.DataFrame, devi
                 reservation_df["count"].fillna(0).values.reshape(-1, 7)[::-1],
                 reservation_df["remaining"].fillna(0).values.reshape(-1, 7)[::-1]
             )),
-            hovertemplate="""
-                <b>%{customdata[0]}</b><br>
-                Reservations: %{customdata[1]}<br>
-                Remaining: %{customdata[2]}<extra></extra>
-            """,
-            colorscale=[
-                [0, "#DF4E46"],
-                [0.01, "#F5AB4B"],
-                [warning_level, "#F5AB4B"],
-                [warning_level + 0.01, "#479825"],
-                [1, "#479825"]
-            ],
+            hovertemplate=(
+                "<b>%{customdata[0]}</b><br>"
+                "Reserved: %{customdata[1]}<br>"
+                "Available: %{customdata[2]}<extra></extra>"
+            ),
+            colorscale=colorscale,
             zmin=0,
             zmax=1,
             showscale=False,

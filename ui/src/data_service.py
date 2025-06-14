@@ -280,6 +280,7 @@ class DataService:
 
     def _clear_reservations_functions_cache(self):
         self.get_reservations_on_date.clear()
+        self.get_reservation_count.clear()
 
     @timeit(logger=logger)
     @auto_process_api_errors

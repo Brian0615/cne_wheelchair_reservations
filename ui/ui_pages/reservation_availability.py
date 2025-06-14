@@ -29,9 +29,9 @@ for col, device_type in zip(cols, DeviceType):
         st.info(f"**Reservation Limit**: Maximum of **{limit}** reservations allowed for {device_type}s")
 
         if "cne-admin" in st.session_state["auth_groups"]:
-            with st.expander("Set Reservation Limit for " + device_type.title() + "s", expanded=False):
+            with st.expander("Modify Reservation Limit for " + device_type.title() + "s", expanded=False):
                 new_limit = st.number_input(
-                    f"Set {device_type.title()} Reservation Limit",
+                    f"New {device_type.title()} Reservation Limit",
                     min_value=0,
                     step=1,
                     value=int(limit) if limit is not None else 0,

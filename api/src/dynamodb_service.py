@@ -513,6 +513,7 @@ class DynamoDBService:
 
         reservations = self.reservations_table.query(
             KeyConditionExpression=Key("cne_year").eq(cne_year),
+            FilterExpression=~Attr("status").is_in([ReservationStatus.CANCELLED, ReservationStatus.WAITLISTED]),
             ProjectionExpression="#date, #device_type, #location",
             ExpressionAttributeNames={
                 "#date": "date",
