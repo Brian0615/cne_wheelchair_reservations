@@ -36,10 +36,7 @@ with st.expander(f"Update Rental {rental_data['device_type'].value}", expanded=T
         key="change_device_location",
     )
     if change_device_info["location"] is not None:
-        available_devices = data_service.get_available_device_ids(
-            device_type=rental_data["device_type"],
-            location=Location(change_device_info["location"]),
-        )
+        available_devices = data_service.get_available_device_ids(device_type=rental_data["device_type"])
         if not available_devices:
             st.warning("**No Available Devices**: There are no available devices at this location.")
             st.stop()

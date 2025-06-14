@@ -167,20 +167,28 @@ class DynamoDBService:
         logger.info("Added devices to the inventory: %s", devices)
 
     @timeit(logger=logger)
-    def get_available_device_ids(self, cne_year: int, device_type: DeviceType, location: Location):
+    def get_available_device_ids(
+            self,
+            cne_year: int,
+            device_type: DeviceType,
+            location: Optional[Location] = None,
+    ) -> List[str]:
         """Get the available devices of a specific type at a specific location"""
         response = self.devices_table.scan(
-            FilterExpression="cne_year = :year AND #type = :type AND #location = :location AND #status = :status",
+            FilterExpression=(
+                    "cne_year = :year AND #type = :type AND #status = :status"
+                    + (" AND #location = :location" if location else "")
+            ),
             ExpressionAttributeNames={
                 "#type": "type",
-                "#location": "location",
-                "#status": "status"
+                "#status": "status",
+                **({"#location": "location"} if location else {})
             },
             ExpressionAttributeValues={
                 ":year": cne_year,
                 ":type": device_type,
-                ":location": location,
-                ":status": DeviceStatus.AVAILABLE
+                ":status": DeviceStatus.AVAILABLE,
+                **({":location": location} if location else {})
             }
         )
         return [item["id"] for item in response["Items"]]
