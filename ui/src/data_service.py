@@ -1,7 +1,7 @@
 import datetime
 import os
 from functools import wraps
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
 import requests
@@ -280,6 +280,7 @@ class DataService:
 
     def _clear_reservations_functions_cache(self):
         self.get_reservations_on_date.clear()
+        self.get_reservation_count.clear()
 
     @timeit(logger=logger)
     @auto_process_api_errors
@@ -288,6 +289,21 @@ class DataService:
         response = self._make_request(request_method=requests.post, url_path="reservations/add", json=reservation)
         self.get_reservations_on_date.clear()
         return response.status_code, response.json()
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_reservation_count(_self):
+        """Get the number of reservations for each date, location, device"""
+        response = _self._make_request(
+            request_method=requests.get,
+            url_path="reservations/get_reservation_count",
+            params={"cne_year": CNEDates.get_cne_year()},
+        )
+        response = response.json()
+        response = pd.DataFrame(response)
+        response["date"] = pd.to_datetime(response["date"])
+        return response
 
     @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @timeit(logger=logger)
@@ -357,4 +373,34 @@ class DataService:
             files={"pdf_bytes": pdf_bytes},
             timeout=DEFAULT_TIMEOUT,
         )
+        return response.status_code, response.json()
+
+    # ==============================
+    # SETTINGS
+    # ==============================
+
+    def _clear_settings_functions_cache(self):
+        self.get_setting.clear()
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @auto_process_api_errors
+    def get_setting(_self, setting_id: str):
+        """Get settings from the API."""
+        response = _self._make_request(
+            request_method=requests.get,
+            url_path="settings/get",
+            params={"cne_year": CNEDates.get_cne_year(), "setting_id": setting_id},
+        )
+        return response.json()
+
+    @auto_process_api_errors
+    def update_settings(self, settings: Dict[str, Any]):
+        """Update settings using the API."""
+        response = self._make_request(
+            request_method=requests.put,
+            url_path="settings/update",
+            params={"cne_year": CNEDates.get_cne_year()},
+            json=settings,
+        )
+        self._clear_settings_functions_cache()
         return response.status_code, response.json()

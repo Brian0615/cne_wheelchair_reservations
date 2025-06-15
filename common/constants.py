@@ -90,6 +90,17 @@ class Location(StrEnum):
     BLC = "BLC"
     PG = "PG"
 
+    @classmethod
+    def get_location_colour(cls, location) -> str:
+        """Get the colour for a location"""
+        match location:
+            case cls.BLC:
+                return "#7F72D5"
+            case cls.PG:
+                return "#E6920B"
+            case _:
+                raise ValueError(f"Unrecognized location {location}")
+
 
 class PaymentMethod(StrEnum):
     """Possible payment methods"""
@@ -122,6 +133,7 @@ class ReservationStatus(StrEnum):
     PICKED_UP = "Picked Up"
     COMPLETED = "Completed"
     CANCELLED = "Cancelled"
+    WAITLISTED = "Waitlisted"
 
     @classmethod
     def get_default_reservation_status(cls, device_type: DeviceType):

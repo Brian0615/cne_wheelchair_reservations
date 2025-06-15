@@ -1,10 +1,11 @@
 import os
 from datetime import datetime
 from functools import wraps
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import boto3
 import botocore
+import pandas as pd
 from boto3.dynamodb.conditions import Attr, Key
 
 from api.src.exceptions import (
@@ -34,6 +35,7 @@ class DynamoDBService:
         self.devices_table = self.dynamodb.Table('cne_devices')
         self.rentals_table = self.dynamodb.Table('cne_rentals')
         self.reservations_table = self.dynamodb.Table('cne_reservations')
+        self.settings_table = self.dynamodb.Table('cne_settings')
 
     # ==============================
     # HELPER FUNCTIONS
@@ -506,6 +508,27 @@ class DynamoDBService:
     # ==============================
 
     @timeit(logger=logger)
+    def get_reservation_count(self, cne_year: int) -> pd.DataFrame:
+        """Get the count of reservations for each device type on each date in the given range."""
+
+        reservations = self.reservations_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year),
+            FilterExpression=~Attr("status").is_in([ReservationStatus.CANCELLED, ReservationStatus.WAITLISTED]),
+            ProjectionExpression="#date, #device_type, #location",
+            ExpressionAttributeNames={
+                "#date": "date",
+                "#device_type": "device_type",
+                "#location": "location",
+            },
+        )
+        reservations = reservations.get("Items", [])
+        if not reservations:
+            return pd.DataFrame({"date": [], "device_type": [], "location": [], "count": []})
+
+        reservations = pd.DataFrame(reservations).groupby(["date", "device_type", "location"])
+        return reservations.value_counts().reset_index(drop=False)
+
+    @timeit(logger=logger)
     def get_reservations_on_date(
             self,
             date: datetime.date,
@@ -517,7 +540,7 @@ class DynamoDBService:
         filter_expression = Attr('date').eq(date.isoformat())
 
         if device_type:
-            filter_expression = Attr('device_type').eq(device_type)
+            filter_expression &= Attr('device_type').eq(device_type)
 
         if exclude_picked_up_reservations:
             filter_expression &= ~Attr('status').is_in([
@@ -599,3 +622,29 @@ class DynamoDBService:
             expression_attribute_names={"#status": "status"},
             expression_attribute_values={":status": status},
         )
+
+    # ==============================
+    # SETTINGS
+    # ==============================
+
+    @timeit(logger=logger)
+    def get_setting(self, cne_year: int, setting_id: str):
+        """Get settings for a specific CNE year."""
+        response = self.settings_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year) & Key("id").eq(setting_id),
+        )
+        response = response.get("Items", [])
+        if not response:
+            return None
+        return response[0]["value"]
+
+    @timeit(logger=logger)
+    def update_settings(self, cne_year: int, settings: Dict[str, Any]):
+        """Set settings for a specific CNE year."""
+        for setting_id, setting_value in settings.items():
+            self.settings_table.update_item(
+                Key={"cne_year": cne_year, "id": setting_id},
+                UpdateExpression="SET #value = :value",
+                ExpressionAttributeNames={"#value": "value"},
+                ExpressionAttributeValues={":value": setting_value},
+            )
