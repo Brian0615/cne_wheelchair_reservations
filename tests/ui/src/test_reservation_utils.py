@@ -36,7 +36,7 @@ class TestReservationUtils(TestCase):
         """Run the submit new reservation form function"""
         from ui.src.reservation_utils import submit_new_reservation_form
 
-        submit_new_reservation_form(reservation=reservation)
+        submit_new_reservation_form(reservation=reservation, is_waitlisted=False)
 
     @staticmethod
     def _run_submit_update_reservation_form(reservation):

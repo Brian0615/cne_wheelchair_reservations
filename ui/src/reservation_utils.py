@@ -44,10 +44,11 @@ def submit_new_reservation_form(reservation: dict, is_waitlisted: bool):
         datetime.combine(reservation["date"], reservation["reservation_time"])
     )
     reservation["cne_year"] = CNEDates.get_cne_year()
-    if is_waitlisted:
-        reservation["status"] = ReservationStatus.WAITLISTED
-    else:
-        reservation["status"] = ReservationStatus.get_default_reservation_status(device_type=reservation["device_type"])
+    if reservation["device_type"]:
+        if is_waitlisted:
+            reservation["status"] = ReservationStatus.WAITLISTED
+        else:
+            reservation["status"] = ReservationStatus.get_default_reservation_status(reservation["device_type"])
 
     reservation = NewReservation(**reservation)
     status_code, result = DataService().add_new_reservation(reservation=reservation)
