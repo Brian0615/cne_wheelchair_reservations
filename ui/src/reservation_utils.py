@@ -22,7 +22,7 @@ def display_success_dialog(reservation_id: str, reservation: Union[NewReservatio
     """Display the success dialog upon creating/updating a reservation"""
     st.success(
         f"""
-        The following **{reservation.device_type}** reservation was 
+        The following **{reservation.device_type}** reservation was
         {'updated' if is_update else 'created'} successfully:
 
         * **Reservation ID**: {reservation_id}
@@ -65,7 +65,6 @@ def submit_update_reservation_form(reservation: dict):
     reservation["reservation_time"] = get_default_timezone().localize(
         datetime.combine(reservation["date"], reservation["reservation_time"])
     )
-
     reservation = Reservation(**reservation)
     status_code = DataService().update_reservation(reservation=reservation)
     if status_code == 200:
@@ -74,7 +73,7 @@ def submit_update_reservation_form(reservation: dict):
 
 
 def update_reservation_status(reservation: Reservation, status: ReservationStatus):
-    """Update the reservation status"""
+    """Update the reservation status."""
     reservation.status = status
     status_code = DataService().update_reservation_status(reservation_id=reservation.id, status=status)
     if status_code == 200:
@@ -106,14 +105,7 @@ def create_reservation_availability_chart(
 ):
     """
     Create a heatmap chart showing reservation availability for a specific device type.
-    Args:
-        reservation_counts (pd.DataFrame): DataFrame containing reservation counts with
-          columns 'date', 'device_type', and 'count'.
-        device_type (str): The type of device for which to create the availability chart.
-        limit (int): The maximum number of reservations allowed for the device type.
-        plot_height (int): The height of the plot in pixels.
     """
-    # get all dates for the calendar
     start_date, end_date = CNEDates.get_cne_start_end_dates()
     reservation_df = pd.DataFrame(
         data={
@@ -124,7 +116,6 @@ def create_reservation_availability_chart(
             )
         }
     )
-
     reservation_df = pd.merge(
         reservation_df,
         reservation_counts[reservation_counts["device_type"] == device_type].groupby(by="date")["count"].sum(),
@@ -138,9 +129,7 @@ def create_reservation_availability_chart(
     )
     reservation_df["availability"] = (1 - (reservation_df["count"] / limit)).clip(lower=0, upper=1)
     reservation_df["remaining"] = (limit - reservation_df["count"]).clip(lower=0)
-    warning_level = max(0.2 * limit, 2.0) / limit  # Ensure at least 1 reservation is considered for warning
-
-    # Fixed colour scale: 0 = red, (0, warning_level] = yellow, (warning_level, 1] = green
+    warning_level = max(0.2 * limit, 2.0) / limit
     colorscale = [
         [0.0, Colour.RESERVATIONS_NONE],
         [1e-6, Colour.RESERVATIONS_LOW if warning_level > 0 else Colour.RESERVATIONS_AVAILABLE],
@@ -148,7 +137,6 @@ def create_reservation_availability_chart(
         [min(1.0, warning_level + 1e-6), Colour.RESERVATIONS_AVAILABLE],
         [1.0, Colour.RESERVATIONS_AVAILABLE]
     ]
-
     fig = go.Figure(
         data=go.Heatmap(
             z=reservation_df["availability"].values.reshape(-1, 7)[::-1],
@@ -183,12 +171,10 @@ def create_reservation_availability_chart(
         tickfont={"size": 14}
     )
     fig.update_yaxes(showline=False, showgrid=False, zeroline=False, showticklabels=False, title=None)
-    # Make cells square by setting aspect ratio and remove top margin
     margin_factor = max(0.2, plot_height / 300.0)
     fig.update_layout(
         autosize=True,
         height=plot_height,
         margin={"t": 10, "b": 40 * margin_factor, "l": 40 * margin_factor, "r": 40 * margin_factor},
-        # Reduce top margin
     )
     st.plotly_chart(fig)

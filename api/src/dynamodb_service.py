@@ -57,7 +57,6 @@ class DynamoDBService:
                             f"{kwargs.get('device_ids', [])} (year={kwargs.get('cne_year', '')})",
                         ) from exc
                 raise exc
-
         return wrapper
 
     @staticmethod
@@ -67,7 +66,8 @@ class DynamoDBService:
             try:
                 return func(*args, **kwargs)
             except botocore.exceptions.ClientError as exc:
-                if exc.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                error_code = exc.response["Error"].get("Code", "")
+                if error_code == "ConditionalCheckFailedException":
                     logger.warning("One or more devices not found in the inventory. No devices were deleted.")
                     reservation_id = None
                     if "reservation" in kwargs:
@@ -80,7 +80,6 @@ class DynamoDBService:
                         + (f": {reservation_id}" if reservation_id else "")
                     ) from exc
                 raise exc
-
         return wrapper
 
     @staticmethod
