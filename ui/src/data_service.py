@@ -79,8 +79,10 @@ class DataService:
     """Service class to interact with the API."""
 
     def __init__(self, api_host: Optional[str] = None, api_port: Optional[str] = None):
-        self.api_host = api_host if api_host is not None else os.environ["API_HOST"]
-        self.api_port = api_port if api_port is not None else os.environ["API_PORT"]
+        self.api_host = api_host or os.environ.get("API_HOST")
+        self.api_port = api_port or os.environ.get("API_PORT")
+        if not self.api_host or not self.api_port:
+            raise RuntimeError("API_HOST and API_PORT environment variables must be set.")
 
     # ==============================
     # HELPER FUNCTIONS
@@ -339,7 +341,7 @@ class DataService:
         response = self._make_request(
             request_method=requests.post,
             url_path="reservations/update_reservation",
-            json=reservation,
+            json=reservation.model_dump(mode="json"),
         )
         self._clear_reservations_functions_cache()
         return response.status_code
@@ -370,7 +372,7 @@ class DataService:
         response = requests.put(
             f"http://{self.api_host}:{self.api_port}/forms/upload_rental_form",
             params={"rental_id": rental_id},
-            files={"pdf_bytes": pdf_bytes},
+            files={"pdf_bytes": (f"{rental_id}.pdf", pdf_bytes, "application/pdf")},
             timeout=DEFAULT_TIMEOUT,
         )
         return response.status_code, response.json()

@@ -13,16 +13,13 @@ def get_authenticator() -> Union[LocalAuthenticator, CognitoAuthenticator]:
     """
     Retrieve the appropriate authenticator based on the authentication method.
 
-    This function determines the authentication method to use by reading the
-    `AUTH_METHOD` environment variable. It supports two methods:
+    Determines the authentication method to use by reading the
+    `AUTH_METHOD` environment variable. Supports two methods:
     - "local": Uses the `LocalAuthenticator` for local authentication.
     - "cognito": Uses the `CognitoAuthenticator` for AWS Cognito-based authentication.
 
-    If an invalid or unsupported authentication method is specified, a `ValueError`
-    is raised.
-
     Returns:
-        BaseAuthenticator: An instance of the appropriate authenticator class.
+        An instance of the appropriate authenticator class.
 
     Raises:
         ValueError: If the `AUTH_METHOD` environment variable contains an invalid value.

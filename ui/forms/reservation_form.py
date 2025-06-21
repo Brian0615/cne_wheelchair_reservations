@@ -98,7 +98,9 @@ class ReservationForm(BaseForm):
 
         # third row of form
         result["notes"] = self.fields["notes"].render_field(disabled=other_fields_disabled)
-        st.divider()
+
+        # add spacer
+        st.write("")
 
         # form submission
         is_submitted = self.fields["is_submitted"].render_field(disabled=other_fields_disabled)
