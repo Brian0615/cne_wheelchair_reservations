@@ -1,3 +1,4 @@
+import itertools
 from datetime import datetime, timedelta
 from typing import Union
 
@@ -6,7 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from common.constants import ReservationStatus, DeviceType
+from common.constants import ReservationStatus, DeviceType, Location
 from common.data_models.reservation import Reservation, NewReservation
 from common.utils import get_default_timezone
 from ui.forms.reservation_form import ReservationForm
@@ -80,7 +81,29 @@ def update_reservation_status(reservation: Reservation, status: ReservationStatu
         display_success_dialog(reservation_id=reservation.id, reservation=reservation, is_update=True)
 
 
-def create_reservation_availability_chart(reservation_counts: pd.DataFrame, device_type: DeviceType, limit: int):
+def get_reservation_counts() -> pd.DataFrame:
+    """
+    Get the reservation counts for each date, device type, and location.
+    """
+    data_service = DataService()
+    reservation_counts = data_service.get_reservation_count()
+    default_table = pd.DataFrame(
+        list(itertools.product(CNEDates.get_cne_date_list(), [x.value for x in DeviceType],
+                               [x.value for x in Location])),
+        columns=["date", "device_type", "location"],
+    )
+    default_table["date"] = pd.to_datetime(default_table["date"])
+    reservation_counts = default_table.merge(reservation_counts, on=["date", "device_type", "location"], how="left")
+    reservation_counts = reservation_counts.fillna(0).sort_values(by=["date", "device_type", "location"])
+    return reservation_counts
+
+
+def create_reservation_availability_chart(
+        reservation_counts: pd.DataFrame,
+        device_type: DeviceType,
+        limit: int,
+        plot_height: int = 300,
+):
     """
     Create a heatmap chart showing reservation availability for a specific device type.
     Args:
@@ -88,6 +111,7 @@ def create_reservation_availability_chart(reservation_counts: pd.DataFrame, devi
           columns 'date', 'device_type', and 'count'.
         device_type (str): The type of device for which to create the availability chart.
         limit (int): The maximum number of reservations allowed for the device type.
+        plot_height (int): The height of the plot in pixels.
     """
     # get all dates for the calendar
     start_date, end_date = CNEDates.get_cne_start_end_dates()
@@ -160,9 +184,11 @@ def create_reservation_availability_chart(reservation_counts: pd.DataFrame, devi
     )
     fig.update_yaxes(showline=False, showgrid=False, zeroline=False, showticklabels=False, title=None)
     # Make cells square by setting aspect ratio and remove top margin
+    margin_factor = max(0.2, plot_height / 300.0)
     fig.update_layout(
         autosize=True,
-        height=350,
-        margin={"t": 10, "b": 40, "l": 40, "r": 40},  # Reduce top margin
+        height=plot_height,
+        margin={"t": 10, "b": 40 * margin_factor, "l": 40 * margin_factor, "r": 40 * margin_factor},
+        # Reduce top margin
     )
     st.plotly_chart(fig)
