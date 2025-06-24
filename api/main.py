@@ -1,9 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Optional
 
 from fastapi import FastAPI, HTTPException, File
 
-from api.routers import devices_router, rentals_router, reservations_router
+from api.routers import devices_router, rentals_router, reservations_router, settings_router
 from api.src.s3_service import S3Service
 
 app = FastAPI()
@@ -11,6 +11,7 @@ app = FastAPI()
 app.include_router(devices_router)
 app.include_router(reservations_router)
 app.include_router(rentals_router)
+app.include_router(settings_router)
 s3_service = S3Service()
 
 
@@ -21,7 +22,7 @@ s3_service = S3Service()
 @app.get("/health")
 def health_check():
     """Health check"""
-    return {"status": "ok", "time": datetime.now().isoformat()}
+    return {"status": "ok", "time": datetime.now(timezone.utc).isoformat()}
 
 
 # ==============================

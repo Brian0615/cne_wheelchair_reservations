@@ -56,7 +56,7 @@ with confirm_cancel_col.expander("Confirm or Cancel Reservation", expanded=True)
             status_func = st.error
         case ReservationStatus.CONFIRMED:
             status_func = st.success
-        case ReservationStatus.PENDING:
+        case ReservationStatus.PENDING | ReservationStatus.WAITLISTED:
             status_func = st.warning
         case _:
             status_func = st.info

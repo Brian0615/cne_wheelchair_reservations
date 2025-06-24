@@ -9,10 +9,10 @@ from ui.forms.form_fields import (
     CheckboxField,
     DateField,
     MultiSelectField,
+    PhoneNumberField,
     SelectboxField,
     TextField,
     TimeField,
-    SignatureField,
 )
 
 
@@ -52,7 +52,7 @@ class NewRentalForm(BaseForm):
                 options=sorted(device_id_options, key=lambda x: int(x[1:])),
             ),
             "name": TextField(key=f"{key_prefix}_name", label="Name"),
-            "phone_number": TextField(key=f"{key_prefix}_phone_number", label="Phone Number"),
+            "phone_number": PhoneNumberField(key=f"{key_prefix}_phone_number", label="Phone Number"),
             "address": TextField(key=f"{key_prefix}_address", label="Address"),
             "city": TextField(key=f"{key_prefix}_city", label="City"),
             "province": TextField(key=f"{key_prefix}_province", label="Province", default_value="Ontario"),
@@ -74,7 +74,6 @@ class NewRentalForm(BaseForm):
                 label="Items Left Behind by Renter",
                 options=HoldItem,
             ),
-            "signature": SignatureField(key=f"{key_prefix}_signature", label="Signature"),
             "id_verified": CheckboxField(key=f"{key_prefix}_id_verified", label="ID Verified?"),
             "submit": ButtonField(
                 key=f"{key_prefix}_submit",
@@ -108,7 +107,7 @@ class NewRentalForm(BaseForm):
             col1, col2, _, _ = st.columns(4)
             with col1:
                 result["reservation_id"] = self.fields["reservation_id"].render_field()
-            if result["reservation_id"]:
+            if result["reservation_id"] and result["reservation_id"] != WALK_IN_RESERVATION_ID:
                 result["reservation_id"] = re.search(r"\(([^)]+)\)", result["reservation_id"]).group(1)
             with col2:
                 result["device_id"] = self.fields["device_id"].render_field()
@@ -118,7 +117,7 @@ class NewRentalForm(BaseForm):
 
         # Renter Information Section of Form
         with st.container(border=True):
-            st.header("Renter Information")
+            st.subheader("Renter Information")
             col1, col2 = st.columns([2, 1])
             with col1:
                 result["name"] = self.fields["name"].render_field()
@@ -160,13 +159,6 @@ class NewRentalForm(BaseForm):
                 result["staff_name"] = self.fields["staff_name"].render_field()
             with col2:
                 result["items_left_behind"] = self.fields["items_left_behind"].render_field()
-
-        # Terms and Conditions Section of Form
-        with st.container(border=True):
-            st.subheader("Terms and Conditions")
-            st.markdown("Insert Terms and Conditions here...")
-            st.markdown("By signing below, I agree to the terms and conditions above.")
-            result["signature"] = self.fields["signature"].render_field()
 
         is_submitted = self.fields["submit"].render_field()
 

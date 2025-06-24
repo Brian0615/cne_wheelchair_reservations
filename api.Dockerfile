@@ -9,6 +9,7 @@ WORKDIR /app
 COPY requirements.txt /app
 RUN python3 -m venv /venv
 ENV PATH="/venv/bin:$PATH"
+RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ===== SECOND STAGE (COPY FILES) =====
@@ -25,6 +26,7 @@ RUN apt-get update && apt-get install -y curl
 COPY api/ /app/api/
 COPY common/ /app/common/
 COPY ui/ /app/ui/
+COPY version.py /app/version.py
 
 # start API (note: port needs to match the "internal" port in compose.yaml)
 WORKDIR /app

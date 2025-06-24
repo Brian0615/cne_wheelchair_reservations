@@ -7,9 +7,9 @@ from streamlit.testing.v1 import AppTest
 from common.constants import DeviceType, ReservationStatus, Location
 from common.data_models import NewReservation, Reservation
 from common.utils import get_default_timezone
+from ui.forms.reservation_form import ReservationForm
 from ui.src import reservation_utils
 from ui.src.data_service import DataService
-from ui.forms.reservation_form import ReservationForm
 
 
 # pylint: disable=import-outside-toplevel
@@ -24,7 +24,7 @@ class TestReservationUtils(TestCase):
             date=date(2025, 9, 1),
             device_type=DeviceType.SCOOTER,
             name="John Doe",
-            phone_number="123-456-7890",
+            phone_number="+1 437-293-0384",
             location=Location.BLC,
             reservation_time=get_default_timezone().localize(datetime(2025, 9, 1, 15, 30)),
             status=ReservationStatus.RESERVED,
@@ -36,7 +36,7 @@ class TestReservationUtils(TestCase):
         """Run the submit new reservation form function"""
         from ui.src.reservation_utils import submit_new_reservation_form
 
-        submit_new_reservation_form(reservation=reservation)
+        submit_new_reservation_form(reservation=reservation, is_waitlisted=False)
 
     @staticmethod
     def _run_submit_update_reservation_form(reservation):

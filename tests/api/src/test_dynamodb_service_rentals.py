@@ -15,6 +15,115 @@ from tests.base_tests import BaseTestCases
 @mock_aws
 class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
 
+    # pylint: disable=protected-access
+    def test_get_new_rental_or_reservation_id(self):
+        """Test the _get_new_rental_or_reservation_id method generates correct sequential IDs."""
+        test_date = date(2025, 6, 21)
+
+        # Test with empty table - should return ID with sequence 001
+        rental_id = self.service._get_new_rental_or_reservation_id(
+            table=self.service.rentals_table,
+            cne_year=2025,
+            date=test_date,
+            device_type=DeviceType.WHEELCHAIR,
+        )
+        self.assertEqual(rental_id, "W0621001")
+
+        # Add a few items with the same pattern and verify sequence increments
+        self.service.rentals_table.put_item(
+            Item={
+                "cne_year": 2025,
+                "id": "W0621001",
+                "date": test_date.isoformat(),
+                "device_type": DeviceType.WHEELCHAIR,
+            }
+        )
+
+        # Get next ID - should be sequence 002
+        rental_id = self.service._get_new_rental_or_reservation_id(
+            table=self.service.rentals_table,
+            cne_year=2025,
+            date=test_date,
+            device_type=DeviceType.WHEELCHAIR,
+        )
+        self.assertEqual(rental_id, "W0621002")
+
+        # Add another item and check again
+        self.service.rentals_table.put_item(
+            Item={
+                "cne_year": 2025,
+                "id": "W0621002",
+                "date": test_date.isoformat(),
+                "device_type": DeviceType.WHEELCHAIR,
+            }
+        )
+
+        # Get next ID - should be sequence 003
+        rental_id = self.service._get_new_rental_or_reservation_id(
+            table=self.service.rentals_table,
+            cne_year=2025,
+            date=test_date,
+            device_type=DeviceType.WHEELCHAIR,
+        )
+        self.assertEqual(rental_id, "W0621003")
+
+        # Test with a different device type
+        rental_id = self.service._get_new_rental_or_reservation_id(
+            table=self.service.rentals_table,
+            cne_year=2025,
+            date=test_date,
+            device_type=DeviceType.SCOOTER,
+        )
+        self.assertEqual(rental_id, "S0621001")  # First scooter rental
+
+        # Test with a different year - should start from 001
+        rental_id = self.service._get_new_rental_or_reservation_id(
+            table=self.service.rentals_table,
+            cne_year=2026,
+            date=test_date,
+            device_type=DeviceType.WHEELCHAIR,
+        )
+        self.assertEqual(rental_id, "W0621001")  # First wheelchair rental for 2026
+
+        # Test with a different date
+        different_date = date(2025, 7, 15)
+        rental_id = self.service._get_new_rental_or_reservation_id(
+            table=self.service.rentals_table,
+            cne_year=2025,
+            date=different_date,
+            device_type=DeviceType.WHEELCHAIR,
+        )
+        self.assertEqual(rental_id, "W0715001")  # First wheelchair rental for July 15
+
+        # Verify items with similar but different prefixes don't affect sequence
+        # Add a scooter rental with same date
+        self.service.rentals_table.put_item(
+            Item={
+                "cne_year": 2025,
+                "id": "S0621001",
+                "date": test_date.isoformat(),
+                "device_type": DeviceType.SCOOTER,
+            }
+        )
+
+        # Check wheelchair sequence - still 003 (not affected by scooter)
+        rental_id = self.service._get_new_rental_or_reservation_id(
+            table=self.service.rentals_table,
+            cne_year=2025,
+            date=test_date,
+            device_type=DeviceType.WHEELCHAIR,
+        )
+        self.assertEqual(rental_id, "W0621003")
+
+        # Check scooter sequence - should be 002
+        rental_id = self.service._get_new_rental_or_reservation_id(
+            table=self.service.rentals_table,
+            cne_year=2025,
+            date=test_date,
+            device_type=DeviceType.SCOOTER,
+        )
+        self.assertEqual(rental_id, "S0621002")
+
     def _setup_in_progress_rental(self):
         # set up a normal rental
         reservation = self._generate_mock_new_reservation(overrides={"device_type": DeviceType.WHEELCHAIR})
@@ -181,7 +290,6 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
         self.assertEqual(len(response), 0)
         response = self.service.get_rentals_on_date(date=date(2025, 8, 20), device_type=DeviceType.WHEELCHAIR)
         self.assertEqual(len(response), 1)
-
 
     def test_insert_rental_walk_in(self):
         rental = self._generate_mock_new_rental(overrides={"reservation_id": None})

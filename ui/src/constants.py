@@ -54,6 +54,16 @@ class CNEDates:
         return time(hour=10)
 
 
+class Colour(StrEnum):
+    """Colour Constants"""
+    RESERVATIONS_AVAILABLE = "#479825"
+    RESERVATIONS_LOW = "#F5AB4B"
+    RESERVATIONS_NONE = "#DF4E46"
+
+    TABLE_HEADER = "#89CFF1"
+    TABLE_ALTERNATE_LIGHT_GREY = "#E5E5E5"
+
+
 class Page(StrEnum):
     """Page Name"""
     VIEW_RENTALS = auto()

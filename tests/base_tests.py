@@ -6,7 +6,6 @@ from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
 import boto3
-import numpy as np
 import requests
 import streamlit as st
 from moto import mock_aws
@@ -17,9 +16,8 @@ from common.constants import DeviceType, DeviceStatus, Location, PaymentMethod, 
 from common.data_models import CompletedRental, NewRental, NewReservation, Reservation
 from common.utils import get_default_timezone
 from tests.mock_requests import MockRequests
-from ui.src import auth_utils
+from ui.auth.local_authenticator import LocalAuthenticator
 from ui.src.constants import CNEDates
-from ui.src.signature import Signature
 
 
 # pylint: disable=too-few-public-methods
@@ -82,7 +80,7 @@ class BaseTestCases:
                 "location": Location.BLC,
                 "reservation_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 30)),
                 "name": "Test Name",
-                "phone_number": "1234567890",
+                "phone_number": "4168202370",
                 "notes": "",
                 "status": ReservationStatus.PENDING,
             }
@@ -108,7 +106,6 @@ class BaseTestCases:
                 "return_location": Location.BLC,
                 "return_time": get_default_timezone().localize(datetime(2025, 8, 20, 20, 28)),
                 "return_staff_name": "Test Staff",
-                "return_signature": Signature(signature_data=np.ones((100, 600, 4), dtype=np.uint8)).encode_as_base64(),
             }
             if overrides:
                 for key, value in overrides.items():
@@ -127,10 +124,10 @@ class BaseTestCases:
                 "pickup_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 28)),
                 "status": RentalStatus.IN_PROGRESS,
                 "name": "Test Name",
-                "phone_number": "1234567890",
+                "phone_number": "4168202370",
                 "address": "1234 Test St",
                 "city": "Test City",
-                "province": "Test Province",
+                "province": "Ontario",
                 "postal_code": "A1B2C3",
                 "country": "Canada",
                 "fee_payment_method": PaymentMethod.CREDIT_CARD,
@@ -140,7 +137,6 @@ class BaseTestCases:
                 "items_left_behind": [],
                 "notes": None,
                 "staff_name": "Test Staff",
-                "signature": Signature(signature_data=np.ones((100, 600, 4), dtype=np.uint8)).encode_as_base64(),
             }
             if overrides:
                 for key, value in overrides.items():
@@ -263,7 +259,11 @@ class BaseTestCases:
 
         def test_unauthenticated_user(self):
             """Test if unauthenticated user is redirected to login page."""
-            with patch.object(auth_utils, "initialize_authenticator"):
+            with patch.multiple(
+                    LocalAuthenticator,
+                    _initialize_authenticator=MagicMock(),
+                    login=MagicMock(return_value=False),
+            ):
                 # mock the switch_page method so we can check whether the user was redirected to login
                 st.switch_page = MagicMock()
 
@@ -274,7 +274,7 @@ class BaseTestCases:
         def init_authenticated_app_test(self):
             """Initialize an AppTest instance assuming the user is already authenticated"""
             st.cache_data.clear()  # clear the cache before starting a new test
-            at = AppTest.from_file(self.page_path, default_timeout=1000000)
+            at = AppTest.from_file(self.page_path, default_timeout=10)
             at.session_state["authentication_status"] = True
             at.session_state["username"] = "test_user"
             return at
@@ -285,13 +285,21 @@ class BaseTestCases:
                 at: Optional[AppTest] = None,
                 allow_errors: bool = False
         ):
-            with patch.object(requests, "get", side_effect=mock_requests.mock_requests_get):
-                with patch.object(requests, "post", side_effect=mock_requests.mock_requests_post):
-                    with patch.object(requests, "put", side_effect=mock_requests.mock_requests_put):
-                        with patch.object(auth_utils, "initialize_authenticator"):
-                            if at is None:
-                                at = self.init_authenticated_app_test()
-                            at.run()
+            with patch.multiple(
+                    requests,
+                    get=mock_requests.mock_requests_get,
+                    post=mock_requests.mock_requests_post,
+                    put=mock_requests.mock_requests_put
+            ):
+                with patch.multiple(
+                        LocalAuthenticator,
+                        login=MagicMock(return_value=True),
+                        _initialize_authenticator=MagicMock(),
+                        get_current_user=MagicMock(return_value="test_user"),
+                ):
+                    if at is None:
+                        at = self.init_authenticated_app_test()
+                    at.run()
             if not allow_errors:
                 self.assertEqual(0, len(at.error), f"Error running AppTest: {at.error.values}")
             return at

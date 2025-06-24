@@ -37,6 +37,15 @@ class MockRequests:
             return Mock(status_code=200, json=Mock(return_value=self.mock_reservations_data))
         if "get_rentals_on_date" in url:
             return Mock(status_code=200, json=Mock(return_value=self.mock_rentals_data))
+        if "get_reservation_count" in url:
+            return Mock(
+                status_code=200,
+                json=Mock(return_value=[
+                    {"cne_year": 2025, "date": "2025-08-15", "device_type": "Scooter", "location": "BLC", "count": 5}
+                ]),
+            )
+        if "settings/get" in url:
+            return Mock(status_code=200, json=Mock(return_value=100))
         raise ValueError(f"Unsupported API url for mocking requests.get: {url}")
 
     @staticmethod

@@ -1,5 +1,4 @@
 # pylint: disable=invalid-name
-import numpy as np
 import streamlit as st
 
 from common.data_models import CompletedRental, RentalSummary
@@ -38,11 +37,6 @@ if is_submitted:
     allow_submission = True
     if not completed_rental_info["check_items_deposit"]:
         st.error("Please confirm that the deposit and all items left behind (if any) have been returned.")
-        allow_submission = False
-    if not np.count_nonzero(np.max(completed_rental_info["return_signature"], axis=-1)) > 500:
-        st.info(
-            "**Signature Required**: Please sign in the box above to confirm that the above items have been returned."
-        )
         allow_submission = False
 
     if allow_submission:

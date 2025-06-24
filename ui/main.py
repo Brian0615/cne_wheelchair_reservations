@@ -1,7 +1,11 @@
 import streamlit as st
 
+from ui.src.auth_utils import get_authenticator
+
+authenticator = get_authenticator()
+
 # determine pages to display depending on authentication status
-if st.session_state.get("authentication_status", None) is True:  # already authenticated
+if authenticator.is_authenticated():
     # default pages
     pages = {
         "Home": [
@@ -11,6 +15,8 @@ if st.session_state.get("authentication_status", None) is True:  # already authe
             st.Page("ui_pages/view_rentals.py", title="View Rentals", icon=":material/manage_search:"),
         ],
         "Reservations": [
+            st.Page("ui_pages/reservation_availability.py", title="Reservation Availability",
+                    icon=":material/event_available:"),
             st.Page("ui_pages/view_reservations.py", title="View Reservations", icon=":material/manage_search:"),
         ],
         "Inventory": [
@@ -19,24 +25,20 @@ if st.session_state.get("authentication_status", None) is True:  # already authe
     }
 
     # add privileged pages
-    if "admin" in st.session_state.get("roles", []):
-        pages["Rentals"].append(
-            st.Page("ui_pages/manage_rental.py", title="Manage Rental", icon=":material/settings:")
-        )
-        pages["Reservations"].append(
-            st.Page("ui_pages/manage_reservations.py", title="Manage Reservations", icon=":material/settings:")
-        )
+    if authenticator.is_admin_user():
+        pages["Reservations"] += [
+            st.Page("ui_pages/new_reservation.py", title="New Reservation", icon=":material/add_circle:"),
+            st.Page("ui_pages/manage_reservation.py", title="Manage Reservation", icon=":material/settings:"),
+        ]
         pages["Inventory"].append(
             st.Page("ui_pages/manage_inventory.py", title="Manage Inventory", icon=":material/settings:")
         )
-    if "editor" in st.session_state.get("roles", []):
+    if authenticator.is_editor_user():
         pages["Rentals"] += [
             st.Page("ui_pages/new_rental.py", title="New Rental", icon=":material/add_circle:"),
+            st.Page("ui_pages/manage_rental.py", title="Manage Rental", icon=":material/settings:"),
             st.Page("ui_pages/complete_rental.py", title="Complete Rental", icon=":material/check_circle:"),
         ]
-        pages["Reservations"].append(
-            st.Page("ui_pages/new_reservation.py", title="New Reservation", icon=":material/add_circle:")
-        )
 
 else:  # not authenticated
     pages = {

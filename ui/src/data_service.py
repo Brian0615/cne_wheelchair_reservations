@@ -1,7 +1,7 @@
 import datetime
 import os
 from functools import wraps
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
 import requests
@@ -79,14 +79,16 @@ class DataService:
     """Service class to interact with the API."""
 
     def __init__(self, api_host: Optional[str] = None, api_port: Optional[str] = None):
-        self.api_host = api_host if api_host is not None else os.environ["API_HOST"]
-        self.api_port = api_port if api_port is not None else os.environ["API_PORT"]
+        self.api_host = api_host or os.environ.get("API_HOST")
+        self.api_port = api_port or os.environ.get("API_PORT")
+        if not self.api_host or not self.api_port:
+            raise RuntimeError("API_HOST and API_PORT environment variables must be set.")
 
     # ==============================
     # HELPER FUNCTIONS
     # ==============================
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments
     def _make_request(
             self,
             request_method: Callable,
@@ -140,12 +142,15 @@ class DataService:
     @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @timeit(logger=logger)
     @auto_process_api_errors
-    def get_available_device_ids(_self, device_type: DeviceType, location: Location):
-        """Get the available devices of a specific type at a specific location using the API."""
+    def get_available_device_ids(_self, device_type: DeviceType, location: Optional[Location] = None):
+        """Get the available devices of a specific type at a specific location using the API (location optional)."""
+        params = {"cne_year": CNEDates.get_cne_year(), "device_type": device_type}
+        if location is not None:
+            params["location"] = location
         response = _self._make_request(
             request_method=requests.get,
             url_path="devices/get_available_devices",
-            params={"cne_year": CNEDates.get_cne_year(), "device_type": device_type, "location": location},
+            params=params,
         )
         return response.json()
 
@@ -277,6 +282,7 @@ class DataService:
 
     def _clear_reservations_functions_cache(self):
         self.get_reservations_on_date.clear()
+        self.get_reservation_count.clear()
 
     @timeit(logger=logger)
     @auto_process_api_errors
@@ -285,6 +291,21 @@ class DataService:
         response = self._make_request(request_method=requests.post, url_path="reservations/add", json=reservation)
         self.get_reservations_on_date.clear()
         return response.status_code, response.json()
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_reservation_count(_self):
+        """Get the number of reservations for each date, location, device"""
+        response = _self._make_request(
+            request_method=requests.get,
+            url_path="reservations/get_reservation_count",
+            params={"cne_year": CNEDates.get_cne_year()},
+        )
+        response = response.json()
+        response = pd.DataFrame(response)
+        response["date"] = pd.to_datetime(response["date"])
+        return response
 
     @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @timeit(logger=logger)
@@ -320,7 +341,7 @@ class DataService:
         response = self._make_request(
             request_method=requests.post,
             url_path="reservations/update_reservation",
-            json=reservation,
+            json=reservation.model_dump(mode="json"),
         )
         self._clear_reservations_functions_cache()
         return response.status_code
@@ -351,7 +372,37 @@ class DataService:
         response = requests.put(
             f"http://{self.api_host}:{self.api_port}/forms/upload_rental_form",
             params={"rental_id": rental_id},
-            files={"pdf_bytes": pdf_bytes},
+            files={"pdf_bytes": (f"{rental_id}.pdf", pdf_bytes, "application/pdf")},
             timeout=DEFAULT_TIMEOUT,
         )
+        return response.status_code, response.json()
+
+    # ==============================
+    # SETTINGS
+    # ==============================
+
+    def _clear_settings_functions_cache(self):
+        self.get_setting.clear()
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @auto_process_api_errors
+    def get_setting(_self, setting_id: str):
+        """Get settings from the API."""
+        response = _self._make_request(
+            request_method=requests.get,
+            url_path="settings/get",
+            params={"cne_year": CNEDates.get_cne_year(), "setting_id": setting_id},
+        )
+        return response.json()
+
+    @auto_process_api_errors
+    def update_settings(self, settings: Dict[str, Any]):
+        """Update settings using the API."""
+        response = self._make_request(
+            request_method=requests.put,
+            url_path="settings/update",
+            params={"cne_year": CNEDates.get_cne_year()},
+            json=settings,
+        )
+        self._clear_settings_functions_cache()
         return response.status_code, response.json()
