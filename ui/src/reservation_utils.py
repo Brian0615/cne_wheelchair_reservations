@@ -186,7 +186,7 @@ def create_reservation_availability_chart(
         height=plot_height,
         margin={"t": 10, "b": 40 * margin_factor, "l": 40 * margin_factor, "r": 40 * margin_factor},
     )
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, config={'displayModeBar': False})
 
 
 def load_fonts():
