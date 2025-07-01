@@ -304,6 +304,8 @@ class DataService:
         )
         response = response.json()
         response = pd.DataFrame(response)
+        if response.empty:
+            return response
         response["date"] = pd.to_datetime(response["date"])
         return response
 
