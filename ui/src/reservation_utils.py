@@ -101,6 +101,9 @@ def get_reservation_counts() -> pd.DataFrame:
         columns=["date", "device_type", "location"],
     )
     default_table["date"] = pd.to_datetime(default_table["date"])
+    if reservation_counts.empty:
+        default_table["count"] = 0
+        return default_table
     reservation_counts = default_table.merge(reservation_counts, on=["date", "device_type", "location"], how="left")
     reservation_counts = reservation_counts.fillna(0).sort_values(by=["date", "device_type", "location"])
     return reservation_counts
