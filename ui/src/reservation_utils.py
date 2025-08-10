@@ -189,7 +189,9 @@ def create_reservation_availability_chart(
         height=plot_height,
         margin={"t": 10, "b": 40 * margin_factor, "l": 40 * margin_factor, "r": 40 * margin_factor},
     )
-    st.plotly_chart(fig)
+    # remove the toolbar
+
+    st.plotly_chart(fig, key=f"availability_chart_{device_type.value.lower()}", config={'displayModeBar': False})
 
 
 def load_fonts():
