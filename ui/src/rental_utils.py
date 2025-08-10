@@ -6,10 +6,11 @@ from common.constants import DeviceType, WALK_IN_RESERVATION_ID, RentalStatus
 from common.data_models import CompletedRental, NewRental, ChangeDeviceInfo
 from common.utils import get_default_timezone
 from ui.forms import NewRentalForm
+from ui.pdf_forms.scooter_pdf_form import ScooterPDFForm
+from ui.pdf_forms.wheelchair_pdf_form import WheelchairPDFForm
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import clear_session_state_for_form, process_validation_errors
-from ui.src.wheelchair_form import WheelchairForm
 
 
 @st.dialog("Success!")
@@ -43,15 +44,23 @@ def display_new_rental_success_dialog(rental_id: str, new_rental: NewRental, for
         * **Rental ID**: {rental_id}
         """
     )
-    if new_rental.device_type == DeviceType.WHEELCHAIR:
-        st.download_button(
-            label="Download Rental Form",
-            data=form_data,
-            icon=":material/download:",
-            file_name=f"rental_form_{rental_id}.pdf",
-        )
+    st.download_button(
+        label="Download Rental Form",
+        data=form_data,
+        icon=":material/download:",
+        file_name=f"rental_form_{rental_id}.pdf",
+    )
     if st.button("Close"):
         st.rerun()
+
+
+def get_pdf_form_class(device_type: DeviceType):
+    """Get the PDF form class based on the device type"""
+    if device_type == DeviceType.WHEELCHAIR:
+        return WheelchairPDFForm
+    if device_type == DeviceType.SCOOTER:
+        return ScooterPDFForm
+    raise ValueError(f"Unsupported device type: {device_type}")
 
 
 @process_validation_errors(error_key="complete_rental_errors")
@@ -104,16 +113,33 @@ def submit_new_rental_form(new_rental: dict):
 
     # try to add the new rental
     data_service = DataService()
-    status_code, rental_id = data_service.add_new_rental(new_rental)
-    if new_rental.device_type == DeviceType.WHEELCHAIR:
-        form_data = WheelchairForm(rental_data=new_rental, rental_id=rental_id).export_form_to_bytes()
-        status_code, _ = data_service.upload_rental_form(pdf_bytes=form_data, rental_id=rental_id)
-    else:
-        form_data = None
+    status_code, add_result = data_service.add_new_rental(new_rental)
     if status_code == 200:
-        display_new_rental_success_dialog(rental_id=rental_id, new_rental=new_rental, form_data=form_data)
-        NewRentalForm(key_prefix="new_rental").clear_form()
-
+        form_data = get_pdf_form_class(device_type=new_rental.device_type)(
+            rental_data=new_rental,
+            rental_id=add_result,
+        ).export_form_to_bytes()
+        status_code, upload_result = data_service.upload_rental_form(pdf_bytes=form_data, rental_id=add_result)
+        st.write(status_code)
+        if status_code == 200:
+            display_new_rental_success_dialog(rental_id=add_result, new_rental=new_rental, form_data=form_data)
+            NewRentalForm(key_prefix="new_rental").clear_form()
+        else:
+            st.error(
+                f"""
+                **API Error**
+                * Error Code: {status_code}
+                * Error Message: {upload_result}
+                """
+            )
+    else:
+        st.error(
+            f"""
+            **API Error**
+            * Error Code: {status_code}
+            * Error Message: {add_result}
+            """
+        )
 
 @st.dialog("Success!")
 def display_change_device_success_dialog(change_data: ChangeDeviceInfo):

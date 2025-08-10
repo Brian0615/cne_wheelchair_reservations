@@ -289,7 +289,7 @@ class DataService:
     def add_new_reservation(self, reservation: NewReservation):
         """Add a new reservation using the API."""
         response = self._make_request(request_method=requests.post, url_path="reservations/add", json=reservation)
-        self.get_reservations_on_date.clear()
+        self._clear_reservations_functions_cache()
         return response.status_code, response.json()
 
     @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)

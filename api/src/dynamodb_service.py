@@ -32,10 +32,11 @@ class DynamoDBService:
             aws_access_key_id=read_secret(os.getenv("AWS_ACCESS_KEY_ID")),
             aws_secret_access_key=read_secret(os.getenv("AWS_SECRET_ACCESS_KEY")),
         )
-        self.devices_table = self.dynamodb.Table('cne_devices')
-        self.rentals_table = self.dynamodb.Table('cne_rentals')
-        self.reservations_table = self.dynamodb.Table('cne_reservations')
-        self.settings_table = self.dynamodb.Table('cne_settings')
+        is_dev = os.getenv("DEV_MODE", default="False").lower() == "true"
+        self.devices_table = self.dynamodb.Table("cne_devices" if not is_dev else "cne_devices_test")
+        self.rentals_table = self.dynamodb.Table("cne_rentals" if not is_dev else "cne_rentals_test")
+        self.reservations_table = self.dynamodb.Table("cne_reservations" if not is_dev else "cne_reservations_test")
+        self.settings_table = self.dynamodb.Table("cne_settings" if not is_dev else "cne_settings_test")
 
     # ==============================
     # HELPER FUNCTIONS
