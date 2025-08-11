@@ -19,8 +19,10 @@ class MockRequests:
         self.mock_reservations_data = mock_reservations_data if mock_reservations_data is not None else []
         self.mock_rentals_data = mock_rentals_data if mock_rentals_data is not None else []
 
-    def mock_requests_get(self, url, *args, **kwargs):  # pylint: disable=unused-argument
+    def mock_requests_get(self, url, *args, **kwargs):  # pylint: disable=unused-argument,too-many-return-statements
         """Mock the requests.get method"""
+        if "download_rental_form" in url:
+            return Mock(status_code=200, content=b"Mocked rental form content")
         if "get_full_inventory" in url:
             return Mock(status_code=200, json=Mock(return_value=self.mock_inventory_data))
         if "get_available_devices" in url:

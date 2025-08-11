@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from typing import Annotated, Optional
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, File
+from fastapi import FastAPI, HTTPException, File, Response
 
 from api.routers import devices_router, rentals_router, reservations_router, settings_router
 from api.src.s3_service import S3Service
@@ -30,10 +30,15 @@ def health_check():
 # ==============================
 
 @app.get("/forms/download_rental_form")
-def download_rental_form(rental_id: str) -> Optional[bytes]:
+def download_rental_form(rental_id: str) -> Response:
     """Download a rental form from S3"""
     try:
-        return s3_service.download_rental_form(rental_id=rental_id)
+        content = s3_service.download_rental_form(rental_id=rental_id)
+        return Response(
+            content=content,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=rental_form_{rental_id}.pdf"},
+        )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

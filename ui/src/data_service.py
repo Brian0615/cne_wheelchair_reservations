@@ -377,7 +377,20 @@ class DataService:
             files={"pdf_bytes": (f"{rental_id}.pdf", pdf_bytes, "application/pdf")},
             timeout=DEFAULT_TIMEOUT,
         )
+        self.download_rental_form.clear()
         return response.status_code, response.json()
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def download_rental_form(_self, rental_id: str) -> Tuple[int, Optional[bytes]]:
+        """Download a rental form from S3 using the API"""
+        response = requests.get(
+            f"http://{_self.api_host}:{_self.api_port}/forms/download_rental_form",
+            params={"rental_id": rental_id},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        return response.status_code, response.content
 
     # ==============================
     # SETTINGS
