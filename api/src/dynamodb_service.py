@@ -416,9 +416,9 @@ class DynamoDBService:
         """Get all rentals on a given date"""
         projection_expression = (
             "cne_year, id, #date, device_id, device_type, pickup_location, pickup_time, reservation_id, #name, "
-            "phone_number, deposit_payment_method, items_left_behind, notes, return_location, return_time"
+            "#status, phone_number, deposit_payment_method, items_left_behind, notes, return_location, return_time"
         )
-        expression_attribute_names = {"#date": "date", "#name": "name"}
+        expression_attribute_names = {"#date": "date", "#name": "name", "#status": "status"}
 
         key_condition_expression = Key("cne_year").eq(date.year)
         filter_expression = None

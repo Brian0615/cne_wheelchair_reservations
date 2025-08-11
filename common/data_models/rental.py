@@ -171,6 +171,7 @@ class RentalSummary(BaseModel):
     reservation_id: ReservationIDField
     pickup_location: PickupLocationField
     pickup_time: PickupTimeField
+    status: RentalStatusField
 
     name: NameField
     phone_number: PhoneNumberField
