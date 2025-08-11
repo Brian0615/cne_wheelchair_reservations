@@ -383,10 +383,10 @@ class DataService:
     @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
     @timeit(logger=logger)
     @auto_process_api_errors
-    def download_rental_form(self, rental_id: str) -> Tuple[int, Optional[bytes]]:
+    def download_rental_form(_self, rental_id: str) -> Tuple[int, Optional[bytes]]:
         """Download a rental form from S3 using the API"""
         response = requests.get(
-            f"http://{self.api_host}:{self.api_port}/forms/download_rental_form",
+            f"http://{_self.api_host}:{_self.api_port}/forms/download_rental_form",
             params={"rental_id": rental_id},
             timeout=DEFAULT_TIMEOUT,
         )
