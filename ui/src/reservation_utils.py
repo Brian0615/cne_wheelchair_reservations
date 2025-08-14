@@ -22,6 +22,7 @@ from common.utils import get_default_timezone
 from ui.forms.reservation_form import ReservationForm
 from ui.src.constants import CNEDates, Colour
 from ui.src.data_service import DataService
+from ui.src.display_utils import coerce_pandas_aware_datetime
 from ui.src.utils import process_validation_errors
 
 
@@ -249,13 +250,14 @@ def export_reservations_to_pdf(reservations_df: pd.DataFrame, date: datetime.dat
     )
 
     elements = []
+    reservations_df["reservation_time"] = coerce_pandas_aware_datetime(reservations_df["reservation_time"])
+    reservations_df["reservation_time"] = reservations_df["reservation_time"].dt.strftime("%I:%M %p")
+    reservations_df["phone_number"] = reservations_df["phone_number"].str.lstrip("tel:")
     for i, device_type in enumerate(reservations_df['device_type'].unique()):
         # Filter the reservations for this device type
         device_reservations = reservations_df[reservations_df['device_type'] == device_type][
             ["id", "name", "phone_number", "reservation_time", "location", "status", "notes"]
         ]
-        device_reservations["reservation_time"] = device_reservations["reservation_time"].dt.strftime('%I:%M %p')
-        device_reservations["phone_number"] = device_reservations["phone_number"].str.lstrip("tel:")
         device_reservations = device_reservations.rename(columns={"reservation_time": "time"})
         device_reservations[DeviceType.get_short_label(device_type)] = None
 

@@ -16,7 +16,7 @@ reservations = DataService().get_reservations_on_date(date=view_date)
 # Add export button in col2 - only enabled if there are reservations
 with col2:
     if not reservations.empty:
-        pdf_data = export_reservations_to_pdf(reservations_df=reservations, date=view_date)
+        pdf_data = export_reservations_to_pdf(reservations_df=reservations.copy(), date=view_date)
         formatted_date = view_date.strftime("%Y-%m-%d")
         st.download_button(
             label=":material/download: Download Reservations",
