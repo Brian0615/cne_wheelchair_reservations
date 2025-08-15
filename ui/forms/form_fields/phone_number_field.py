@@ -15,7 +15,8 @@ class PhoneNumberField(TextField):
             label: str,
             default_value: Optional[str] = None,
     ):
-        super().__init__(key=key, label=label, default_value=default_value)
+        default_value = default_value.replace("tel:", "") if default_value else ""
+        super().__init__(key=key, label=label, default_value=default_value.replace("tel:", ""))
 
     def _render(self, disabled=False):
         """Render the text input field"""
