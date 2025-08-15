@@ -15,7 +15,7 @@ class TimeField(BaseFormField):
             self,
             key: str,
             label: Optional[str] = "Time",
-            default_value: Optional[time] = datetime.now(tz=get_default_timezone()).time(),
+            default_value: Optional[time] = datetime.now(tz=get_default_timezone()).time(),  # None,
             step: Optional[timedelta] = timedelta(minutes=30),
     ):
         self.step = step

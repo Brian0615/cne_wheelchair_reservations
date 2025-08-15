@@ -7,6 +7,7 @@ import pandas as pd
 import requests
 import streamlit as st
 from pydantic import BaseModel
+from requests import JSONDecodeError
 
 from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
 from common.data_models import (
@@ -115,8 +116,10 @@ class DataService:
                 request_data={"params": params, "json": json},
                 details=response.json()
             )
-        raise APIError(message=response.json())
-
+        try:
+            raise APIError(message=response.json())
+        except JSONDecodeError as exc:
+            raise APIError(message=response.text) from exc
 
     # ==============================
     # DEVICES
