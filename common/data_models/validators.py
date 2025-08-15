@@ -65,7 +65,7 @@ def check_province_state(model):
 
     subdivisions = pycountry.subdivisions.get(country_code=pycountry.countries.lookup(model.country).alpha_2)
     if not subdivisions:
-        raise ValueError(f"No subdivisions found for country code: {model.country}")
+        raise ValueError(f"No subdivisions found for country: {pycountry.countries.lookup(model.country).name}")
 
     province_input = model.province.strip().upper()
     code_map = {sub.code.split('-')[1].upper(): sub.code.split('-')[1] for sub in subdivisions}
@@ -76,7 +76,9 @@ def check_province_state(model):
     elif province_input in name_map:
         model.province = name_map[province_input]
     else:
-        raise ValueError(f"Invalid province/state '{model.province}' for {model.country}")
+        raise ValueError(
+            f"Invalid province/state '{model.province}' for country: {pycountry.countries.lookup(model.country).name}"
+        )
 
     return model
 
