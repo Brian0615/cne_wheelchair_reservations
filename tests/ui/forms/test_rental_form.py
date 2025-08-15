@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import time
 from unittest import TestCase
 
 from streamlit.testing.v1 import AppTest
 
 from common.constants import WALK_IN_RESERVATION_ID
-from common.utils import get_default_timezone
 from ui.src.constants import CNEDates
 
 
@@ -28,6 +27,7 @@ class TestRentalForm(TestCase):
     def _render_form_and_select_location_device(self):
         """Render the form and select a location and device type"""
         at = AppTest.from_function(self._run_form, args=(self.mock_prefix, True)).run()
+        at.time_input(f"{self.mock_prefix}_time").set_value(time(hour=10, minute=30))
         at.selectbox(f"{self.mock_prefix}_pickup_location").select_index(0)
         at.selectbox(f"{self.mock_prefix}_device_type").select_index(0)
         at.run()
@@ -38,16 +38,7 @@ class TestRentalForm(TestCase):
 
         at = AppTest.from_function(self._run_form, args=(self.mock_prefix, False)).run()
         self.assertEqual(at.session_state[f"{self.mock_prefix}_date"], CNEDates.get_default_date())
-        self.assertLessEqual(
-            (
-                datetime.now(tz=get_default_timezone()).replace(tzinfo=None)
-                - datetime.combine(
-                    datetime.now(tz=get_default_timezone()).date(),
-                    at.session_state[f"{self.mock_prefix}_time"]
-                )
-            ),
-            timedelta(minutes=1)
-        )
+        self.assertIsNone(at.session_state[f"{self.mock_prefix}_time"])
 
         for field, value in {
             "pickup_location": None,
@@ -85,6 +76,7 @@ class TestRentalForm(TestCase):
                     at.selectbox(f"{self.mock_prefix}_{field}")
 
         # pick a location and device type to render next part of form
+        at.time_input(f"{self.mock_prefix}_time").set_value(time(hour=10, minute=30))
         at.selectbox(f"{self.mock_prefix}_pickup_location").select_index(0)
         at.selectbox(f"{self.mock_prefix}_device_type").select_index(0)
         at.run()

@@ -30,7 +30,10 @@ class NewRentalForm(BaseForm):
 
         fields = {
             "date": DateField(key=f"{key_prefix}_date", label="Rental Date"),
-            "pickup_time": TimeField(key=f"{key_prefix}_time", label="Pickup Time"),
+            "pickup_time": TimeField(
+                key=f"{key_prefix}_time",
+                label="Pickup Time (24-hour format)",
+            ),
             "pickup_location": SelectboxField(
                 key=f"{key_prefix}_pickup_location",
                 label="Pickup Location",
