@@ -120,7 +120,7 @@ def submit_new_rental_form(new_rental: dict):
             rental_id=add_result,
         ).export_form_to_bytes()
         status_code, upload_result = data_service.upload_rental_form(pdf_bytes=form_data, rental_id=add_result)
-        st.write(status_code)
+
         if status_code == 200:
             display_new_rental_success_dialog(rental_id=add_result, new_rental=new_rental, form_data=form_data)
             NewRentalForm(key_prefix="new_rental").clear_form()
