@@ -48,6 +48,7 @@ class NewRentalForm(BaseForm):
                 key=f"{key_prefix}_reservation_id",
                 label="Reservation Name/ID",
                 options=reservation_options + [WALK_IN_RESERVATION_ID],
+                default_value=st.session_state.get(f"{key_prefix}_reservation_id", None),
             ),
             "device_id": SelectboxField(
                 key=f"{key_prefix}_device_id",
