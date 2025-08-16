@@ -53,6 +53,7 @@ class NewRentalForm(BaseForm):
                 key=f"{key_prefix}_device_id",
                 label="Assigned Chair/Scooter",
                 options=sorted(device_id_options, key=lambda x: int(x[1:])),
+                default_value=st.session_state.get(f"{key_prefix}_device_id", None),
             ),
             "name": TextField(key=f"{key_prefix}_name", label="Name"),
             "phone_number": PhoneNumberField(key=f"{key_prefix}_phone_number", label="Phone Number"),

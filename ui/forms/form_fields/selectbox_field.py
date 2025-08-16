@@ -25,6 +25,7 @@ class SelectboxField(BaseFormField):
         return st.selectbox(
             label=self.label,
             options=self.options,
+            index=self.options.index(self.default_value) if self.default_value in self.options else None,
             key=self.key,
             disabled=disabled,
         )
