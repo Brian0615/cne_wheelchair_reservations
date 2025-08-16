@@ -26,8 +26,13 @@ from ui.src.display_utils import coerce_pandas_aware_datetime
 from ui.src.utils import process_validation_errors
 
 
-# pylint: disable=trailing-whitespace
-@st.dialog("Success!")
+def on_dismiss_success_dialog():
+    """Callback for when the success dialog is dismissed"""
+    ReservationForm(key_prefix="new_reservation").clear_form()
+    ReservationForm(key_prefix="update_reservation").clear_form()
+
+
+@st.dialog("Success!", on_dismiss=on_dismiss_success_dialog)
 def display_success_dialog(reservation_id: str, reservation: Union[NewReservation, Reservation], is_update: bool):
     """Display the success dialog upon creating/updating a reservation"""
     st.success(
@@ -43,8 +48,6 @@ def display_success_dialog(reservation_id: str, reservation: Union[NewReservatio
         * **Status**: {reservation.status}
         """
     )
-    if st.button("Close"):
-        st.rerun()
 
 
 @process_validation_errors(error_key="new_reservation_form_errors")
@@ -65,7 +68,6 @@ def submit_new_reservation_form(reservation: dict, is_waitlisted: bool):
     status_code, result = DataService().add_new_reservation(reservation=reservation)
     if status_code == 200:
         display_success_dialog(reservation_id=result, reservation=reservation, is_update=False)
-        ReservationForm(key_prefix="new_reservation").clear_form()
 
 
 @process_validation_errors(error_key="update_reservation_form_errors")
@@ -79,7 +81,6 @@ def submit_update_reservation_form(reservation: dict):
     status_code = DataService().update_reservation(reservation=reservation)
     if status_code == 200:
         display_success_dialog(reservation_id=reservation.id, reservation=reservation, is_update=True)
-        ReservationForm(key_prefix="update_reservation").clear_form()
 
 
 def update_reservation_status(reservation: Reservation, status: ReservationStatus):
