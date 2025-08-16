@@ -85,6 +85,15 @@ class NewRentalForm(BaseForm):
         }
         super().__init__(key_prefix=key_prefix, fields=fields)
 
+    @staticmethod
+    def _extract_reservation_id(reservation_id):
+        if reservation_id == WALK_IN_RESERVATION_ID:
+            return reservation_id
+        match = re.search(r"\(([SW]0[8-9][0-9]{2}[0-9]{3})\)", reservation_id)
+        if match:
+            return match.group(1)
+        return None
+
     # pylint: disable=too-many-statements
     def render_form(self):
 
@@ -110,8 +119,8 @@ class NewRentalForm(BaseForm):
             col1, col2, _ = st.columns([2, 1, 1])
             with col1:
                 result["reservation_id"] = self.fields["reservation_id"].render_field()
-            if result["reservation_id"] and result["reservation_id"] != WALK_IN_RESERVATION_ID:
-                result["reservation_id"] = re.search(r"\(([^)]+)\)", result["reservation_id"]).group(1)
+            if result["reservation_id"]:
+                result["reservation_id"] = self._extract_reservation_id(result["reservation_id"])
             with col2:
                 result["device_id"] = self.fields["device_id"].render_field()
 
