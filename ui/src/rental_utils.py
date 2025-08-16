@@ -13,7 +13,12 @@ from ui.src.data_service import DataService
 from ui.src.utils import clear_session_state_for_form, process_validation_errors
 
 
-@st.dialog("Success!")
+def on_dismiss_complete_rental_success_dialog():
+    """Callback for when the success dialog is dismissed"""
+    clear_session_state_for_form(clear_prefixes=["complete_rental_"])
+
+
+@st.dialog("Success!", on_dismiss=on_dismiss_complete_rental_success_dialog)
 def display_complete_rental_success_dialog(completed_rental: CompletedRental):
     """Display the success dialog upon completing a rental"""
 
@@ -26,13 +31,15 @@ def display_complete_rental_success_dialog(completed_rental: CompletedRental):
         * **Returned Chair/Scooter**: {completed_rental.device_id}
         """
     )
-    if st.button("Close"):
-        clear_session_state_for_form(clear_prefixes=["complete_rental_"])
-        st.rerun()
 
 
+def on_dismiss_new_rental_success_dialog():
+    """Callback for when the success dialog is dismissed"""
+    clear_session_state_for_form(clear_prefixes=["new_rental_"])
+    NewRentalForm(key_prefix="new_rental").clear_form()
 
-@st.dialog("Success!")
+
+@st.dialog("Success!", on_dismiss=on_dismiss_new_rental_success_dialog)
 def display_new_rental_success_dialog(rental_id: str, new_rental: NewRental, form_data: bytes):
     """Display the success dialog upon creating a new rental"""
     st.success(
@@ -50,8 +57,6 @@ def display_new_rental_success_dialog(rental_id: str, new_rental: NewRental, for
         icon=":material/download:",
         file_name=f"rental_form_{rental_id}.pdf",
     )
-    if st.button("Close"):
-        st.rerun()
 
 
 def get_pdf_form_class(device_type: DeviceType):
@@ -120,10 +125,9 @@ def submit_new_rental_form(new_rental: dict):
             rental_id=add_result,
         ).export_form_to_bytes()
         status_code, upload_result = data_service.upload_rental_form(pdf_bytes=form_data, rental_id=add_result)
-        st.write(status_code)
+
         if status_code == 200:
             display_new_rental_success_dialog(rental_id=add_result, new_rental=new_rental, form_data=form_data)
-            NewRentalForm(key_prefix="new_rental").clear_form()
         else:
             st.error(
                 f"""
@@ -141,21 +145,24 @@ def submit_new_rental_form(new_rental: dict):
             """
         )
 
-@st.dialog("Success!")
+
+def on_dismiss_change_device_success_dialog():
+    """Callback for when the success dialog is dismissed"""
+    clear_session_state_for_form(clear_prefixes=["manage_rental_", "change_device_"])
+
+
+@st.dialog("Success!", on_dismiss=on_dismiss_change_device_success_dialog)
 def display_change_device_success_dialog(change_data: ChangeDeviceInfo):
     """Display the success dialog upon changing a device"""
     st.success(
         f"""
         The following rental was updated successfully:
 
-        * **Rental ID**: {change_data.rental_id}
+        * **Rental ID**: {change_data.id}
         * **Old Device ID**: {change_data.old_device_id}
         * **New Device ID**: {change_data.new_device_id}
         """
     )
-    if st.button("Close"):
-        clear_session_state_for_form(clear_prefixes=["manage_rental_", "change_device_"])
-        st.rerun()
 
 
 @process_validation_errors(error_key="change_device_errors")

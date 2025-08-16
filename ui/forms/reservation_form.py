@@ -49,7 +49,7 @@ class ReservationForm(BaseForm):
             ),
             "reservation_time": TimeField(
                 key=f"{key_prefix}_time",
-                label="Reservation Time",
+                label="Reservation Time (24-hour format)",
                 default_value=(
                     existing_reservation.reservation_time.astimezone(get_default_timezone())
                     if existing_reservation

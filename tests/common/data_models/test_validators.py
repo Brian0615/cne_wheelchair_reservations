@@ -83,31 +83,28 @@ class TestValidators(unittest.TestCase):
         # Function should return un-changed model for non-Canada/US countries
         self.assertEqual(result, model)
 
-    @patch('pycountry.subdivisions.get')
-    def test_check_province_state_valid_canada(self, mock_get):
+    def test_check_province_state_valid_canada(self):
         """Test check_province_state with valid Canadian provinces."""
-        # Setup mock subdivisions for Canada
-        mock_on = MagicMock()
-        mock_on.code = "CA-ON"
-        mock_on.name = "Ontario"
-
-        mock_bc = MagicMock()
-        mock_bc.code = "CA-BC"
-        mock_bc.name = "British Columbia"
-
-        mock_get.return_value = [mock_on, mock_bc]
 
         # Test with province code
         model = MockModel(country="CAN", province="ON")
         result = check_province_state(model)
         self.assertEqual(result.province, "ON")
-        mock_get.assert_called_with(country_code="CA")
 
         # Test with province code
         model = MockModel(country="CAN", province="BC")
         result = check_province_state(model)
         self.assertEqual(result.province, "BC")
-        mock_get.assert_called_with(country_code="CA")
+
+        # Test with province code
+        model = MockModel(country="CAN", province="B.C.")
+        result = check_province_state(model)
+        self.assertEqual(result.province, "BC")
+
+        # Test with province code
+        model = MockModel(country="CAN", province="British Columbia")
+        result = check_province_state(model)
+        self.assertEqual(result.province, "BC")
 
         # Test with province name
         model = MockModel(country="CAN", province="Ontario")
@@ -119,25 +116,12 @@ class TestValidators(unittest.TestCase):
         result = check_province_state(model)
         self.assertEqual(result.province, "ON")
 
-    @patch('pycountry.subdivisions.get')
-    def test_check_province_state_valid_us(self, mock_get):
+    def test_check_province_state_valid_us(self):
         """Test check_province_state with valid US states."""
-        # Setup mock subdivisions for US
-        mock_ca = MagicMock()
-        mock_ca.code = "US-CA"
-        mock_ca.name = "California"
-
-        mock_ny = MagicMock()
-        mock_ny.code = "US-NY"
-        mock_ny.name = "New York"
-
-        mock_get.return_value = [mock_ca, mock_ny]
-
         # Test with state code
         model = MockModel(country="USA", province="CA")
         result = check_province_state(model)
         self.assertEqual(result.province, "CA")
-        mock_get.assert_called_with(country_code="US")
 
         # Test with state name
         model = MockModel(country="USA", province="California")
@@ -149,15 +133,18 @@ class TestValidators(unittest.TestCase):
         result = check_province_state(model)
         self.assertEqual(result.province, "CA")
 
-    @patch('pycountry.subdivisions.get')
-    def test_check_province_state_invalid(self, mock_get):
-        """Test check_province_state with invalid provinces/states."""
-        # Setup mock subdivisions
-        mock_on = MagicMock()
-        mock_on.code = "CA-ON"
-        mock_on.name = "Ontario"
+        # test with states that have spaces
+        model = MockModel(country="USA", province="North Carolina")
+        result = check_province_state(model)
+        self.assertEqual(result.province, "NC")
 
-        mock_get.return_value = [mock_on]
+        # test with extra symbols
+        model = MockModel(country="USA", province="N.C.")
+        result = check_province_state(model)
+        self.assertEqual(result.province, "NC")
+
+    def test_check_province_state_invalid(self):
+        """Test check_province_state with invalid provinces/states."""
 
         # Test with invalid province
         model = MockModel(country="CAN", province="InvalidProvince")

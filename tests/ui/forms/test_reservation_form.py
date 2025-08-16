@@ -59,7 +59,10 @@ class TestReservationForm(TestCase):
         self.assertEqual(at.session_state["test_form_device_type"], self.mock_reservation.device_type)
         self.assertEqual(at.session_state["test_form_location"], self.mock_reservation.location)
         self.assertEqual(at.session_state["test_form_name"], self.mock_reservation.name)
-        self.assertEqual(at.session_state["test_form_phone_number"], self.mock_reservation.phone_number)
+        self.assertEqual(
+            at.session_state["test_form_phone_number"],
+            self.mock_reservation.phone_number.replace("tel:", ""),  # pylint: disable=no-member
+        )
         self.assertEqual(at.session_state["test_form_time"], self.mock_reservation.reservation_time)
         self.assertEqual(at.session_state["test_form_notes"], self.mock_reservation.notes)
 

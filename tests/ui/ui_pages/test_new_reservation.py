@@ -49,13 +49,13 @@ class TestNewReservation(BaseTestCases.BaseUIPageTest):
                 mock_add_new_reservation.assert_called_once_with(
                     reservation=NewReservation(
                         cne_year=CNEDates.get_cne_year(),
-                        date=CNEDates.get_default_date(),
+                        date=CNEDates.get_default_new_reservation_date(),
                         device_type=DeviceType.SCOOTER,
                         location=Location.BLC,
                         name="John Doe",
                         phone_number="416-937-2830",
                         reservation_time=get_default_timezone().localize(
-                            datetime.combine(CNEDates.get_default_date(), time(hour=11, minute=30))
+                            datetime.combine(CNEDates.get_default_new_reservation_date(), time(hour=11, minute=30))
                         ),  # check that the time gets converted properly
                         notes=None,
                         status=ReservationStatus.PENDING,

@@ -153,6 +153,7 @@ class TestManageReservations(BaseTestCases.BaseUIPageTest):
             expected_reservation_data = Reservation(**mock_requests.mock_reservations_data[0]).model_dump()
             expected_reservation_data["name"] = "New Name"
             expected_reservation_data["reservation_time"] = expected_reservation_data["reservation_time"].time()
+            expected_reservation_data["phone_number"] = expected_reservation_data["phone_number"].replace("tel:", "")
             expected_reservation_data.pop("rental_id")
             mock_submit_form.assert_called_once_with(reservation=expected_reservation_data)
 

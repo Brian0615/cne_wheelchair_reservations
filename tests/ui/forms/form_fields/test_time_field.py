@@ -1,10 +1,9 @@
-from datetime import datetime, time, timedelta
+from datetime import time
 
 from streamlit.testing.v1 import AppTest
 
 from tests.base_tests import BaseTestCases
 from ui.forms.form_fields.time_field import TimeField
-from ui.src.utils import get_default_timezone
 
 
 class TestTimeField(BaseTestCases.BaseFormFieldTest):
@@ -27,12 +26,7 @@ class TestTimeField(BaseTestCases.BaseFormFieldTest):
         return at.time_input("test_key")
 
     def _run_field_post_render_checks(self, at: AppTest, disabled: bool):
-        now = datetime.now(tz=get_default_timezone())
-        self.assertLessEqual(
-            now.replace(tzinfo=None) - datetime.combine(now.date(), self._get_field(at=at).value),
-            timedelta(minutes=1)
-        )
-        self.assertEqual(self._get_field(at=at).step, timedelta(minutes=30).total_seconds())
+        self.assertIsNone(self._get_field(at=at).value)
 
     def _run_field_post_interaction_checks(self, at: AppTest):
         self._get_field(at=at).set_value(time(hour=11, minute=30))

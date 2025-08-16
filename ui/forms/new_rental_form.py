@@ -30,7 +30,10 @@ class NewRentalForm(BaseForm):
 
         fields = {
             "date": DateField(key=f"{key_prefix}_date", label="Rental Date"),
-            "pickup_time": TimeField(key=f"{key_prefix}_time", label="Pickup Time"),
+            "pickup_time": TimeField(
+                key=f"{key_prefix}_time",
+                label="Pickup Time (24-hour format)",
+            ),
             "pickup_location": SelectboxField(
                 key=f"{key_prefix}_pickup_location",
                 label="Pickup Location",
@@ -104,7 +107,7 @@ class NewRentalForm(BaseForm):
                 return result, False
 
             # second row of form
-            col1, col2, _, _ = st.columns(4)
+            col1, col2, _ = st.columns([2, 1, 1])
             with col1:
                 result["reservation_id"] = self.fields["reservation_id"].render_field()
             if result["reservation_id"] and result["reservation_id"] != WALK_IN_RESERVATION_ID:

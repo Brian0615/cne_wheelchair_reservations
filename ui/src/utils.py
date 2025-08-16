@@ -14,18 +14,21 @@ def display_validation_errors(errors: List[dict], validation_class: type[BaseMod
     """Display validation errors on the UI."""
     display_errors = []
     for error in errors:
-        field_name = validation_class.model_fields[error['loc'][0]].title
-        if not field_name:
-            field_name = error['loc'][0]
+        try:
+            field_name = validation_class.model_fields[error['loc'][0]].title
+            if not field_name:
+                field_name = error['loc'][0]
 
-        match error['type']:
-            case "enum":
-                message = error["msg"].replace("Input should be", "Input should be one of:")
-            case "string_too_short" | "string_too_long":
-                message = error["msg"].replace("String", "Input")
-            case _:
-                message = error["msg"]
-        display_errors.append(f"{field_name}: {message}")
+            match error['type']:
+                case "enum":
+                    message = error["msg"].replace("Input should be", "Input should be one of:")
+                case "string_too_short" | "string_too_long":
+                    message = error["msg"].replace("String", "Input")
+                case _:
+                    message = error["msg"]
+            display_errors.append(f"{field_name}: {message}")
+        except IndexError:
+            display_errors.append(error["msg"].replace("Value error, ", ""))
 
     error_str = "**Validation Error:** There was an error validating the input data. Please check the following fields:"
     error_str = "\n* ".join([error_str] + display_errors)
@@ -79,8 +82,6 @@ def clear_session_state_for_form(clear_prefixes: List[str]):
             del st.session_state[key]
             if "items_left_behind" in key:
                 continue
-            if "button" not in key:
-                st.session_state[key] = None
 
 
 def initialize_form(

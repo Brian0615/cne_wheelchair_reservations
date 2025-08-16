@@ -65,11 +65,6 @@ class TestReservationUtils(TestCase):
             )
             self.assertTrue("S0901001" in at.success[0].value, "Success dialog should display reservation ID")
 
-            at.button[0].click()
-            with patch("streamlit.rerun") as mock_rerun:
-                at.run()
-                mock_rerun.assert_called_once()
-
     def test_submit_new_reservation_form_success(self):
         """Test submitting a new reservation form successfully"""
 
@@ -79,19 +74,17 @@ class TestReservationUtils(TestCase):
                 return_value=(200, "S0901001")
         ) as mock_add_new_reservation:
             with patch.object(reservation_utils, "display_success_dialog") as mock_display_success_dialog:
-                with patch.object(ReservationForm, "clear_form") as mock_clear_form:
-                    reservation_dict = self.mock_reservation.model_dump()
-                    reservation_dict["reservation_time"] = reservation_dict["reservation_time"].time()
-                    at = AppTest.from_function(self._run_submit_new_reservation_form, args=(reservation_dict,)).run()
+                reservation_dict = self.mock_reservation.model_dump()
+                reservation_dict["reservation_time"] = reservation_dict["reservation_time"].time()
+                at = AppTest.from_function(self._run_submit_new_reservation_form, args=(reservation_dict,)).run()
 
-                    mock_add_new_reservation.assert_called_once_with(reservation=NewReservation(**reservation_dict))
-                    self.assertIsNone(at.session_state["new_reservation_form_errors"])
-                    mock_display_success_dialog.assert_called_once_with(
-                        reservation_id="S0901001",
-                        reservation=NewReservation(**reservation_dict),
-                        is_update=False,
-                    )
-                    mock_clear_form.assert_called_once()
+                mock_add_new_reservation.assert_called_once_with(reservation=NewReservation(**reservation_dict))
+                self.assertIsNone(at.session_state["new_reservation_form_errors"])
+                mock_display_success_dialog.assert_called_once_with(
+                    reservation_id="S0901001",
+                    reservation=NewReservation(**reservation_dict),
+                    is_update=False,
+                )
 
     def test_submit_new_reservation_form_validation_failure(self):
         """Test submitting a new reservation form with validation errors"""
@@ -119,19 +112,17 @@ class TestReservationUtils(TestCase):
                 return_value=200,
         ) as mock_update_reservation:
             with patch.object(reservation_utils, "display_success_dialog") as mock_display_success_dialog:
-                with patch.object(ReservationForm, "clear_form") as mock_clear_form:
-                    reservation_dict = self.mock_reservation.model_dump()
-                    reservation_dict["reservation_time"] = reservation_dict["reservation_time"].time()
-                    at = AppTest.from_function(self._run_submit_update_reservation_form, args=(reservation_dict,)).run()
+                reservation_dict = self.mock_reservation.model_dump()
+                reservation_dict["reservation_time"] = reservation_dict["reservation_time"].time()
+                at = AppTest.from_function(self._run_submit_update_reservation_form, args=(reservation_dict,)).run()
 
-                    mock_update_reservation.assert_called_once_with(reservation=Reservation(**reservation_dict))
-                    self.assertIsNone(at.session_state["update_reservation_form_errors"])
-                    mock_display_success_dialog.assert_called_once_with(
-                        reservation_id="S0901001",
-                        reservation=Reservation(**reservation_dict),
-                        is_update=True,
-                    )
-                    mock_clear_form.assert_called_once()
+                mock_update_reservation.assert_called_once_with(reservation=Reservation(**reservation_dict))
+                self.assertIsNone(at.session_state["update_reservation_form_errors"])
+                mock_display_success_dialog.assert_called_once_with(
+                    reservation_id="S0901001",
+                    reservation=Reservation(**reservation_dict),
+                    is_update=True,
+                )
 
     def test_submit_update_reservation_form_validation_failure(self):
         """Test submitting an update reservation form with validation errors"""
