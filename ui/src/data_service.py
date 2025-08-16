@@ -42,7 +42,8 @@ class APIError(Exception):
                     st.text("Error Message")
                     st.write(details)
 
-DEFAULT_CACHE_TTL = 60
+
+DEFAULT_CACHE_TTL = 30
 DEFAULT_TIMEOUT = 5
 
 
