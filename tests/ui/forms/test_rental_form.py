@@ -147,3 +147,30 @@ class TestRentalForm(TestCase):
                     at.selectbox(f"{self.mock_prefix}_{field}_payment_method").label,
                     f"Payment Type for **$100** {field.title()}"
                 )
+
+    # pylint: disable=import-outside-toplevel,protected-access
+    def test_extract_reservation_id(self):
+        """Test that the reservation ID is extracted correctly from the reservation name"""
+        from ui.forms.new_rental_form import NewRentalForm
+
+        form = NewRentalForm(key_prefix="mock_prefix")
+
+        # normal reservation ID
+        result = form._extract_reservation_id("Reservation Name (W0819123)")
+        self.assertEqual(result, "W0819123")
+
+        # name with no ID
+        result = form._extract_reservation_id("Reservation Name")
+        self.assertIsNone(result)
+
+        # name that contains brackets
+        result = form._extract_reservation_id("Reservation Name (Extra) (W0819123)")
+        self.assertEqual(result, "W0819123")
+
+        # name that contains random characters
+        result = form._extract_reservation_id("Reservation !@# Name (12345) (W0819123)")
+        self.assertEqual(result, "W0819123")
+
+        # walk-in
+        result = form._extract_reservation_id(WALK_IN_RESERVATION_ID)
+        self.assertEqual(result, WALK_IN_RESERVATION_ID)
