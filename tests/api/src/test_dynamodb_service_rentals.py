@@ -3,6 +3,7 @@ from datetime import date
 from moto import mock_aws
 
 from api.src.exceptions import (
+    DeviceNotFoundOrNotAvailableException,
     NewDeviceNotFoundException,
     NewReservationNotFoundOrNotEditableException,
 )
@@ -294,7 +295,7 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
     def test_insert_rental_walk_in(self):
         rental = self._generate_mock_new_rental(overrides={"reservation_id": None})
         with self.assertRaises(
-                NewDeviceNotFoundException,
+                DeviceNotFoundOrNotAvailableException,
                 msg="Exception should be raised if rental specifies a non-existent device",
         ):
             self.service.insert_rental(rental=rental)
@@ -304,7 +305,7 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
             NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.AVAILABLE)
         ])
         with self.assertRaises(
-                NewDeviceNotFoundException,
+                DeviceNotFoundOrNotAvailableException,
                 msg="Exception should still be raised here as the device available is the wrong type",
         ):
             self.service.insert_rental(rental=rental)
@@ -325,7 +326,7 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
         self.assertEqual(self.service.devices_table.scan()["Items"][1]["status"], DeviceStatus.RENTED)
 
         with self.assertRaises(
-                NewDeviceNotFoundException,
+                DeviceNotFoundOrNotAvailableException,
                 msg="Exception should be raised if rental specifies an unavailable device",
         ):
             self.service.insert_rental(rental=rental)
