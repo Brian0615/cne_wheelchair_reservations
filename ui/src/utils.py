@@ -82,8 +82,6 @@ def clear_session_state_for_form(clear_prefixes: List[str]):
             del st.session_state[key]
             if "items_left_behind" in key:
                 continue
-            if "button" not in key:
-                st.session_state[key] = None
 
 
 def initialize_form(
