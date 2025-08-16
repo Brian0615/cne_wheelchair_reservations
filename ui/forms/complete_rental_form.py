@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Tuple, Dict, Any
 
 import streamlit as st
@@ -28,7 +29,11 @@ class CompleteRentalForm(BaseForm):
                 label="Return Date",
                 default_value=self.rental_info.date,
             ),
-            "return_time": TimeField(key=f"{key_prefix}_return_time", label="Return Time (24-hour format)"),
+            "return_time": TimeField(
+                key=f"{key_prefix}_return_time",
+                label="Return Time (24-hour format)",
+                step=timedelta(minutes=15),
+            ),
             "return_location": SelectboxField(
                 key=f"{key_prefix}_return_location",
                 label="Return Location",

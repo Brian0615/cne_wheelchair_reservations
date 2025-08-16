@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 
 import streamlit as st
 
@@ -33,6 +34,7 @@ class NewRentalForm(BaseForm):
             "pickup_time": TimeField(
                 key=f"{key_prefix}_time",
                 label="Pickup Time (24-hour format)",
+                step=timedelta(minutes=15),
             ),
             "pickup_location": SelectboxField(
                 key=f"{key_prefix}_pickup_location",
