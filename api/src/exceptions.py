@@ -6,6 +6,14 @@ class DeviceNotFoundException(Exception):
         super().__init__(self.message)
 
 
+class DeviceNotFoundOrNotAvailableException(Exception):
+    """Exception raised when a device is not found or not available"""
+
+    def __init__(self, cne_year: int, device_id: str):
+        self.message = f"Device {device_id} (cne_year={cne_year}) is either not available or cannot be found"
+        super().__init__(self.message)
+
+
 class NewDeviceNotFoundException(Exception):
     """Exception raised when a device is not found in the inventory."""
 

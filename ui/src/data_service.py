@@ -42,7 +42,8 @@ class APIError(Exception):
                     st.text("Error Message")
                     st.write(details)
 
-DEFAULT_CACHE_TTL = 60
+
+DEFAULT_CACHE_TTL = 30
 DEFAULT_TIMEOUT = 5
 
 
@@ -66,7 +67,7 @@ def auto_process_api_errors(func):
                 st.write(exc)
             raise
         except APIError:
-            return None
+            raise
         except Exception as exc:
             st.error(f"**API Error**: {exc}")
             raise
