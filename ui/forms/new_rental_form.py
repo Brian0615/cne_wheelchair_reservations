@@ -1,6 +1,8 @@
 import re
 from datetime import timedelta
+from typing import Optional
 
+import pycountry
 import streamlit as st
 
 from common.constants import DeviceType, Location, WALK_IN_RESERVATION_ID, PaymentMethod, HoldItem
@@ -28,6 +30,7 @@ class NewRentalForm(BaseForm):
         deposit_payment_amount = st.session_state.get(f"{key_prefix}_deposit_payment_amount", 0)
         reservation_options = st.session_state.get(f"{key_prefix}_reservations", [])
         device_id_options = st.session_state.get(f"{key_prefix}_available_devices", [])
+        country = st.session_state.get(f"{key_prefix}_country", "Canada")
 
         fields = {
             "date": DateField(key=f"{key_prefix}_date", label="Rental Date"),
@@ -62,9 +65,19 @@ class NewRentalForm(BaseForm):
             "phone_number": PhoneNumberField(key=f"{key_prefix}_phone_number", label="Phone Number"),
             "address": TextField(key=f"{key_prefix}_address", label="Address"),
             "city": TextField(key=f"{key_prefix}_city", label="City"),
-            "province": TextField(key=f"{key_prefix}_province", label="Province", default_value="Ontario"),
+            "province": SelectboxField(
+                key=f"{key_prefix}_province",
+                label="Province",
+                options=self._get_subdivision_options(country),
+                default_value="Ontario" if country == "Canada" else None,
+            ),
             "postal_code": TextField(key=f"{key_prefix}_postal_code", label="Postal Code"),
-            "country": TextField(key=f"{key_prefix}_country", label="Country", default_value="Canada"),
+            "country": SelectboxField(
+                key=f"{key_prefix}_country",
+                label="Country",
+                options=self._get_country_options(),
+                default_value="Canada",
+            ),
             "fee_payment_method": SelectboxField(
                 key=f"{key_prefix}_fee_payment_method",
                 label=f"Payment Type for **${fee_payment_amount}** Fee",
@@ -88,6 +101,28 @@ class NewRentalForm(BaseForm):
             )
         }
         super().__init__(key_prefix=key_prefix, fields=fields)
+
+    @staticmethod
+    def _get_subdivision_options(country: Optional[str] = None):
+        if country is None:
+            return []
+        try:
+            subdivisions = sorted(
+                x.name for x in pycountry.subdivisions.lookup(pycountry.countries.lookup(country).alpha_2)
+            )
+            if country == "Canada":
+                subdivisions.remove("Ontario")
+                return ["Ontario"] + subdivisions
+            return subdivisions
+        except LookupError:
+            return []
+
+    @staticmethod
+    def _get_country_options():
+        countries = [x.name for x in list(pycountry.countries)]
+        countries.remove("Canada")
+        countries.remove("United States")
+        return ["Canada", "United States"] + sorted(countries)
 
     @staticmethod
     def _extract_reservation_id(reservation_id):
