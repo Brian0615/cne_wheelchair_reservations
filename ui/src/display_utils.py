@@ -6,7 +6,7 @@ import streamlit as st
 from common.constants import DeviceType, DeviceStatus, Location
 from common.data_models import Device
 from common.utils import get_default_timezone
-from ui.src.constants import Page
+from ui.src.constants import Colour, Page
 
 # silence the SettingWithCopyWarning
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -70,9 +70,16 @@ def display_reservations_table(reservations: pd.DataFrame, device_type: DeviceTy
     # remove tel: prefix from phone numbers
     reservations["phone_number"] = reservations["phone_number"].str.replace(r"^tel:", "", regex=True)
 
+    # turn into styler
+    reservations_styler = reservations.set_index("id").style
+    reservations_styler = reservations_styler.applymap(
+        lambda value: f'background-color: {Colour.get_reservation_table_status_colour(value)}',
+        subset=["status"],
+    )
+
     # display reservations
     st.dataframe(
-        data=reservations.set_index("id"),
+        data=reservations_styler,
         column_config={
             "id": st.column_config.TextColumn(label="ID"),
             "name": st.column_config.TextColumn(label="Name"),
