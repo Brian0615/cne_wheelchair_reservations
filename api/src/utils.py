@@ -2,7 +2,9 @@ from functools import wraps
 
 from fastapi import HTTPException
 
-from api.src.exceptions import DeviceNotFoundException
+from api.src.exceptions import DeviceNotFoundException, ReservationNotFoundOrNotEditableException, \
+    DeviceNotFoundOrInvalidStatusException, RentalNotFoundOrNotEditableException, \
+    NewReservationNotFoundOrNotEditableException
 
 
 def auto_process_database_errors(func):
@@ -15,5 +17,12 @@ def auto_process_database_errors(func):
             return func(*args, **kwargs)
         except DeviceNotFoundException as exc:
             raise HTTPException(status_code=404, detail=exc.message) from exc
+        except (
+                DeviceNotFoundOrInvalidStatusException,
+                RentalNotFoundOrNotEditableException,
+                ReservationNotFoundOrNotEditableException,
+                NewReservationNotFoundOrNotEditableException,
+        ) as exc:
+            raise HTTPException(status_code=400, detail=exc.message) from exc
 
     return wrapper

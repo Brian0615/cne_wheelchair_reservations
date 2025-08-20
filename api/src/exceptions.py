@@ -6,14 +6,6 @@ class DeviceNotFoundException(Exception):
         super().__init__(self.message)
 
 
-class DeviceNotFoundOrNotAvailableException(Exception):
-    """Exception raised when a device is not found or not available"""
-
-    def __init__(self, cne_year: int, device_id: str):
-        self.message = f"Device {device_id} (cne_year={cne_year}) is either not available or cannot be found"
-        super().__init__(self.message)
-
-
 class NewDeviceNotFoundException(Exception):
     """Exception raised when a device is not found in the inventory."""
 
@@ -22,11 +14,23 @@ class NewDeviceNotFoundException(Exception):
         super().__init__(self.message)
 
 
+class DeviceNotFoundOrInvalidStatusException(Exception):
+    """Base exception for device-related errors."""
+
+    def __init__(self, cne_year: int, device_id: str, expected_status: str):
+        self.message = (
+            f"Device {device_id} (cne_year={cne_year}) not found or has an invalid status. "
+            f"Expected status: {expected_status}"
+        )
+        super().__init__(self.message)
+
+
 class RentalNotFoundOrNotEditableException(Exception):
     """Exception raised when a rental is not found in the inventory or cannot be edited"""
 
     def __init__(self, cne_year: int, rental_id: str):
-        self.message = f"Rental {rental_id} (cne_year={cne_year}) not found or cannot be edited"
+        self.message = (f"Rental {rental_id} (cne_year={cne_year}) not found or "
+                        f"cannot be edited (because it has already been completed)")
         super().__init__(self.message)
 
 
@@ -42,7 +46,7 @@ class NewReservationNotFoundOrNotEditableException(Exception):
     def __init__(self, cne_year: int, reservation_id: str):
         self.message = (
             f"Reservation {reservation_id} (cne_year={cne_year}) not found or "
-            f"is un-editable (because it is cancelled/completed/picked up)"
+            f"cannot be edited (because it is cancelled/completed/picked up)"
         )
         super().__init__(self.message)
 
