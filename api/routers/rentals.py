@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from api.src.dynamodb_service import DynamoDBService
-from api.src.exceptions import DeviceNotFoundOrNotAvailableException, NewReservationNotFoundOrNotEditableException
 from api.src.utils import auto_process_database_errors
 from common.constants import DeviceType
 from common.data_models import ChangeDeviceInfo, CompletedRental, NewRental, RentalSummary
@@ -17,10 +16,7 @@ router = APIRouter(prefix="/rentals", tags=["rentals"])
 @auto_process_database_errors
 def add_new_rental(new_rental: NewRental):
     """Start a new rental"""
-    try:
-        return db_service.insert_rental(rental=new_rental)
-    except (DeviceNotFoundOrNotAvailableException, NewReservationNotFoundOrNotEditableException) as exc:
-        raise HTTPException(status_code=400, detail=exc.message) from exc
+    return db_service.insert_rental(rental=new_rental)
 
 
 @router.post("/change_device")

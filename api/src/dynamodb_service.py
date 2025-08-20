@@ -10,11 +10,10 @@ from boto3.dynamodb.conditions import Attr, Key
 
 from api.src.exceptions import (
     DeviceNotFoundException,
-    NewDeviceNotFoundException,
     NewReservationNotFoundOrNotEditableException,
     ReservationNotFoundOrNotEditableException,
     RentalNotFoundOrNotEditableException,
-    DeviceNotFoundOrNotAvailableException,
+    DeviceNotFoundOrInvalidStatusException,
 )
 from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus, RentalStatus
 from common.data_models import CompletedRental, NewDevice, NewReservation, Reservation, NewRental, ChangeDeviceInfo
@@ -314,14 +313,16 @@ class DynamoDBService:
             if exc.response["Error"]["Code"] == "TransactionCanceledException":
                 cancellation_reasons = exc.response["CancellationReasons"]
                 if cancellation_reasons[0]["Code"] == "ConditionalCheckFailed":
-                    raise NewDeviceNotFoundException(
+                    raise DeviceNotFoundOrInvalidStatusException(
                         cne_year=change_info.cne_year,
-                        device_id=change_info.old_device_id
+                        device_id=change_info.old_device_id,
+                        expected_status=DeviceStatus.RENTED,
                     ) from exc
                 if cancellation_reasons[1]["Code"] == "ConditionalCheckFailed":
-                    raise NewDeviceNotFoundException(
+                    raise DeviceNotFoundOrInvalidStatusException(
                         cne_year=change_info.cne_year,
-                        device_id=change_info.new_device_id
+                        device_id=change_info.old_device_id,
+                        expected_status=DeviceStatus.AVAILABLE,
                     ) from exc
                 if cancellation_reasons[2]["Code"] == "ConditionalCheckFailed":
                     raise RentalNotFoundOrNotEditableException(
@@ -397,7 +398,11 @@ class DynamoDBService:
             if exc.response["Error"]["Code"] == "TransactionCanceledException":
                 cancellation_reasons = exc.response["CancellationReasons"]
                 if cancellation_reasons[0]["Code"] == "ConditionalCheckFailed":
-                    raise NewDeviceNotFoundException(cne_year=rental.cne_year, device_id=rental.device_id) from exc
+                    raise DeviceNotFoundOrInvalidStatusException(
+                        cne_year=rental.cne_year,
+                        device_id=rental.device_id,
+                        expected_status=DeviceStatus.RENTED,
+                    ) from exc
                 if cancellation_reasons[1]["Code"] == "ConditionalCheckFailed":
                     raise RentalNotFoundOrNotEditableException(cne_year=rental.cne_year, rental_id=rental.id) from exc
                 if rental.reservation_id and cancellation_reasons[2]["Code"] == "ConditionalCheckFailed":
@@ -507,9 +512,10 @@ class DynamoDBService:
             if exc.response["Error"]["Code"] == "TransactionCanceledException":
                 cancellation_reasons = exc.response["CancellationReasons"]
                 if cancellation_reasons[0]["Code"] == "ConditionalCheckFailed":
-                    raise DeviceNotFoundOrNotAvailableException(
+                    raise DeviceNotFoundOrInvalidStatusException(
                         cne_year=rental.cne_year,
                         device_id=rental.device_id,
+                        expected_status=DeviceStatus.AVAILABLE,
                     ) from exc
                 if rental.reservation_id and cancellation_reasons[2]["Code"] == "ConditionalCheckFailed":
                     raise NewReservationNotFoundOrNotEditableException(
