@@ -7,10 +7,23 @@ on:
     tags: [ 'v*.*.*', 'v*.*.*-dev' ]
   pull_request:
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
 
+jobs:
+  
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
     env:
       API_HOST: localhost
       API_PORT: 9999
@@ -22,7 +35,6 @@ jobs:
       CNE_YEAR: 2025
       PDF_PASSWORD: fakepassword123
       S3_BUCKET: fake-s3-bucket
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,6 +55,7 @@ jobs:
           python -m unittest discover -s ./tests -t .
 
   build_and_push:
+    name: Build and Push Docker
     needs: test
     runs-on: ubuntu-latest
     # Only run this job for pushes to develop/main branches and tags
@@ -51,7 +64,6 @@ jobs:
       contents: read
       packages: write
       id-token: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -124,6 +136,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy_ecs:
+    name: Deploy to ECS
     needs: build_and_push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
