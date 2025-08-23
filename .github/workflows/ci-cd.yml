@@ -7,10 +7,28 @@ on:
     tags: [ 'v*.*.*', 'v*.*.*-dev' ]
   pull_request:
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
+  actions: read
+  packages: read
+  statuses: write
 
+jobs:
+
+  snyk:
+    name: Snyk Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/python@master
+        continue-on-error: true # To make sure that SARIF upload gets called
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
     env:
       API_HOST: localhost
       API_PORT: 9999
@@ -22,7 +40,6 @@ jobs:
       CNE_YEAR: 2025
       PDF_PASSWORD: fakepassword123
       S3_BUCKET: fake-s3-bucket
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,7 +60,8 @@ jobs:
           python -m unittest discover -s ./tests -t .
 
   build_and_push:
-    needs: test
+    name: Build and Push Docker
+    needs: [ snyk, test ]
     runs-on: ubuntu-latest
     # Only run this job for pushes to develop/main branches and tags
     if: github.event_name == 'push' && (contains(github.ref, 'refs/heads/develop') || contains(github.ref, 'refs/heads/main') || contains(github.ref, 'refs/tags/'))
@@ -51,7 +69,6 @@ jobs:
       contents: read
       packages: write
       id-token: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -124,6 +141,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy_ecs:
+    name: Deploy to ECS
     needs: build_and_push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
