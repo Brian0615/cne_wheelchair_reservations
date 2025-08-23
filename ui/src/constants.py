@@ -73,6 +73,11 @@ class Colour(StrEnum):
     RESERVATION_TABLE_COMPLETED = "#E1FCE1"
     RESERVATION_TABLE_PENDING = "#F7E7D5"
 
+    # Indicator
+    INDICATOR_RED = "#DF4E46"
+    INDICATOR_ORANGE = "#F5AB4B"
+    INDICATOR_GREEN = "#479825"
+
     @classmethod
     def get_reservation_table_status_colour(cls, status: ReservationStatus):
         """Get the colour for a reservation status for the reservation table"""

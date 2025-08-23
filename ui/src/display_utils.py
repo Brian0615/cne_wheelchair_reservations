@@ -1,9 +1,11 @@
 from datetime import date
+from typing import Union
 
 import pandas as pd
 import streamlit as st
+from plotly import graph_objects as go
 
-from common.constants import DeviceType, DeviceStatus, Location
+from common.constants import DeviceType, DeviceStatus, Location, ReservationStatus
 from common.data_models import Device
 from common.utils import get_default_timezone
 from ui.src.constants import Colour, Page
@@ -15,6 +17,157 @@ pd.options.mode.chained_assignment = None  # default='warn'
 def coerce_pandas_aware_datetime(data: pd.Series) -> pd.Series:
     """Coerce a pandas Series to datetime with timezone awareness."""
     return pd.to_datetime(data, errors="coerce", utc=True).dt.tz_convert(get_default_timezone())
+
+
+# pylint: disable=too-many-arguments
+def display_dual_indicator_chart(
+        left_title: str,
+        right_title: str,
+        left_value: Union[float, int],
+        right_value: Union[float, int],
+        left_total: Union[float, int],
+        right_total: Union[float, int],
+        key: str,
+):
+    """
+    Display a dual indicator chart with left and right indicators.
+
+    Args:
+        left_title (str): The title of the left indicator
+        right_title (str): The title of the right indicator
+        left_value (Union[float, int]): The value of the left indicator
+        right_value (Union[float, int]): The value of the right indicator
+        left_total (Union[float, int]): The total value of the left indicator
+        right_total (Union[float, int]): The total value of the right indicator
+        key (str): The key for the Streamlit component
+    """
+    fig = go.Figure()
+    if left_value < 0.3 * left_total:
+        left_colour = Colour.INDICATOR_RED
+    elif left_value < left_total:
+        left_colour = Colour.INDICATOR_ORANGE
+    else:
+        left_colour = Colour.INDICATOR_GREEN
+    fig.add_trace(
+        go.Indicator(
+            mode="gauge+number",
+            value=left_value,
+            title={"text": left_title, "font": {"size": 14}},
+            domain={'row': 0, 'column': 0},
+            number={'suffix': f" / {left_total}"},
+            gauge={
+                'axis': {'range': [-left_total * 0.03, left_total], 'visible': False},
+                'bar': {'color': left_colour},
+            },
+        ),
+    )
+    if right_value < 0.3 * right_total:
+        right_colour = Colour.INDICATOR_RED
+    elif right_value < right_total:
+        right_colour = Colour.INDICATOR_ORANGE
+    else:
+        right_colour = Colour.INDICATOR_GREEN
+    fig.add_trace(
+        go.Indicator(
+            mode="gauge+number",
+            value=right_value,
+            title={"text": right_title, "font": {"size": 14}},
+            domain={'row': 0, 'column': 1},
+            number={'suffix': f" / {right_total}"},
+            gauge={
+                'axis': {'range': [-right_total * 0.03, right_total], 'visible': False},
+                'bar': {'color': right_colour},
+            },
+        ),
+    )
+    fig.update_layout(height=75, margin={"t": 20, "b": 0, "l": 2, "r": 2}, grid={"rows": 1, "columns": 2})
+    st.plotly_chart(fig, key=key, use_container_width=True, config={'displayModeBar': False})
+
+
+def display_dual_indicator_reservation_chart(reservations: pd.DataFrame, location: Location):
+    """
+    Display a dual indicator chart for reservations at a given location.
+    The left indicator is for scooters and the right indicator is for wheelchairs.
+
+    Args:
+        reservations (pd.DataFrame): The reservations data.
+        location (Location): The location to filter reservations by.
+    """
+    if reservations.empty:
+        st.warning(f":material/warning: No reservations at {location} today")
+        return
+    location_reservations = reservations[reservations['location'] == location]
+    if location_reservations.empty:
+        st.warning(f":material/warning: No reservations at {location} today")
+        return
+    display_dual_indicator_chart(
+        left_title=DeviceType.SCOOTER,
+        right_title=DeviceType.WHEELCHAIR,
+        left_value=len(
+            location_reservations[
+                (location_reservations['device_type'] == DeviceType.SCOOTER)
+                & location_reservations['status'].isin({ReservationStatus.PICKED_UP, ReservationStatus.COMPLETED})
+                ]
+        ),
+        right_value=len(
+            location_reservations[
+                (location_reservations['device_type'] == DeviceType.WHEELCHAIR)
+                & location_reservations['status'].isin({ReservationStatus.PICKED_UP, ReservationStatus.COMPLETED})
+                ]
+        ),
+        left_total=len(
+            location_reservations[
+                (location_reservations['device_type'] == DeviceType.SCOOTER)
+                & ~location_reservations['status'].isin({ReservationStatus.CANCELLED, ReservationStatus.WAITLISTED})
+                ]
+        ),
+        right_total=len(
+            location_reservations[
+                (location_reservations['device_type'] == DeviceType.WHEELCHAIR)
+                & ~location_reservations['status'].isin({ReservationStatus.CANCELLED, ReservationStatus.WAITLISTED})
+                ]
+        ),
+        key=f"{location.value.lower()}_reservations_chart",
+    )
+    st.caption("Picked Up / Total Reservations")
+
+
+def display_dual_indicator_rental_chart(rentals: pd.DataFrame, location: Location):
+    """
+    Display a dual indicator chart for rentals at a given location.
+    The left indicator is for scooters and the right indicator is for wheelchairs.
+
+    Args:
+        rentals (pd.DataFrame): The rentals data.
+        location (Location): The location to filter rentals by.
+    """
+    if rentals.empty:
+        st.warning(f":material/warning: No rentals at {location} today")
+        return
+    location_rentals = rentals[rentals['pickup_location'] == location]
+    if location_rentals.empty:
+        st.warning(f":material/warning: No rentals at {location} today")
+        return
+    display_dual_indicator_chart(
+        left_title=DeviceType.SCOOTER,
+        right_title=DeviceType.WHEELCHAIR,
+        left_value=len(
+            location_rentals[
+                (location_rentals['device_type'] == DeviceType.SCOOTER)
+                & location_rentals['return_time'].notna()
+                ]
+        ),
+        right_value=len(
+            location_rentals[
+                (location_rentals['device_type'] == DeviceType.WHEELCHAIR)
+                & location_rentals['return_time'].notna()
+                ]
+        ),
+        left_total=len(location_rentals[location_rentals['device_type'] == DeviceType.SCOOTER]),
+        right_total=len(location_rentals[location_rentals['device_type'] == DeviceType.WHEELCHAIR]),
+        key=f"{location.value.lower()}_rentals_chart",
+    )
+    st.caption("Completed / Total Rentals")
 
 
 # pylint: disable=unsubscriptable-object

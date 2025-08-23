@@ -413,6 +413,7 @@ class DynamoDBService:
             raise exc
         logger.info("Completed rental: %s", rental.id)
 
+    @timeit(logger=logger)
     def get_rentals_on_date(
             self,
             date: datetime.date,
