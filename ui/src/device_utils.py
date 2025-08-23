@@ -86,10 +86,12 @@ def add_devices(data_service: DataService, device_type: DeviceType):
 def update_devices(data_service: DataService, device_type: DeviceType, inventory: pd.DataFrame):
     """Update device status in the inventory."""
     device_ids, label = display_devices_multiselect(inventory=inventory, device_type=device_type, action="update")
-    new_status = st.selectbox(
+    new_status = st.pills(
         label="New Status",
         options=DeviceStatus,
-        index=None,
+        default=None,
+        selection_mode="single",
+        width="stretch",
         key=f"{device_type.value.lower()}_new_status",
     )
 
@@ -103,10 +105,12 @@ def update_devices(data_service: DataService, device_type: DeviceType, inventory
 def transfer_devices(data_service: DataService, device_type: DeviceType, inventory: pd.DataFrame):
     """Transfer devices to a new location."""
     device_ids, label = display_devices_multiselect(inventory=inventory, device_type=device_type, action="transfer")
-    new_location = st.selectbox(
+    new_location = st.pills(
         label="New Location",
         options=Location,
-        index=None,
+        default=None,
+        selection_mode="single",
+        width="stretch",
         key=f"{device_type.value.lower()}_new_location",
     )
 
