@@ -233,6 +233,7 @@ class DataService:
         return response.status_code, response.json()
 
     @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
     @auto_process_api_errors
     def get_rentals_on_date(
             _self,

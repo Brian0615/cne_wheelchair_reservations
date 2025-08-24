@@ -18,7 +18,7 @@ from common.constants import (
 
 AddressField = Annotated[str, StringConstraints(min_length=5, strip_whitespace=True), Field(title="Address")]
 CNEYearField = Annotated[int, Field(title="CNE Year", gt=2000)]
-CityField = Annotated[str, StringConstraints(min_length=5), Field(title="City")]
+CityField = Annotated[str, StringConstraints(min_length=3), Field(title="City")]
 CountryField = Annotated[CountryAlpha3, Field(title="Country")]
 DepositPaymentMethodField = Annotated[PaymentMethod, Field(title="Deposit Payment Method")]
 DepositPaymentAmountField = Annotated[conint(gt=0), Field(title="Deposit Payment Amount")]
@@ -48,8 +48,8 @@ ReturnLocationField = Annotated[Optional[Location], Field(title="Return Location
 ReturnSignatureField = Annotated[Optional[bytes], Field(title="Return Signature", default=None)]
 ReturnStaffNameField = Annotated[
     Optional[str],
-    StringConstraints(min_length=5), Field(title="Return Staff Name", default=None),
+    StringConstraints(min_length=3), Field(title="Return Staff Name", default=None),
 ]
 ReturnTimeField = Annotated[Optional[AwareDatetime], Field(title="Return Time", default=None)]
 SignatureField = Annotated[bytes, Field(title="Signature")]
-StaffNameField = Annotated[str, StringConstraints(min_length=5), Field(title="Staff Name")]
+StaffNameField = Annotated[str, StringConstraints(min_length=3), Field(title="Staff Name")]
