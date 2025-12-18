@@ -17,3 +17,4 @@ reportlab>=4.4,<4.5
 streamlit>=1.48
 streamlit-authenticator>=0.4,<1
 streamlit-drawable-canvas
+tornado>=6.5.3 # not directly required, pinned by Snyk to avoid a vulnerability
