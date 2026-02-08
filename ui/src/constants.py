@@ -6,6 +6,8 @@ from typing import List, Tuple
 from common.constants import ReservationStatus
 from common.utils import get_default_timezone
 
+DEFAULT_RESERVATION_LIMIT = 5  # default number of reservations available for each device type if not set by admin
+
 
 class CNEDates:
     """Class for determining dates of the CNE"""

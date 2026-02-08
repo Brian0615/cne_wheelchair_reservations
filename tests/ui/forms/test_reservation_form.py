@@ -13,17 +13,18 @@ class TestReservationForm(TestCase):
     """Test the reservation form"""
 
     def setUp(self):
+        curr_year = datetime.now().year
 
         # pylint: disable=duplicate-code
         self.mock_reservation = Reservation(
-            cne_year=2025,
+            cne_year=curr_year,
             id="S0901001",
-            date=date(2025, 9, 1),
+            date=date(curr_year, 9, 1),
             device_type=DeviceType.SCOOTER,
             name="John Doe",
             phone_number="+1 437-293-0384",
             location=Location.BLC,
-            reservation_time=get_default_timezone().localize(datetime(2025, 9, 1, 15, 30)),
+            reservation_time=get_default_timezone().localize(datetime(curr_year, 9, 1, 15, 30)),
             status=ReservationStatus.RESERVED,
             notes="Test notes"
         )

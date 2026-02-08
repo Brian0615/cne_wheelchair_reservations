@@ -5,9 +5,13 @@ from common.constants import DeviceType
 from common.data_models.reservation import NewReservation
 from ui.forms import ReservationForm
 from ui.src.auth_utils import initialize_page
+from ui.src.constants import DEFAULT_RESERVATION_LIMIT
 from ui.src.data_service import DataService
-from ui.src.reservation_utils import submit_new_reservation_form, get_reservation_counts, \
-    create_reservation_availability_chart
+from ui.src.reservation_utils import (
+    submit_new_reservation_form,
+    get_reservation_counts,
+    create_reservation_availability_chart,
+)
 from ui.src.utils import display_validation_errors
 
 initialize_page(page_header="New Reservation")
@@ -24,7 +28,7 @@ with st.expander("View Reservation Availability", expanded=False):
             create_reservation_availability_chart(
                 reservation_counts=reservation_counts,
                 device_type=device_type,
-                limit=int(limit) if limit is not None else 0,
+                limit=int(limit) if limit is not None else DEFAULT_RESERVATION_LIMIT,
                 plot_height=200,
             )
 
@@ -56,7 +60,7 @@ if reservation_info and reservation_info.get("date") and reservation_info.get("d
                 selected date
                 
                 * Please try another date, or increase the reservation limit to allow more reservations
-                * Alternatively, you can add a reservation onto the waitlist by submitting
+                * Alternatively, any newly created reservations will be automatically added to the waitlist.
                 """
                        )
             is_waitlisted = True
