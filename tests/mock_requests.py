@@ -47,7 +47,7 @@ class MockRequests:
                 ]),
             )
         if "settings/get" in url:
-            return Mock(status_code=200, json=Mock(return_value=100))
+            return Mock(status_code=200, json=Mock(return_value=None))
         raise ValueError(f"Unsupported API url for mocking requests.get: {url}")
 
     @staticmethod

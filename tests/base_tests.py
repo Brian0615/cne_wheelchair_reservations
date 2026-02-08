@@ -277,6 +277,7 @@ class BaseTestCases:
             at = AppTest.from_file(self.page_path, default_timeout=10)
             at.session_state["authentication_status"] = True
             at.session_state["username"] = "test_user"
+            at.session_state["auth_groups"] = "cne-admin"
             return at
 
         def _run_app_test_with_mock_requests(
@@ -302,6 +303,7 @@ class BaseTestCases:
                     at.run()
             if not allow_errors:
                 self.assertEqual(0, len(at.error), f"Error running AppTest: {at.error.values}")
+                self.assertEqual(0, len(at.exception), f"Exception running AppTest: {at.exception.values}")
             return at
 
         def _test_date_input(self, key: str):
