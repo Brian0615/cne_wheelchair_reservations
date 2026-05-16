@@ -14,6 +14,6 @@ pydantic>=2.10,<3
 pydantic-extra-types>=2.9,<3
 pymupdf>=1.25,<1.26.1
 reportlab>=4.4,<4.5
-streamlit>=1.48
+streamlit>=1.48,<1.49
 streamlit-authenticator>=0.4,<1
 streamlit-drawable-canvas
