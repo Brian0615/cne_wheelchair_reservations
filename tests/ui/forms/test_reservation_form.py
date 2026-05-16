@@ -39,6 +39,22 @@ class TestReservationForm(TestCase):
         if render:
             form.render_form()
 
+    @staticmethod
+    def _check_for_run_issues(at: AppTest):
+        if at.exception:
+            raise AssertionError(f"Exception occurred during form rendering: {at.exception}")
+
+        # Debug: print available elements if button not found
+        if not at.button:
+            available = {
+                "buttons": [b.key for b in at.button] if hasattr(at, 'button') else [],
+                "date_inputs": [d.key for d in at.date_input] if hasattr(at, 'date_input') else [],
+                "selectboxes": [s.key for s in at.selectbox] if hasattr(at, 'selectbox') else [],
+                "text_inputs": [t.key for t in at.text_input] if hasattr(at, 'text_input') else [],
+                "time_inputs": [ti.key for ti in at.time_input] if hasattr(at, 'time_input') else [],
+            }
+            raise AssertionError(f"No buttons found in rendered output. Available elements: {available}")
+
     def test_initialize_form_new_reservation(self):
         """Test that the form is initialized with the correct default values"""
 
@@ -70,6 +86,8 @@ class TestReservationForm(TestCase):
         """Test rendering the form with a new reservation"""
 
         at = AppTest.from_function(self._run_form, args=(None, True)).run()
+        self._check_for_run_issues(at=at)
+
         for element_type in [at.button, at.date_input, at.selectbox, at.text_input, at.time_input]:
             for element in element_type:
                 self.assertFalse(element.disabled)
@@ -85,6 +103,8 @@ class TestReservationForm(TestCase):
                     self._run_form,
                     kwargs={"render": True, "reservation": self.mock_reservation, "disabled": disabled}
                 ).run()
+                self._check_for_run_issues(at=at)
+
                 for element_type in [at.button, at.date_input, at.selectbox, at.text_input, at.time_input]:
                     for element in element_type:
                         if element.key in ["test_form_date", "test_form_device_type"]:
