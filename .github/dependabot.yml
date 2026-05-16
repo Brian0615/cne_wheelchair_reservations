@@ -1,0 +1,30 @@
+# Dependabot configuration to keep Python dependencies up to date.
+# This watches pip requirements and GitHub Actions and opens PRs on a weekly schedule.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    # root of the repo where requirements.txt is located
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # limit how many open PRs dependabot will create
+    open-pull-requests-limit: 10
+    # automatically rebase PRs when base branch changes
+    rebase-strategy: "auto"
+    # update all dependency types (direct and indirect)
+    allow:
+      - dependency-type: "all"
+    # optionals: you can uncomment and set reviewers or assignees
+    # reviewers: ["your-github-username"]
+    # assignees: ["your-github-username"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+# Note: Dependabot will update Python packages listed in requirements files (e.g. requirements.txt)
+# but it does not automatically bump runtime Python versions in files like conda_env.yml.
+# If you want automated Python runtime version bumps (for example in conda_env.yml or runtime files),
+# we can add a GitHub Action that checks the latest Python releases and opens a PR to update those files.
