@@ -71,17 +71,34 @@ class TestReservationForm(TestCase):
         """Test rendering the form with a new reservation"""
 
         at = AppTest.from_function(self._run_form, args=(None, True)).run()
+
+        # Check all form elements are rendered
+        form_elements_found = {
+            "buttons": len(at.button),
+            "date_inputs": len(at.date_input),
+            "selectboxes": len(at.selectbox),
+            "text_inputs": len(at.text_input),
+            "time_inputs": len(at.time_input),
+        }
+
+        # Verify all elements exist
         for element_type in [at.button, at.date_input, at.selectbox, at.text_input, at.time_input]:
             for element in element_type:
-                self.assertFalse(element.disabled)
+                self.assertFalse(element.disabled,
+                                 f"Element {getattr(element, 'key', 'unknown')} should not be disabled")
 
         # Find the submit button by label
         submit_button = None
+        button_labels = [button.label for button in at.button]
         for button in at.button:
             if button.label == "Submit Reservation":
                 submit_button = button
                 break
-        self.assertIsNotNone(submit_button, "Submit button not found")
+        self.assertIsNotNone(
+            submit_button,
+            f"Submit button not found. Form elements: {form_elements_found}. "
+            f"Button labels: {button_labels}"
+        )
         self.assertEqual(submit_button.label, "Submit Reservation")
 
     def test_render_form_existing_reservation(self):
@@ -93,18 +110,43 @@ class TestReservationForm(TestCase):
                     self._run_form,
                     kwargs={"render": True, "reservation": self.mock_reservation, "disabled": disabled}
                 ).run()
-                for element_type in [at.button, at.date_input, at.selectbox, at.text_input, at.time_input]:
+
+                # Check what elements are rendered
+                form_elements_found = {
+                    "buttons": len(at.button),
+                    "date_inputs": len(at.date_input),
+                    "selectboxes": len(at.selectbox),
+                    "text_inputs": len(at.text_input),
+                    "time_inputs": len(at.time_input),
+                }
+
+                for element_type in [at.date_input, at.selectbox, at.text_input, at.time_input]:
                     for element in element_type:
                         if element.key in ["test_form_date", "test_form_device_type"]:
                             self.assertTrue(element.disabled, "Date and Device Type should always be disabled")
                         else:
                             self.assertEqual(element.disabled, disabled)
 
+                # Check buttons
+                for button in at.button:
+                    # Buttons should have the same disabled state as other_fields_disabled
+                    # which is: self.disabled and self.existing_reservation is not None
+                    button_expected_disabled = disabled and self.mock_reservation is not None
+                    self.assertEqual(
+                        button.disabled,
+                        button_expected_disabled,
+                        f"Button disabled state should be {button_expected_disabled}, got {button.disabled}",
+                    )
+
                 # Find the update button by label
                 update_button = None
+                button_labels = [button.label for button in at.button]
                 for button in at.button:
                     if button.label == "Update Reservation":
                         update_button = button
                         break
-                self.assertIsNotNone(update_button, "Update button not found")
+                self.assertIsNotNone(
+                    update_button,
+                    f"Update button not found. Form elements: {form_elements_found}. Button labels: {button_labels}"
+                )
                 self.assertEqual(update_button.label, "Update Reservation")
