@@ -20,7 +20,7 @@ jobs:
     name: Snyk Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/python@master
         continue-on-error: true # To make sure that SARIF upload gets called
@@ -42,10 +42,10 @@ jobs:
       S3_BUCKET: fake-s3-bucket
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
           cache: 'pip'
@@ -72,7 +72,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -148,7 +148,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
