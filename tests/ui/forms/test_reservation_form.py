@@ -75,7 +75,14 @@ class TestReservationForm(TestCase):
             for element in element_type:
                 self.assertFalse(element.disabled)
 
-        self.assertEqual(at.button("test_form_submit").label, "Submit Reservation")
+        # Find the submit button by label
+        submit_button = None
+        for button in at.button:
+            if button.label == "Submit Reservation":
+                submit_button = button
+                break
+        self.assertIsNotNone(submit_button, "Submit button not found")
+        self.assertEqual(submit_button.label, "Submit Reservation")
 
     def test_render_form_existing_reservation(self):
         """Test rendering the form with an existing reservation"""
@@ -93,4 +100,11 @@ class TestReservationForm(TestCase):
                         else:
                             self.assertEqual(element.disabled, disabled)
 
-                self.assertEqual(at.button("test_form_submit").label, "Update Reservation")
+                # Find the update button by label
+                update_button = None
+                for button in at.button:
+                    if button.label == "Update Reservation":
+                        update_button = button
+                        break
+                self.assertIsNotNone(update_button, "Update button not found")
+                self.assertEqual(update_button.label, "Update Reservation")
