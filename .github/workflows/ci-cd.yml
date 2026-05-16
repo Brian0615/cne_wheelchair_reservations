@@ -101,7 +101,7 @@ jobs:
 
       - name: Extract Docker metadata for API
         id: meta_api
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v6
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/cne_api
           tags: |
@@ -122,7 +122,7 @@ jobs:
 
       - name: Extract Docker metadata for UI
         id: meta_ui
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v6
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/cne_ui
           tags: |
