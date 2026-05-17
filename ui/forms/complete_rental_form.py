@@ -39,7 +39,6 @@ class CompleteRentalForm(BaseForm):
                 label="Return Location",
                 options=Location,
             ),
-            # "return_signature": SignatureField(key=f"{key_prefix}_return_signature", label="Signature"),
             "return_staff_name": TextField(key=f"{key_prefix}_staff_name", label="Staff Name"),
             "deposit_received": CheckboxField(
                 key=f"{key_prefix}_deposit_received",

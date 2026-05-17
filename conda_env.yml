@@ -29,5 +29,4 @@ dependencies:
       - pycognito>=2024.5,<2025
       - pymupdf>=1.25,<2
       - streamlit-authenticator>=0.4.0,<0.5
-      - streamlit-drawable-canvas
       - streamlit-extras

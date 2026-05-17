@@ -45,11 +45,9 @@ ReservationIDField = Annotated[
     StringConstraints(pattern=RESERVATION_ID_PATTERN), Field(title="Reservation ID", default=None),
 ]
 ReturnLocationField = Annotated[Optional[Location], Field(title="Return Location", default=None)]
-ReturnSignatureField = Annotated[Optional[bytes], Field(title="Return Signature", default=None)]
 ReturnStaffNameField = Annotated[
     Optional[str],
     StringConstraints(min_length=3), Field(title="Return Staff Name", default=None),
 ]
 ReturnTimeField = Annotated[Optional[AwareDatetime], Field(title="Return Time", default=None)]
-SignatureField = Annotated[bytes, Field(title="Signature")]
 StaffNameField = Annotated[str, StringConstraints(min_length=3), Field(title="Staff Name")]

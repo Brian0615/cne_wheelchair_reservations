@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/python@master
+        uses: snyk/actions/python@v1
         continue-on-error: true # To make sure that SARIF upload gets called
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -77,13 +77,13 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log into Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
@@ -102,9 +102,6 @@ jobs:
             else
               VERSION_TAG="${VERSION}"
             fi
-          elif [[ "$GITHUB_REF" == refs/heads/develop ]]; then
-            # For develop branch pushes we only want latest-develop, do not create version-dev
-            VERSION_TAG=""
           else
             # For main branch pushes we do not set a version tag here so only latest-main will be used
             VERSION_TAG=""
@@ -115,7 +112,7 @@ jobs:
 
       - name: Extract Docker metadata for API
         id: meta_api
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/cne_api
           tags: |
@@ -137,7 +134,7 @@ jobs:
 
       - name: Extract Docker metadata for UI
         id: meta_ui
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/cne_ui
           tags: |
