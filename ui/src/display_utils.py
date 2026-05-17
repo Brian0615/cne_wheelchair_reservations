@@ -10,8 +10,9 @@ from common.data_models import Device
 from common.utils import get_default_timezone
 from ui.src.constants import Colour, Page
 
-# silence the SettingWithCopyWarning
-pd.options.mode.chained_assignment = None  # default='warn'
+pd.options.mode.chained_assignment = None
+
+TIME_FORMAT_STR = "hh:mm a"
 
 
 def coerce_pandas_aware_datetime(data: pd.Series) -> pd.Series:
@@ -238,7 +239,7 @@ def display_reservations_table(reservations: pd.DataFrame, device_type: DeviceTy
             "name": st.column_config.TextColumn(label="Name"),
             "phone_number": st.column_config.TextColumn(label="Phone Number"),
             "location": st.column_config.TextColumn(label="Location"),
-            "reservation_time": st.column_config.DatetimeColumn(label="Time", format="hh:mm a"),
+            "reservation_time": st.column_config.DatetimeColumn(label="Time", format=TIME_FORMAT_STR),
             "status": st.column_config.TextColumn(label="Status"),
             "rental_id": st.column_config.TextColumn(label="Rental ID"),
             "notes": st.column_config.TextColumn(label="Notes"),
@@ -273,10 +274,10 @@ def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
             "phone_number": st.column_config.TextColumn(label="Phone Number"),
             "device_id": st.column_config.TextColumn(label=device_id_label, width="small"),
             "pickup_location": st.column_config.TextColumn(label="Pickup Location"),
-            "pickup_time": st.column_config.DatetimeColumn(label="Pickup Time", format="hh:mm a"),
+            "pickup_time": st.column_config.DatetimeColumn(label="Pickup Time", format=TIME_FORMAT_STR),
             "deposit_payment_method": st.column_config.TextColumn(label="Deposit Method"),
             "return_location": st.column_config.TextColumn(label="Return Location"),
-            "return_time": st.column_config.DatetimeColumn(label="Return Time", format="hh:mm a"),
+            "return_time": st.column_config.DatetimeColumn(label="Return Time", format=TIME_FORMAT_STR),
             "items_left_behind": st.column_config.ListColumn(label="Items Left Behind"),
             "notes": st.column_config.TextColumn(label="Notes"),
         },

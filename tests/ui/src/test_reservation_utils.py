@@ -63,7 +63,7 @@ class TestReservationUtils(TestCase):
                 "updated" if update else "created" in at.success[0].value,
                 msg=f"Success dialog should indicate reservation was {'updated' if update else 'created'}"
             )
-            self.assertTrue("S0901001" in at.success[0].value, "Success dialog should display reservation ID")
+            self.assertIn("S0901001", at.success[0].value, "Success dialog should display reservation ID")
 
     def test_submit_new_reservation_form_success(self):
         """Test submitting a new reservation form successfully"""

@@ -60,12 +60,12 @@ class TestReservationForm(TestCase):
 
         at = AppTest.from_function(self._run_form, args=(None, False)).run()
         self.assertEqual(at.session_state["test_form_date"], CNEDates.get_default_new_reservation_date())
-        self.assertEqual(at.session_state["test_form_device_type"], None)
-        self.assertEqual(at.session_state["test_form_location"], None)
-        self.assertEqual(at.session_state["test_form_name"], None)
-        self.assertEqual(at.session_state["test_form_phone_number"], None)
+        self.assertIsNone(at.session_state["test_form_device_type"])
+        self.assertIsNone(at.session_state["test_form_location"])
+        self.assertIsNone(at.session_state["test_form_name"])
+        self.assertIsNone(at.session_state["test_form_phone_number"])
         self.assertEqual(at.session_state["test_form_time"], CNEDates.get_default_new_reservation_time())
-        self.assertEqual(at.session_state["test_form_notes"], None)
+        self.assertIsNone(at.session_state["test_form_notes"])
 
     def test_initialize_form_existing_reservation(self):
         """Test that the form is initialized with the correct values for an existing reservation"""

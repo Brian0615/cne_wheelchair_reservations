@@ -29,7 +29,7 @@ def health_check():
 # RENTAL FORMS
 # ==============================
 
-@app.get("/forms/download_rental_form")
+@app.get("/forms/download_rental_form", responses={404: {"description": "Rental form not found"}})
 def download_rental_form(rental_id: str) -> Response:
     """Download a rental form from S3"""
     try:

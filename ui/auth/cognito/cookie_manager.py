@@ -72,7 +72,7 @@ class CognitoAuthCookieManager(CognitoAuthCookieManagerBase):
                 self.cookie_manager.delete(name, key=key)
                 logger.info("deleted cookie: %s", name)
             except KeyError:
-                logger.warning(f"Requested to delete non existing cookie: %s", name)
+                logger.warning("Requested to delete non existing cookie: %s", name)
 
         logger.info("reset_credentials start")
         delete_cookie("id_token")

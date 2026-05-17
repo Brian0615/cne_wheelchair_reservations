@@ -24,7 +24,7 @@ class CognitoAuthSessionStateManager:
 
     @staticmethod
     def _init_state(name, default_value: Any = ""):
-        if not name in st.session_state:
+        if name not in st.session_state:
             st.session_state[name] = default_value
 
     @staticmethod

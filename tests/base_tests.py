@@ -39,7 +39,7 @@ class BaseTestCases:
 
         @classmethod
         def setUpClass(cls):
-            cls.dynamodb = boto3.resource("dynamodb", region_name="us-east-2")
+            cls.dynamodb = boto3.resource("dynamodb", region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-2"))
             cls.devices_table = None
             cls.rentals_table = None
             cls.reservations_table = None
@@ -79,7 +79,7 @@ class BaseTestCases:
                 "device_type": DeviceType.SCOOTER,
                 "location": Location.BLC,
                 "reservation_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 30)),
-                "name": "Test Name",
+                "name": "Test Reservation Name",
                 "phone_number": "4168202370",
                 "notes": "",
                 "status": ReservationStatus.PENDING,
@@ -102,7 +102,7 @@ class BaseTestCases:
                 "date": date(2025, 8, 20),
                 "device_id": "W01",
                 "reservation_id": "W0820001",
-                "name": "Test Name",
+                "name": "Test Completed Renter Name",
                 "return_location": Location.BLC,
                 "return_time": get_default_timezone().localize(datetime(2025, 8, 20, 20, 28)),
                 "return_staff_name": "Test Staff",
@@ -123,7 +123,7 @@ class BaseTestCases:
                 "pickup_location": Location.BLC,
                 "pickup_time": get_default_timezone().localize(datetime(2025, 8, 20, 11, 28)),
                 "status": RentalStatus.IN_PROGRESS,
-                "name": "Test Name",
+                "name": "Test New Renter Name",
                 "phone_number": "4168202370",
                 "address": "1234 Test St",
                 "city": "Test City",
@@ -435,7 +435,7 @@ class BaseTestCases:
                         and (device["location"] == location or location is None)
                 )
             ]
-            self.assertTrue(at.dataframe.len == 1, "No inventory displayed")
+            self.assertEqual(at.dataframe.len, 1, "No inventory displayed")
             self.assertEqual(
                 len(expected_results),
                 len(at.dataframe[0].value),

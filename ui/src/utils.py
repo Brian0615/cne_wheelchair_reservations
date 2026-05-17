@@ -92,12 +92,10 @@ def initialize_form(
         default_time: Optional[time] = datetime.now(tz=get_default_timezone()).time(),
 ):
     """Initialize a form by setting date/time fields"""
-    if set_default_date:
-        if st.session_state.get(f"{form_prefix}_date") is None:
-            st.session_state[f"{form_prefix}_date"] = default_date
-    if set_default_time:
-        if st.session_state.get(f"{form_prefix}_time") is None:
-            st.session_state[f"{form_prefix}_time"] = default_time
+    if set_default_date and st.session_state.get(f"{form_prefix}_date") is None:
+        st.session_state[f"{form_prefix}_date"] = default_date
+    if set_default_time and st.session_state.get(f"{form_prefix}_time") is None:
+        st.session_state[f"{form_prefix}_time"] = default_time
 
 
 def process_validation_errors(error_key: str):
