@@ -14,13 +14,15 @@ permissions:
   contents: read
   actions: read
   packages: read
-  statuses: write
 
 jobs:
 
   snyk:
     name: Snyk Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
     steps:
       - uses: actions/checkout@v6
       - name: Run Snyk to check for vulnerabilities
@@ -32,6 +34,9 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
     env:
       API_HOST: localhost
       API_PORT: 9999
