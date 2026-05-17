@@ -7,6 +7,8 @@ on:
     tags: [ 'v*.*.*', 'v*.*.*-dev' ]
   pull_request:
   workflow_dispatch:
+  release:
+    types: [ published ]
 
 permissions:
   contents: read
@@ -64,8 +66,8 @@ jobs:
     name: Build and Push Docker
     needs: [ snyk, test ]
     runs-on: ubuntu-latest
-    # Only run this job for pushes to develop/main branches and tags
-    if: github.event_name == 'push' && (contains(github.ref, 'refs/heads/develop') || contains(github.ref, 'refs/heads/main') || contains(github.ref, 'refs/tags/'))
+    # Only run this job for pushes to develop/main branches and tags, or for published releases
+    if: github.event_name == 'release' || (github.event_name == 'push' && (contains(github.ref, 'refs/heads/develop') || contains(github.ref, 'refs/heads/main') || contains(github.ref, 'refs/tags/')))
     permissions:
       contents: read
       packages: write
@@ -89,11 +91,23 @@ jobs:
       - name: Extract version from version.py
         id: extract_version
         run: |
-          VERSION=$(grep -oP 'APP_VERSION = "\K[^"]+' version.py)
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            VERSION_TAG="${VERSION}-dev"
+          # Read APP_VERSION from version.py
+          VERSION=$(grep -oP 'APP_VERSION = "\\K[^\"]+' version.py)
+          # If this is a tag push or a release event, decide whether the tag ends with -dev
+          if [[ "$GITHUB_EVENT_NAME" == "release" || "$GITHUB_REF" == refs/tags/* ]]; then
+            # Use the ref to determine the tag name (fall back to GITHUB_REF for release/tag events)
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            if [[ "$TAG_NAME" == *-dev ]]; then
+              VERSION_TAG="${VERSION}-dev"
+            else
+              VERSION_TAG="${VERSION}"
+            fi
+          elif [[ "$GITHUB_REF" == refs/heads/develop ]]; then
+            # For develop branch pushes we only want latest-develop, do not create version-dev
+            VERSION_TAG=""
           else
-            VERSION_TAG="${VERSION}"
+            # For main branch pushes we do not set a version tag here so only latest-main will be used
+            VERSION_TAG=""
           fi
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
@@ -106,7 +120,8 @@ jobs:
           images: ${{ secrets.DOCKER_USERNAME }}/cne_api
           tags: |
             type=raw,value=latest-${{ github.ref_name }},enable=${{ contains(github.ref, 'refs/heads/') }}
-            type=raw,value=${{ env.VERSION_TAG }},enable=true
+            type=raw,value=${{ env.VERSION_TAG }},enable=${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'release' }}
 
       - name: Build and push API Docker image
         uses: docker/build-push-action@v6
@@ -127,7 +142,8 @@ jobs:
           images: ${{ secrets.DOCKER_USERNAME }}/cne_ui
           tags: |
             type=raw,value=latest-${{ github.ref_name }},enable=${{ contains(github.ref, 'refs/heads/') }}
-            type=raw,value=${{ env.VERSION_TAG }},enable=true
+            type=raw,value=${{ env.VERSION_TAG }},enable=${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'release' }}
 
       - name: Build and push UI Docker image
         uses: docker/build-push-action@v6

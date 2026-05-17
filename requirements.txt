@@ -6,7 +6,7 @@ moto==5.1.1
 numpy>=2.4.5,<3
 pandas>=2.2,<3
 pandera>=0.20,<1
-phonenumbers>=8.13,<10
+phonenumbers>=8.13,<9
 plotly>=5.24,<6
 pycognito>=2024.5,<2025
 pycountry>=24.6.1,<25
