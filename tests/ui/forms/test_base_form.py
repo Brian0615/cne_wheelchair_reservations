@@ -32,7 +32,7 @@ class TestBaseForm(TestCase):
         # check that the session state is initialized properly
         at = AppTest.from_function(run_initialize_form, kwargs={"form": self.form}).run()
         for field in ["selectbox_field", "text_field"]:
-            self.assertEqual(at.session_state[field], None, msg=f"Field {field} should be initialized to None")
+            self.assertIsNone(at.session_state[field], msg=f"Field {field} should be initialized to None")
 
     def test_clear_form(self):
         """Test clearing the form"""

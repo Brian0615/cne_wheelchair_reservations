@@ -41,9 +41,9 @@ class TestCognitoAuthenticator(TestCase):
             ):
                 at = AppTest.from_function(run_login)
                 at.run()
-                self.assertTrue(len(at.button) == 1, "Login button should be rendered.")
-                self.assertTrue(len(at.text_input) == 2,
-                                "Two text inputs should be rendered for username and password.")
+                self.assertEqual(len(at.button), 1, "Login button should be rendered.")
+                self.assertEqual(len(at.text_input), 2,
+                                 "Two text inputs should be rendered for username and password.")
 
                 at.text_input("cognito_login_form_username").set_value("test_user")
                 at.text_input("cognito_login_form_password").set_value("test_password")
