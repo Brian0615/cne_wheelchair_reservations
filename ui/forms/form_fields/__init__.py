@@ -7,7 +7,6 @@ from ui.forms.form_fields.date_field import DateField
 from ui.forms.form_fields.multiselect_field import MultiSelectField
 from ui.forms.form_fields.phone_number_field import PhoneNumberField
 from ui.forms.form_fields.selectbox_field import SelectboxField
-from ui.forms.form_fields.signature_field import SignatureField
 from ui.forms.form_fields.text_field import TextField
 from ui.forms.form_fields.time_field import TimeField
 

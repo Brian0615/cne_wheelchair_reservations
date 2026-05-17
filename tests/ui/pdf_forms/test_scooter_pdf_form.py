@@ -12,7 +12,7 @@ class TestScooterPDFForm(unittest.TestCase):
     """Test the ScooterPDFForm class."""
 
     def test_fill(self):
-        """Test the fill_form method with a signature."""
+        """Test the fill_form method."""
 
         # create fake rental data
         # pylint: disable=no-value-for-parameter

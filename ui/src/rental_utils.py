@@ -72,7 +72,6 @@ def get_pdf_form_class(device_type: DeviceType):
 def submit_complete_rental_form(completed_rental: dict):
     """Complete a rental"""
 
-    # process signature
     completed_rental["cne_year"] = CNEDates.get_cne_year()
 
     # update return time

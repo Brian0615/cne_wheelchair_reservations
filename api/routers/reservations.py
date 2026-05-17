@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter
-from pydantic import constr
+from pydantic import StringConstraints
 
 from api.src.dynamodb_service import DynamoDBService
 from api.src.utils import auto_process_database_errors
@@ -39,7 +39,9 @@ def get_reservations_on_date(
 
 @router.post("/add")
 @auto_process_database_errors
-def insert_reservation(reservation: NewReservation) -> constr(to_upper=True, pattern=RESERVATION_ID_PATTERN):
+def insert_reservation(
+        reservation: NewReservation
+) -> Annotated[str, StringConstraints(to_upper=True, pattern=RESERVATION_ID_PATTERN)]:
     """Add a new reservation"""
     return db_service.insert_reservation(reservation=reservation)
 
@@ -55,7 +57,7 @@ def update_reservation(reservation: Reservation) -> None:
 @auto_process_database_errors
 def update_reservation_status(
         cne_year: int,
-        reservation_id: constr(to_upper=True, pattern=RESERVATION_ID_PATTERN),
+        reservation_id: Annotated[str, StringConstraints(to_upper=True, pattern=RESERVATION_ID_PATTERN)],
         reservation_status: ReservationStatus,
 ) -> None:
     """Update the status of a reservation"""

@@ -6,14 +6,13 @@ moto==5.1.1
 numpy>=2.4.5,<3
 pandas>=2.2,<3
 pandera>=0.20,<1
-phonenumbers>=8.13,<10
+phonenumbers>=8.13,<9
 plotly>=5.24,<6
 pycognito>=2024.5,<2025
 pycountry>=24.6.1,<25
 pydantic>=2.10,<3
 pydantic-extra-types>=2.9,<3
-pymupdf>=1.25,<1.26.1
+pymupdf>=1.27.1,<1.28
 reportlab>=4.4,<4.5
-streamlit>=1.48,<1.49
+streamlit>=1.57,<1.58
 streamlit-authenticator>=0.4,<1
-streamlit-drawable-canvas

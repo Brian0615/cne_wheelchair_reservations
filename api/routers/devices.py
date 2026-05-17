@@ -1,7 +1,7 @@
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter
-from pydantic import constr
+from pydantic import StringConstraints
 
 from api.src.dynamodb_service import DynamoDBService
 from api.src.utils import auto_process_database_errors
@@ -23,7 +23,7 @@ def get_available_device_ids(
         cne_year: int,
         device_type: DeviceType,
         location: Optional[Location] = None,
-) -> List[constr(pattern=DEVICE_ID_PATTERN)]:
+) -> List[Annotated[str, StringConstraints(pattern=DEVICE_ID_PATTERN)]]:
     """Get the available devices of a specific type at a specific location (location optional)"""
     return db_service.get_available_device_ids(cne_year=cne_year, device_type=device_type, location=location)
 
@@ -37,7 +37,10 @@ def get_full_inventory(cne_year: int) -> List[Device]:
 
 @router.post("/remove")
 @auto_process_database_errors
-def remove_devices(cne_year: int, device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)]):
+def remove_devices(
+        cne_year: int,
+        device_ids: List[Annotated[str, StringConstraints(to_upper=True, pattern=DEVICE_ID_PATTERN)]]
+):
     """Remove devices from the inventory"""
     return db_service.remove_devices(cne_year=cne_year, device_ids=device_ids)
 
@@ -46,7 +49,7 @@ def remove_devices(cne_year: int, device_ids: List[constr(to_upper=True, pattern
 @auto_process_database_errors
 def update_devices_location(
         cne_year: int,
-        device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)],
+        device_ids: List[Annotated[str, StringConstraints(to_upper=True, pattern=DEVICE_ID_PATTERN)]],
         location: Location,
 ):
     """Update the location of devices"""
@@ -57,7 +60,7 @@ def update_devices_location(
 @auto_process_database_errors
 def update_devices_status(
         cne_year: int,
-        device_ids: List[constr(to_upper=True, pattern=DEVICE_ID_PATTERN)],
+        device_ids: List[Annotated[str, StringConstraints(to_upper=True, pattern=DEVICE_ID_PATTERN)]],
         status: DeviceStatus,
 ):
     """Update the status of devices"""
