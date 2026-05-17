@@ -1,7 +1,7 @@
 import datetime
 from typing import Annotated, List, Optional
 
-from pydantic import Field, StringConstraints, AwareDatetime, conint
+from pydantic import Field, StringConstraints, AwareDatetime
 from pydantic_extra_types.country import CountryAlpha3
 from pydantic_extra_types.phone_numbers import PhoneNumber, PhoneNumberValidator
 
@@ -21,11 +21,11 @@ CNEYearField = Annotated[int, Field(title="CNE Year", gt=2000)]
 CityField = Annotated[str, StringConstraints(min_length=3), Field(title="City")]
 CountryField = Annotated[CountryAlpha3, Field(title="Country")]
 DepositPaymentMethodField = Annotated[PaymentMethod, Field(title="Deposit Payment Method")]
-DepositPaymentAmountField = Annotated[conint(gt=0), Field(title="Deposit Payment Amount")]
+DepositPaymentAmountField = Annotated[int, Field(title="Deposit Payment Amount", gt=0)]
 DeviceIDField = Annotated[str, StringConstraints(to_upper=True, pattern=DEVICE_ID_PATTERN), Field(title="Device ID")]
 DeviceTypeField = Annotated[DeviceType, Field(title="Device Type")]
 FeePaymentMethodField = Annotated[PaymentMethod, Field(title="Fee Payment Method")]
-FeePaymentAmountField = Annotated[conint(gt=0), Field(title="Fee Payment Amount")]
+FeePaymentAmountField = Annotated[int, Field(title="Fee Payment Amount", gt=0)]
 ItemsLeftBehindField = Annotated[List[HoldItem], Field(title="Items Left Behind", default=[])]
 LocationField = Annotated[Location, Field(title="Location")]
 NameField = Annotated[str, StringConstraints(min_length=3), Field(title="Name")]
