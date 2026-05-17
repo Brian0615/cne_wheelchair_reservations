@@ -15,7 +15,7 @@ from api.src.dynamodb_service import DynamoDBService
 from common.constants import DeviceType, DeviceStatus, Location, PaymentMethod, RentalStatus, ReservationStatus
 from common.data_models import CompletedRental, NewRental, NewReservation, Reservation
 from common.utils import get_default_timezone
-from tests.mock_requests import MockRequests
+from tests.unit.mock_requests import MockRequests
 from ui.auth.local_authenticator import LocalAuthenticator
 from ui.src.constants import CNEDates
 
@@ -251,7 +251,7 @@ class BaseTestCases:
             with open(
                     os.path.join(
                         os.path.dirname(__file__),
-                        f"ui/ui_pages/data/mock_{device_type.value.lower()}_{data_type}_data.json"
+                        f"unit/ui/ui_pages/data/mock_{device_type.value.lower()}_{data_type}_data.json"
                     ),
                     encoding="utf-8"
             ) as file:

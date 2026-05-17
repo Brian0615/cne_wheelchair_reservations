@@ -5,7 +5,7 @@ from moto import mock_aws
 from api.src.exceptions import ReservationNotFoundOrNotEditableException
 from common.constants import DeviceType, Location, ReservationStatus
 from common.data_models import Reservation
-from tests.base_tests import BaseTestCases
+from tests.unit.base_tests import BaseTestCases
 
 
 # pylint: disable=missing-class-docstring,missing-function-docstring

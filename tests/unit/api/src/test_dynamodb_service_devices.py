@@ -3,7 +3,7 @@ from moto import mock_aws
 from api.src.exceptions import DeviceNotFoundException
 from common.constants import DeviceType, Location, DeviceStatus
 from common.data_models import NewDevice
-from tests.base_tests import BaseTestCases
+from tests.unit.base_tests import BaseTestCases
 
 
 # pylint: disable=missing-class-docstring,missing-function-docstring

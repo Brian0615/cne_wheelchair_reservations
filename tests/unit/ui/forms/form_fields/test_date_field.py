@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from streamlit.testing.v1 import AppTest
 
-from tests.base_tests import BaseTestCases
+from tests.unit.base_tests import BaseTestCases
 from ui.forms.form_fields.date_field import DateField
 from ui.src.constants import CNEDates
 

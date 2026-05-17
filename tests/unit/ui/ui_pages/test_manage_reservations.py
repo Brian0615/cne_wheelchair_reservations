@@ -2,8 +2,8 @@ from unittest.mock import patch
 
 from common.constants import DeviceType, ReservationStatus
 from common.data_models import Reservation
-from tests.base_tests import BaseTestCases
-from tests.mock_requests import MockRequests
+from tests.unit.base_tests import BaseTestCases
+from tests.unit.mock_requests import MockRequests
 from ui.src import reservation_utils, utils
 from ui.src.constants import CNEDates
 from ui.src.data_service import DataService

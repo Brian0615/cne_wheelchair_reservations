@@ -8,7 +8,7 @@ from api.src.exceptions import (
 )
 from common.constants import DeviceStatus, DeviceType, Location, RentalStatus, ReservationStatus
 from common.data_models import Rental, NewDevice, ChangeDeviceInfo
-from tests.base_tests import BaseTestCases
+from tests.unit.base_tests import BaseTestCases
 
 
 # pylint: disable=missing-class-docstring,missing-function-docstring

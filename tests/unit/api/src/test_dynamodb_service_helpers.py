@@ -1,7 +1,7 @@
 # pylint: disable=missing-function-docstring,protected-access
 
 from common.constants import DeviceStatus, Location, DeviceType
-from tests.base_tests import BaseTestCases
+from tests.unit.base_tests import BaseTestCases
 
 
 class TestDynamoDBServiceHelpers(BaseTestCases.BaseDynamoDBServiceTest):

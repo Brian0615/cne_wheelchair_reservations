@@ -1,6 +1,6 @@
 from streamlit.testing.v1 import AppTest
 
-from tests.base_tests import BaseTestCases
+from tests.unit.base_tests import BaseTestCases
 from ui.forms.form_fields.button_field import ButtonField
 
 

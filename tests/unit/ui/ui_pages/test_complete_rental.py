@@ -6,8 +6,8 @@ import numpy as np
 from streamlit.testing.v1 import AppTest
 
 from common.constants import DeviceType, Location
-from tests.base_tests import BaseTestCases
-from tests.mock_requests import MockRequests
+from tests.unit.base_tests import BaseTestCases
+from tests.unit.mock_requests import MockRequests
 from ui.src.constants import CNEDates
 
 

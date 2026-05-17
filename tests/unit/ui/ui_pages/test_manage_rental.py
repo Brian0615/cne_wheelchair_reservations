@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
 from common.constants import DeviceType
-from tests.base_tests import BaseTestCases
-from tests.mock_requests import MockRequests
+from tests.unit.base_tests import BaseTestCases
+from tests.unit.mock_requests import MockRequests
 from ui.src.data_service import DataService
 
 
