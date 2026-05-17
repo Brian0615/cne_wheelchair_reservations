@@ -105,20 +105,28 @@ jobs:
         id: extract_version
         run: |
           # Read APP_VERSION from version.py
-          VERSION=$(grep -oP 'APP_VERSION = "\\K[^\"]+' version.py)
-          # If this is a tag push or a release event, decide whether the tag ends with -dev
-          if [[ "$GITHUB_EVENT_NAME" == "release" || "$GITHUB_REF" == refs/tags/* ]]; then
-            # Use the ref to determine the tag name (fall back to GITHUB_REF for release/tag events)
-            TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=$(grep -oP 'APP_VERSION\s*=\s*"?\K[^"]+' version.py)
+          
+          # Check if this is a tag push
+          if [[ "$GITHUB_REF" =~ ^refs/tags/ ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            if [[ "$TAG_NAME" == *-dev ]]; then
+              VERSION_TAG="${VERSION}-dev"
+            else
+              VERSION_TAG="${VERSION}"
+            fi
+          elif [[ "$GITHUB_EVENT_NAME" == "release" ]]; then
+            # For release events, use GITHUB_REF_NAME instead
+            TAG_NAME="${GITHUB_REF_NAME}"
             if [[ "$TAG_NAME" == *-dev ]]; then
               VERSION_TAG="${VERSION}-dev"
             else
               VERSION_TAG="${VERSION}"
             fi
           else
-            # For main branch pushes we do not set a version tag here so only latest-main will be used
             VERSION_TAG=""
           fi
+          
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
           echo "Extracted version: $VERSION, Tag: $VERSION_TAG"
