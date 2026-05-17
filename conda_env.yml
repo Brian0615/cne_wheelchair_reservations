@@ -23,10 +23,10 @@ dependencies:
   - pytest[version='>=7.0,<8']
   - pytest-cov[version='>=3.0,<4']
   - python[version='>=3.13,<3.14']
-  - streamlit[version='>=1.48']
+  - streamlit[version='>=1.57,<1.58']
   - pip:
       - extra-streamlit-components>=0.1.80,<0.2
       - pycognito>=2024.5,<2025
-      - pymupdf>=1.25,<2
+      - pymupdf>=1.27.1,<1.28
       - streamlit-authenticator>=0.4.0,<0.5
       - streamlit-extras
