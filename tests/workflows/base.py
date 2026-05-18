@@ -11,7 +11,7 @@ from ui.auth.local_authenticator import LocalAuthenticator
 class WorkflowTestCase(TestCase):
     """Base class for workflow tests covering end-to-end user journeys."""
 
-    page_path: str = None
+    page_path: Optional[str] = None
 
     def _init_app_test(self, roles: Optional[list] = None, auth_groups: Optional[list] = None) -> AppTest:
         st.cache_data.clear()

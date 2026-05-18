@@ -16,7 +16,7 @@ class HomeWorkflowTests(WorkflowTestCase):
     def test_no_data_shows_warnings(self):
         """When there are no rentals or reservations today, warning messages are displayed."""
         at = self._run(MockAPIResponses())
-        self.assertTrue(len(at.warning) > 0, "Expected warning messages when there is no data")
+        self.assertGreater(len(at.warning), 0, "Expected warning messages when there is no data")
         self.assertEqual(0, len(at.dataframe), "No dataframes should be shown when there is no data")
 
     def test_with_reservations_today(self):
