@@ -50,7 +50,7 @@ def pytest_configure(config):
     os.environ.setdefault("API_HOST", "localhost")
     os.environ.setdefault("API_PORT", "8595")
     os.environ.setdefault("AUTH_METHOD", "local")
-    os.environ.setdefault("AUTH_CONFIG_PATH", "/tmp/auth_config.yaml")
+    os.environ.setdefault("AUTH_CONFIG_PATH", "./test_auth_config.yaml")
     os.environ.setdefault("AWS_ACCESS_KEY_ID", "test")
     os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "test")
     os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
