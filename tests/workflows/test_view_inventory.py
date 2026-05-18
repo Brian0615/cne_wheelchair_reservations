@@ -1,10 +1,6 @@
+from tests.shared_mock_data import MOCK_SCOOTER_INVENTORY, MOCK_WHEELCHAIR_INVENTORY, MOCK_FULL_INVENTORY
 from tests.workflows.base import WorkflowTestCase
-from tests.workflows.mock_responses import (
-    MockAPIResponses,
-    MOCK_SCOOTER_INVENTORY,
-    MOCK_WHEELCHAIR_INVENTORY,
-    MOCK_FULL_INVENTORY,
-)
+from tests.workflows.mock_responses import MockAPIResponses
 
 
 class ViewInventoryWorkflowTests(WorkflowTestCase):

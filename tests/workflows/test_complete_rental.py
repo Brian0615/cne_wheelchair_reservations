@@ -1,17 +1,16 @@
 from datetime import time
+from unittest.mock import patch
 
+from tests.shared_mock_data import MOCK_SCOOTER_RENTALS, MOCK_IN_PROGRESS_RENTAL_WITH_ITEMS
 from tests.workflows.base import WorkflowTestCase
-from tests.workflows.mock_responses import (
-    MockAPIResponses,
-    MOCK_SCOOTER_RENTALS,
-    MOCK_IN_PROGRESS_RENTAL_WITH_ITEMS,
-)
+from tests.workflows.mock_responses import MockAPIResponses
 from common.constants import Location
+from ui.src.data_service import DataService
 
-# Only the in-progress rental (no items left behind)
+# Only the in-progress rentals (no items left behind)
 _IN_PROGRESS_RENTALS = [r for r in MOCK_SCOOTER_RENTALS if r["status"] == "In Progress"]
-# Both in-progress rentals: one without items, one with items
-_IN_PROGRESS_MIXED = _IN_PROGRESS_RENTALS + [MOCK_IN_PROGRESS_RENTAL_WITH_ITEMS]
+# One rental without items (index 0) + one with items (index 1)
+_IN_PROGRESS_MIXED = [_IN_PROGRESS_RENTALS[0]] + [MOCK_IN_PROGRESS_RENTAL_WITH_ITEMS]
 
 
 class CompleteRentalWorkflowTests(WorkflowTestCase):
@@ -147,3 +146,22 @@ class CompleteRentalWorkflowTests(WorkflowTestCase):
         at = self._run_as_editor(responses, at=at)
         self.assertFalse(at.button(key="complete_rental_submit").disabled,
                          "Submit should be enabled once all fields filled")
+
+    # ── Edge case: API error on submit ──────────────────────────────────────
+
+    def test_api_error_on_submit_shows_error(self):
+        """When the API returns an error on complete rental, an error message is displayed."""
+        responses = MockAPIResponses(rentals=_IN_PROGRESS_RENTALS)
+        at = self._select_rental(responses)
+
+        at.time_input(key="complete_rental_return_time").set_value(time(14, 30))
+        at.selectbox(key="complete_rental_return_location").set_value(Location.PG)
+        at.text_input(key="complete_rental_staff_name").set_value("Test Staff")
+        at = self._run_as_editor(responses, at=at)
+        at.checkbox[0].set_value(True)
+        at = self._run_as_editor(responses, at=at)
+
+        at.button(key="complete_rental_submit").click()
+        with patch.object(DataService, "complete_rental", return_value=(400, "Rental already completed")):
+            at = self._run_as_editor(responses, at=at, allow_errors=True)
+        self.assertGreater(len(at.error), 0, "Expected an error message when API returns a failure")

@@ -264,7 +264,7 @@ class BaseTestCases:
                     _initialize_authenticator=MagicMock(),
                     login=MagicMock(return_value=False),
             ):
-                # mock the switch_page method so we can check whether the user was redirected to login
+                # mock the switch_page method so we can check whether the user was redirected to log in
                 st.switch_page = MagicMock()
 
                 at = AppTest.from_file(self.page_path)

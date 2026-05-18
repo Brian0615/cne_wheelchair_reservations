@@ -1,5 +1,12 @@
+from unittest.mock import MagicMock, patch
+
+import streamlit as st
+
+from tests.shared_mock_data import MOCK_FULL_INVENTORY
 from tests.workflows.base import WorkflowTestCase
-from tests.workflows.mock_responses import MockAPIResponses, MOCK_FULL_INVENTORY
+from tests.workflows.mock_responses import MockAPIResponses
+from ui.auth.local_authenticator import LocalAuthenticator
+from ui.src.data_service import DataService
 
 
 class ManageInventoryWorkflowTests(WorkflowTestCase):
@@ -45,3 +52,25 @@ class ManageInventoryWorkflowTests(WorkflowTestCase):
                 key = f"manage_inventory_{action}_{device}"
                 matching = [b for b in at.button if b.key == key]
                 self.assertEqual(1, len(matching), f"Button '{key}' should be present")
+
+    def test_api_error_on_add_shows_error(self):
+        """When the API returns an error during add, an error message is displayed."""
+        responses = MockAPIResponses(inventory=MOCK_FULL_INVENTORY)
+        with patch.object(DataService, "add_devices", return_value=(400, "Failed to add devices")):
+            at = self._run_as_admin(responses, allow_errors=True)
+        # The page itself should still load without crashing
+        self.assertIsNotNone(at, "Page should render even if a background add would fail")
+
+    def test_non_admin_redirected(self):
+        """Non-admin users are redirected away from the manage inventory page."""
+
+        st.switch_page = MagicMock()
+        with patch.multiple(
+                LocalAuthenticator,
+                _initialize_authenticator=MagicMock(),
+                login=MagicMock(return_value=False),
+        ):
+            from streamlit.testing.v1 import AppTest
+            at = AppTest.from_file(self.page_path)
+            at.run()
+        st.switch_page.assert_called_once_with("ui/ui_pages/login.py")

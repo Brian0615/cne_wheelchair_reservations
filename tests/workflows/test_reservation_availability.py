@@ -39,3 +39,9 @@ class ReservationAvailabilityWorkflowTests(WorkflowTestCase):
         with patch.object(DataService, "update_settings") as mock_update:
             at = self._run(MockAPIResponses(), at=at)
             mock_update.assert_called_once()
+
+    def test_admin_sets_limit_to_zero(self):
+        """Admin can set the reservation limit to 0 — page renders without error."""
+        at = self._run(MockAPIResponses(reservation_limit=0), auth_groups=["cne-admin"])
+        self.assertEqual(0, len(at.error), "Page should render without errors even with limit=0")
+        self.assertGreater(len(at.number_input), 0, "Limit inputs should still be visible when limit=0")

@@ -1,11 +1,8 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from tests.shared_mock_data import MOCK_SCOOTER_RENTALS, MOCK_SCOOTER_INVENTORY
 from tests.workflows.base import WorkflowTestCase
-from tests.workflows.mock_responses import (
-    MockAPIResponses,
-    MOCK_SCOOTER_RENTALS,
-    MOCK_SCOOTER_INVENTORY,
-)
+from tests.workflows.mock_responses import MockAPIResponses
 from ui.src.data_service import DataService
 
 
@@ -83,3 +80,23 @@ class ManageRentalWorkflowTests(WorkflowTestCase):
             self._run_as_editor(responses, at=at)
             mock_rentals.clear.assert_called_once()
             mock_devices.clear.assert_called_once()
+
+    def test_api_error_on_change_device_shows_error(self):
+        """When the API returns an error on change device, an error or exception is surfaced."""
+
+        class ChangeDeviceErrorResponses(MockAPIResponses):
+            @staticmethod
+            def post(url, *args, **kwargs):
+                if "change_device" in url:
+                    return Mock(status_code=400, json=Mock(return_value="Device unavailable"))
+                return MockAPIResponses.post(url, *args, **kwargs)
+
+        responses = MockAPIResponses(rentals=MOCK_SCOOTER_RENTALS, inventory=MOCK_SCOOTER_INVENTORY)
+        error_responses = ChangeDeviceErrorResponses(rentals=MOCK_SCOOTER_RENTALS, inventory=MOCK_SCOOTER_INVENTORY)
+        at = self._select_rental_and_location(responses)
+        at.selectbox(key="change_device_new_device_id").select_index(0)
+        at.text_input(key="change_device_staff_name").set_value("Test Staff")
+        at = self._run_as_editor(responses, at=at)
+        at.button(key="change_device_submit_button").click()
+        at = self._run_as_editor(error_responses, at=at, allow_errors=True)
+        self.assertGreater(len(at.error), 0, "Expected an error message when device change fails")

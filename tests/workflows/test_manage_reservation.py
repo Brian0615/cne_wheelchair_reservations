@@ -1,8 +1,9 @@
 from unittest.mock import patch
 
 from common.constants import ReservationStatus
+from tests.shared_mock_data import MOCK_SCOOTER_RESERVATIONS
 from tests.workflows.base import WorkflowTestCase
-from tests.workflows.mock_responses import MockAPIResponses, MOCK_SCOOTER_RESERVATIONS
+from tests.workflows.mock_responses import MockAPIResponses
 from ui.src import reservation_utils, utils
 from ui.src.data_service import DataService
 
