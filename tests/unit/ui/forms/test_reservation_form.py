@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from unittest import TestCase
 
 from streamlit.testing.v1 import AppTest
@@ -13,17 +13,22 @@ class TestReservationForm(TestCase):
     """Test the reservation form"""
 
     def setUp(self):
+        cne_year = CNEDates.get_cne_year()
+        _, cne_end = CNEDates.get_cne_start_end_dates()
+        reservation_date = cne_end.date()
 
         # pylint: disable=duplicate-code
         self.mock_reservation = Reservation(
-            cne_year=datetime.now().year,
+            cne_year=cne_year,
             id="S0901001",
-            date=date(datetime.now().year, 9, 1),
+            date=reservation_date,
             device_type=DeviceType.SCOOTER,
             name="John Doe",
             phone_number="+1 437-293-0384",
             location=Location.BLC,
-            reservation_time=get_default_timezone().localize(datetime(datetime.now().year, 9, 1, 15, 30)),
+            reservation_time=get_default_timezone().localize(
+                datetime(cne_year, reservation_date.month, reservation_date.day, 15, 30)
+            ),
             status=ReservationStatus.RESERVED,
             notes="Test notes"
         )

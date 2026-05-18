@@ -25,10 +25,8 @@ class TestCNEDates(unittest.TestCase):
 
     def test_get_cne_date_list(self):
         """Test the get_cne_date_list method."""
-        # make datetime.today return a date in 2025
-        with patch.object(constants, "datetime") as mock_datetime:
-            mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 12, 11))
-            mock_datetime.side_effect = datetime
+        with patch.object(CNEDates, "get_cne_year") as mock_get_cne_year:
+            mock_get_cne_year.return_value = 2025
 
             dates = CNEDates.get_cne_date_list()
             # dates should be a list from Aug 15, 2025 to Sep 1, 2025
@@ -58,34 +56,40 @@ class TestCNEDates(unittest.TestCase):
 
     def test_get_default_date(self):
         """Test the get_default_date method."""
-        with patch.object(constants, "datetime") as mock_datetime:
-            mock_datetime.side_effect = datetime
+        with patch.object(CNEDates, "get_cne_year") as mock_get_cne_year:
+            mock_get_cne_year.return_value = 2025
 
-            # test a date before the CNE
-            mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 8, 11))
-            self.assertEqual(datetime(2025, 8, 15).date(), CNEDates.get_default_date())
+            with patch.object(constants, "datetime") as mock_datetime:
+                mock_datetime.side_effect = datetime
 
-            # test a date during the CNE
-            mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 8, 20))
-            self.assertEqual(datetime(2025, 8, 20).date(), CNEDates.get_default_date())
+                # test a date before the CNE
+                mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 8, 11))
+                self.assertEqual(datetime(2025, 8, 15).date(), CNEDates.get_default_date())
 
-            # test a date after the CNE
-            mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 12, 11))
-            self.assertEqual(datetime(2025, 9, 1).date(), CNEDates.get_default_date())
+                # test a date during the CNE
+                mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 8, 20))
+                self.assertEqual(datetime(2025, 8, 20).date(), CNEDates.get_default_date())
+
+                # test a date after the CNE
+                mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 12, 11))
+                self.assertEqual(datetime(2025, 9, 1).date(), CNEDates.get_default_date())
 
     def test_get_new_default_reservation_date(self):
         """Test the get_default_new_reservation_date method."""
-        with patch.object(constants, "datetime") as mock_datetime:
-            mock_datetime.side_effect = datetime
+        with patch.object(CNEDates, "get_cne_year") as mock_get_cne_year:
+            mock_get_cne_year.return_value = 2025
 
-            # test a date before the CNE
-            mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 8, 11))
-            self.assertEqual(datetime(2025, 8, 15).date(), CNEDates.get_default_new_reservation_date())
+            with patch.object(constants, "datetime") as mock_datetime:
+                mock_datetime.side_effect = datetime
 
-            # test a date during the CNE (DEFAULT RESERVATION DATE SHOULD BE ONE DAY AHEAD)
-            mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 8, 20))
-            self.assertEqual(datetime(2025, 8, 21).date(), CNEDates.get_default_new_reservation_date())
+                # test a date before the CNE
+                mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 8, 11))
+                self.assertEqual(datetime(2025, 8, 15).date(), CNEDates.get_default_new_reservation_date())
 
-            # test a date after the CNE
-            mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 12, 11))
-            self.assertEqual(datetime(2025, 9, 1).date(), CNEDates.get_default_new_reservation_date())
+                # test a date during the CNE (DEFAULT RESERVATION DATE SHOULD BE ONE DAY AHEAD)
+                mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 8, 20))
+                self.assertEqual(datetime(2025, 8, 21).date(), CNEDates.get_default_new_reservation_date())
+
+                # test a date after the CNE
+                mock_datetime.now.return_value = get_default_timezone().localize(datetime(2025, 12, 11))
+                self.assertEqual(datetime(2025, 9, 1).date(), CNEDates.get_default_new_reservation_date())

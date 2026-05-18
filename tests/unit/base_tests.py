@@ -251,7 +251,7 @@ class BaseTestCases:
             with open(
                     os.path.join(
                         os.path.dirname(__file__),
-                        f"unit/ui/ui_pages/data/mock_{device_type.value.lower()}_{data_type}_data.json"
+                        f"ui/ui_pages/data/mock_{device_type.value.lower()}_{data_type}_data.json"
                     ),
                     encoding="utf-8"
             ) as file:
