@@ -61,7 +61,7 @@ class ViewReservationsWorkflowTests(WorkflowTestCase):
     def test_pdf_export_called_when_reservations_exist(self):
         """When reservations exist, the PDF export function can be triggered."""
         responses = MockAPIResponses(reservations=MOCK_SCOOTER_RESERVATIONS + MOCK_WHEELCHAIR_RESERVATIONS)
-        with patch.object(reservation_utils, "export_reservations_to_pdf", return_value=b"mock_pdf") as mock_export:
+        with patch.object(reservation_utils, "export_reservations_to_pdf", return_value=b"mock_pdf"):
             at = self._run(responses)
         # The page should load without errors
         self.assertEqual(0, len(at.error), "Page should load without errors when reservations exist")

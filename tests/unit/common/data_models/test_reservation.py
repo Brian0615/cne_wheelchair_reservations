@@ -11,19 +11,19 @@ _TZ = get_default_timezone()
 _DATE = date(2025, 8, 20)
 _RESERVATION_TIME = _TZ.localize(datetime(2025, 8, 20, 10, 0))
 
-_BASE_RESERVATION = dict(
-    cne_year=2025,
-    id="S0820001",
-    date=_DATE,
-    device_type=DeviceType.SCOOTER,
-    location=Location.BLC,
-    reservation_time=_RESERVATION_TIME,
-    name="Alice Smith",
-    phone_number="9052938402",
-    notes="",
-    status=ReservationStatus.RESERVED,
-    rental_id=None,
-)
+_BASE_RESERVATION = {
+    "cne_year": 2025,
+    "id": "S0820001",
+    "date": _DATE,
+    "device_type": DeviceType.SCOOTER,
+    "location": Location.BLC,
+    "reservation_time": _RESERVATION_TIME,
+    "name": "Alice Smith",
+    "phone_number": "9052938402",
+    "notes": "",
+    "status": ReservationStatus.RESERVED,
+    "rental_id": None,
+}
 
 
 class TestReservation(TestCase):
@@ -84,12 +84,12 @@ class TestNewReservation(TestCase):
 class TestReservationCount(TestCase):
     """Tests for the ReservationCount data model."""
 
-    _BASE = dict(
-        date=_DATE,
-        device_type=DeviceType.SCOOTER,
-        location=Location.BLC,
-        count=5,
-    )
+    _BASE = {
+        "date": _DATE,
+        "device_type": DeviceType.SCOOTER,
+        "location": Location.BLC,
+        "count": 5,
+    }
 
     def test_valid_reservation_count(self):
         rc = ReservationCount(**self._BASE)

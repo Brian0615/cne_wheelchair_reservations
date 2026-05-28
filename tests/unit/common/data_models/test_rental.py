@@ -13,33 +13,33 @@ _DATE = date(2025, 8, 20)
 _PICKUP_TIME = _TZ.localize(datetime(2025, 8, 20, 11, 0))
 _RETURN_TIME = _TZ.localize(datetime(2025, 8, 20, 16, 0))
 
-_BASE_NEW_RENTAL = dict(
-    cne_year=2025,
-    date=_DATE,
-    device_id="W01",
-    device_type=DeviceType.WHEELCHAIR,
-    reservation_id=None,
-    pickup_location=Location.BLC,
-    pickup_time=_PICKUP_TIME,
-    status=RentalStatus.IN_PROGRESS,
-    name="John Doe",
-    phone_number="4168202370",
-    address="123 Test St",
-    city="Toronto",
-    province="Ontario",
-    postal_code="M5G2C3",
-    country="Canada",
-    fee_payment_amount=20,
-    fee_payment_method=PaymentMethod.CASH,
-    deposit_payment_amount=50,
-    deposit_payment_method=PaymentMethod.CASH,
-    items_left_behind=[],
-    notes=None,
-    staff_name="Staff One",
-    return_location=None,
-    return_time=None,
-    return_staff_name=None,
-)
+_BASE_NEW_RENTAL = {
+    "cne_year": 2025,
+    "date": _DATE,
+    "device_id": "W01",
+    "device_type": DeviceType.WHEELCHAIR,
+    "reservation_id": None,
+    "pickup_location": Location.BLC,
+    "pickup_time": _PICKUP_TIME,
+    "status": RentalStatus.IN_PROGRESS,
+    "name": "John Doe",
+    "phone_number": "4168202370",
+    "address": "123 Test St",
+    "city": "Toronto",
+    "province": "Ontario",
+    "postal_code": "M5G2C3",
+    "country": "Canada",
+    "fee_payment_amount": 20,
+    "fee_payment_method": PaymentMethod.CASH,
+    "deposit_payment_amount": 50,
+    "deposit_payment_method": PaymentMethod.CASH,
+    "items_left_behind": [],
+    "notes": None,
+    "staff_name": "Staff One",
+    "return_location": None,
+    "return_time": None,
+    "return_staff_name": None,
+}
 
 
 class TestNewRental(TestCase):
@@ -101,17 +101,17 @@ class TestNewRental(TestCase):
 class TestCompletedRental(TestCase):
     """Tests for the CompletedRental data model."""
 
-    _BASE = dict(
-        cne_year=2025,
-        id="W0820001",
-        date=_DATE,
-        device_id="W01",
-        reservation_id=None,
-        name="John Doe",
-        return_location=Location.BLC,
-        return_time=_RETURN_TIME,
-        return_staff_name="Staff One",
-    )
+    _BASE = {
+        "cne_year": 2025,
+        "id": "W0820001",
+        "date": _DATE,
+        "device_id": "W01",
+        "reservation_id": None,
+        "name": "John Doe",
+        "return_location": Location.BLC,
+        "return_time": _RETURN_TIME,
+        "return_staff_name": "Staff One",
+    }
 
     def test_valid_completed_rental(self):
         rental = CompletedRental(**self._BASE)
@@ -130,24 +130,24 @@ class TestCompletedRental(TestCase):
 class TestRentalSummary(TestCase):
     """Tests for the RentalSummary data model."""
 
-    _BASE = dict(
-        cne_year=2025,
-        id="W0820001",
-        date=_DATE,
-        device_id="W01",
-        device_type=DeviceType.WHEELCHAIR,
-        reservation_id=None,
-        pickup_location=Location.BLC,
-        pickup_time=_PICKUP_TIME,
-        status=RentalStatus.IN_PROGRESS,
-        name="John Doe",
-        phone_number="4168202370",
-        deposit_payment_method=PaymentMethod.CASH,
-        items_left_behind=[],
-        notes=None,
-        return_location=None,
-        return_time=None,
-    )
+    _BASE = {
+        "cne_year": 2025,
+        "id": "W0820001",
+        "date": _DATE,
+        "device_id": "W01",
+        "device_type": DeviceType.WHEELCHAIR,
+        "reservation_id": None,
+        "pickup_location": Location.BLC,
+        "pickup_time": _PICKUP_TIME,
+        "status": RentalStatus.IN_PROGRESS,
+        "name": "John Doe",
+        "phone_number": "4168202370",
+        "deposit_payment_method": PaymentMethod.CASH,
+        "items_left_behind": [],
+        "notes": None,
+        "return_location": None,
+        "return_time": None,
+    }
 
     def test_valid_rental_summary(self):
         summary = RentalSummary(**self._BASE)

@@ -2,12 +2,9 @@ from datetime import date
 from unittest import TestCase
 
 import pandas as pd
-import pytest
 from streamlit.testing.v1 import AppTest
 
-from common.constants import DeviceType, Location, ReservationStatus
 from common.utils import get_default_timezone
-from ui.src.constants import Page
 from ui.src.display_utils import coerce_pandas_aware_datetime, display_rentals_or_reservations_on_date
 
 _TZ = get_default_timezone()
@@ -67,7 +64,6 @@ class TestDisplayRentalsOrReservationsOnDate(TestCase):
 
     def test_none_dataframe_shows_warning(self):
         def run():
-            import pandas as pd
             from datetime import date
             from ui.src.display_utils import display_rentals_or_reservations_on_date
             from ui.src.constants import Page
