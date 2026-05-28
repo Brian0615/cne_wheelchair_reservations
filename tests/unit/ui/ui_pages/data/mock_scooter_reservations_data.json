@@ -1,0 +1,74 @@
+[
+  {
+    "cne_year": 2025,
+    "id": "S0830001",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Teresa Austin",
+    "phone_number": "+852 9382 3021",
+    "location": "BLC",
+    "reservation_time": "2024-08-30T10:00:00-04:00",
+    "status": "Reserved",
+    "notes": ""
+  },
+  {
+    "cne_year": 2025,
+    "id": "S0830002",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Denise McCarty",
+    "phone_number": "+44 20 7946 0950",
+    "location": "PG",
+    "reservation_time": "2024-08-30T17:35:00+00:00",
+    "status": "Reserved",
+    "notes": ""
+  },
+  {
+    "cne_year": 2025,
+    "id": "S0830003",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Teresa Austin",
+    "phone_number": "+1 904 567 8901",
+    "location": "BLC",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Confirmed",
+    "notes": ""
+  },
+  {
+    "cne_year": 2025,
+    "id": "S0830004",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Pamela Lugo",
+    "phone_number": "867-530-9012",
+    "location": "PG",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Cancelled",
+    "notes": ""
+  },
+  {
+    "cne_year": 2025,
+    "id": "S0830005",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Vicki Nunez",
+    "phone_number": "9052938402",
+    "location": "BLC",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Completed",
+    "notes": ""
+  },
+  {
+    "cne_year": 2025,
+    "id": "S0830006",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Renee Zimmerman",
+    "phone_number": "+81 2-7201-2830",
+    "location": "PG",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "Picked Up",
+    "notes": ""
+  }
+]
