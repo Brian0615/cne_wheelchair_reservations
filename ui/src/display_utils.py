@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Union
+from typing import Optional, Union
 
 import pandas as pd
 import streamlit as st
@@ -9,8 +9,6 @@ from common.constants import DeviceType, DeviceStatus, Location, ReservationStat
 from common.data_models import Device
 from common.utils import get_default_timezone
 from ui.src.constants import Colour, Page
-
-pd.options.mode.chained_assignment = None
 
 TIME_FORMAT_STR = "hh:mm a"
 
@@ -289,7 +287,8 @@ def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
     )
 
 
-def display_rentals_or_reservations_on_date(view_date: date, rentals_or_reservations: pd.DataFrame, page: Page):
+def display_rentals_or_reservations_on_date(view_date: date, rentals_or_reservations: Optional[pd.DataFrame],
+                                            page: Page):
     """Display rentals or reservations for a given page."""
     if page not in {Page.VIEW_RENTALS, Page.VIEW_RESERVATIONS}:
         raise ValueError(f"display_rentals_or_reservations is not supported for this page: {page}")
