@@ -119,7 +119,7 @@ class NewRentalForm(BaseForm):
 
     @staticmethod
     def _get_country_options():
-        countries = [x.name for x in list(pycountry.countries)]
+        countries = [x.name for x in pycountry.countries]
         countries.remove("Canada")
         countries.remove("United States")
         return ["Canada", "United States"] + sorted(countries)
@@ -128,7 +128,7 @@ class NewRentalForm(BaseForm):
     def _extract_reservation_id(reservation_id):
         if reservation_id == WALK_IN_RESERVATION_ID:
             return reservation_id
-        match = re.search(r"\(([SW]0[8-9][0-9]{2}[0-9]{3})\)", reservation_id)
+        match = re.search(r"\(([SW]0[8-9]\d{2}\d{3})\)", reservation_id)
         if match:
             return match.group(1)
         return None

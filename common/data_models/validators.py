@@ -47,7 +47,7 @@ def check_postal_code(model):
         postal_code = re.sub(r'[^A-Z0-9]', '', postal_code)
 
         # Check if the postal code follows the Canadian format (letter-number-letter-number-letter-number)
-        if not re.match(r'^[A-Z][0-9][A-Z][0-9][A-Z][0-9]$', postal_code):
+        if not re.match(r'^[A-Z]\d[A-Z]\d[A-Z]\d$', postal_code):
             raise ValueError(f"Invalid Canadian postal code format: {postal_code}")
 
         # Format as A1A 1A1 with a space in the middle

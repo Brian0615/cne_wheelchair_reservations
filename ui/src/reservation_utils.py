@@ -254,7 +254,7 @@ def export_reservations_to_pdf(reservations_df: pd.DataFrame, date: datetime.dat
     reservations_df["reservation_time"] = coerce_pandas_aware_datetime(reservations_df["reservation_time"])
     reservations_df["reservation_time"] = reservations_df["reservation_time"].dt.strftime("%I:%M %p")
     reservations_df["phone_number"] = reservations_df["phone_number"].str.lstrip("tel:")
-    for i, device_type in enumerate(reservations_df['device_type'].unique()):
+    for _, device_type in enumerate(reservations_df['device_type'].unique()):
         # Filter the reservations for this device type
         device_reservations = reservations_df[reservations_df['device_type'] == device_type][
             ["id", "name", "phone_number", "reservation_time", "location", "status", "notes"]
