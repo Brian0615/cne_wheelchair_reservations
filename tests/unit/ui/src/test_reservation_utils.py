@@ -2,6 +2,7 @@ from datetime import date, datetime
 from unittest import TestCase
 from unittest.mock import patch
 
+import pandas as pd
 from streamlit.testing.v1 import AppTest
 
 from common.constants import DeviceType, ReservationStatus, Location
@@ -140,3 +141,19 @@ class TestReservationUtils(TestCase):
 
                 mock_update_reservation.assert_not_called()
                 self.assertIsNotNone(at.session_state["update_reservation_form_errors"])
+
+    def test_create_reservation_availability_chart_zero_limit(self):
+        """Test that create_reservation_availability_chart does not raise ZeroDivisionError when limit is 0"""
+        reservation_counts = pd.DataFrame(columns=["date", "device_type", "location", "count"])
+
+        with patch("ui.src.reservation_utils.CNEDates.get_cne_start_end_dates",
+                   return_value=(datetime(2025, 8, 15), datetime(2025, 9, 1))):
+            with patch("streamlit.plotly_chart"):
+                try:
+                    reservation_utils.create_reservation_availability_chart(
+                        reservation_counts=reservation_counts,
+                        device_type=DeviceType.WHEELCHAIR,
+                        limit=0,
+                    )
+                except ZeroDivisionError:
+                    self.fail("create_reservation_availability_chart raised ZeroDivisionError when limit=0")
