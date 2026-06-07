@@ -2,7 +2,7 @@
 from typing import Dict, List
 
 from common.constants import DeviceType, Location, PaymentMethod, RentalStatus, ReservationStatus
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 _CNE_YEAR = CNEDates.get_cne_year()
 _DEFAULT_DATE = str(CNEDates.get_default_date())

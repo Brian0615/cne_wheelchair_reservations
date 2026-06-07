@@ -4,7 +4,7 @@ from unittest import TestCase
 from streamlit.testing.v1 import AppTest
 
 from common.constants import WALK_IN_RESERVATION_ID
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 
 class TestRentalForm(TestCase):

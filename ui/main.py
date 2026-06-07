@@ -33,6 +33,9 @@ if authenticator.is_authenticated():
         pages["Inventory"].append(
             st.Page("ui_pages/manage_inventory.py", title="Manage Inventory", icon=":material/settings:")
         )
+        pages["Assistant"] = [
+            st.Page("ui_pages/chatbot.py", title="Chatbot", icon=":material/smart_toy:")
+        ]
     if authenticator.is_editor_user():
         pages["Rentals"] += [
             st.Page("ui_pages/new_rental.py", title="New Rental", icon=":material/add_circle:"),

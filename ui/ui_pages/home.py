@@ -2,7 +2,7 @@ import streamlit as st
 
 from common.constants import DeviceType, Location
 from ui.src.auth_utils import initialize_page
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 from ui.src.display_utils import (
     display_reservations_table,

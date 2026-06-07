@@ -4,7 +4,7 @@ from streamlit.testing.v1 import AppTest
 
 from tests.unit.base_tests import BaseTestCases
 from ui.forms.form_fields.date_field import DateField
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 
 # pylint: disable=too-few-public-methods

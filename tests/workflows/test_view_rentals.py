@@ -1,7 +1,7 @@
 from tests.shared_mock_data import MOCK_SCOOTER_RENTALS, MOCK_WHEELCHAIR_RENTALS
 from tests.workflows.base import WorkflowTestCase
 from tests.workflows.mock_responses import MockAPIResponses
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 
 class ViewRentalsWorkflowTests(WorkflowTestCase):

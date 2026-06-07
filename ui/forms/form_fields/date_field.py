@@ -4,7 +4,7 @@ from typing import Optional
 import streamlit as st
 
 from ui.forms.form_fields.base_form_field import BaseFormField
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 
 # pylint: disable=too-few-public-methods

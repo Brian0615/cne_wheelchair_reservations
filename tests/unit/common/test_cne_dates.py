@@ -2,9 +2,9 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch
 
+from common import cne_dates
+from common.cne_dates import CNEDates
 from common.utils import get_default_timezone
-from ui.src import constants
-from ui.src.constants import CNEDates
 
 
 class TestCNEDates(unittest.TestCase):
@@ -59,7 +59,7 @@ class TestCNEDates(unittest.TestCase):
         with patch.object(CNEDates, "get_cne_year") as mock_get_cne_year:
             mock_get_cne_year.return_value = 2025
 
-            with patch.object(constants, "datetime") as mock_datetime:
+            with patch.object(cne_dates, "datetime") as mock_datetime:
                 mock_datetime.side_effect = datetime
 
                 # test a date before the CNE
@@ -79,7 +79,7 @@ class TestCNEDates(unittest.TestCase):
         with patch.object(CNEDates, "get_cne_year") as mock_get_cne_year:
             mock_get_cne_year.return_value = 2025
 
-            with patch.object(constants, "datetime") as mock_datetime:
+            with patch.object(cne_dates, "datetime") as mock_datetime:
                 mock_datetime.side_effect = datetime
 
                 # test a date before the CNE
