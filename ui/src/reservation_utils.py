@@ -142,9 +142,11 @@ def create_reservation_availability_chart(
         reservation_df["date"].dt.strftime("%b %d"),
         "",
     )
-    reservation_df["availability"] = (1 - (reservation_df["count"] / limit)).clip(lower=0, upper=1)
+    reservation_df["availability"] = (
+        (1 - (reservation_df["count"] / limit)).clip(lower=0, upper=1) if limit > 0 else 0.0
+    )
     reservation_df["remaining"] = (limit - reservation_df["count"]).clip(lower=0)
-    warning_level = max(0.2 * limit, 2.0) / limit
+    warning_level = max(0.2 * limit, 2.0) / limit if limit > 0 else 1.0
     colorscale = [
         [0.0, Colour.RESERVATIONS_NONE],
         [1e-6, Colour.RESERVATIONS_LOW if warning_level > 0 else Colour.RESERVATIONS_AVAILABLE],
