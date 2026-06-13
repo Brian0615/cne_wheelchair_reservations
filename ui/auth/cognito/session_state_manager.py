@@ -82,6 +82,11 @@ class CognitoAuthSessionStateManager:
         return st.session_state["auth_state"] == "logged_in"
 
     @staticmethod
+    def is_logged_out() -> bool:
+        """Returns if the user has explicitly logged out as of the streamlit session state."""
+        return st.session_state.get("auth_state") == "logged_out"
+
+    @staticmethod
     def get_username() -> Optional[str]:
         """Returns the username saved in streamlit session state."""
         return st.session_state.get("auth_username") or None
