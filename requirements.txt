@@ -16,4 +16,4 @@ pydantic-extra-types>=2.9,<3
 pymupdf>=1.27.1,<1.28
 reportlab>=4.4,<4.5
 streamlit>=1.57,<1.58
-streamlit-authenticator>=0.4,<1
+streamlit-authenticator>=0.4.2,<1
