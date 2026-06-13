@@ -37,7 +37,7 @@ for device, inventory in zip(
         display_no_device_in_inventory_message(device)
     else:
         inventory_chart = create_inventory_chart(inventory)
-        st.plotly_chart(inventory_chart, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(inventory_chart, config={'displayModeBar': False})
 
 # divider
 st.divider()

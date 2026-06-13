@@ -63,7 +63,7 @@ with confirm_cancel_col.expander("Confirm or Cancel Reservation", expanded=True)
     status_func(f"Reservation Status: **{reservation.status}**")
     st.button(
         label="Confirm Reservation",
-        use_container_width=True,
+        width="stretch",
         icon=":material/check_circle:",
         disabled=disable_edits or reservation.status == ReservationStatus.CONFIRMED,
         key="confirm_reservation",
@@ -72,7 +72,7 @@ with confirm_cancel_col.expander("Confirm or Cancel Reservation", expanded=True)
     )
     st.button(
         "Cancel Reservation",
-        use_container_width=True,
+        width="stretch",
         icon=":material/cancel:",
         disabled=disable_edits,
         key="cancel_reservation",
