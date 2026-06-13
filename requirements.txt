@@ -2,7 +2,7 @@ boto3>=1.37.28,<1.38
 certifi>=2024.8
 extra_streamlit_components>=0.1.80,<0.2
 fastapi[standard]>=0.115,<1
-moto==5.1.1
+moto==5.2.2
 numpy>=2.4.5,<3
 pandas>=2.2,<3
 pandera>=0.20,<1
