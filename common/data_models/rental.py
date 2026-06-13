@@ -192,4 +192,4 @@ class RentalSummary(BaseModel):
     @classmethod
     def convert_nat_to_none(cls, value):
         """Convert pandas NaT to None"""
-        return None if pd.isnull(value) else value
+        return None if pd.isna(value) else value

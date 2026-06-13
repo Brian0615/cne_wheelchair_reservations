@@ -156,14 +156,14 @@ def create_reservation_availability_chart(
     ]
     fig = go.Figure(
         data=go.Heatmap(
-            z=reservation_df["availability"].values.reshape(-1, 7)[::-1],
-            text=reservation_df["label"].values.reshape(-1, 7)[::-1],
+            z=reservation_df["availability"].to_numpy().reshape(-1, 7)[::-1],
+            text=reservation_df["label"].to_numpy().reshape(-1, 7)[::-1],
             texttemplate="%{text}",
             textfont={"size": 14},
             customdata=np.dstack((
-                reservation_df["date"].dt.strftime("%b %d, %Y").values.reshape(-1, 7)[::-1],
-                reservation_df["count"].fillna(0).values.reshape(-1, 7)[::-1],
-                reservation_df["remaining"].fillna(0).values.reshape(-1, 7)[::-1]
+                reservation_df["date"].dt.strftime("%b %d, %Y").to_numpy().reshape(-1, 7)[::-1],
+                reservation_df["count"].fillna(0).to_numpy().reshape(-1, 7)[::-1],
+                reservation_df["remaining"].fillna(0).to_numpy().reshape(-1, 7)[::-1]
             )),
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
@@ -258,6 +258,8 @@ def export_reservations_to_pdf(reservations_df: pd.DataFrame, date: datetime.dat
     reservations_df["reservation_time"] = reservations_df["reservation_time"].dt.strftime("%I:%M %p")
     reservations_df["phone_number"] = reservations_df["phone_number"].str.lstrip("tel:")
     for _, device_type in enumerate(reservations_df['device_type'].unique()):
+        # pandas 3.0 stores the column as plain strings; restore the enum for .value / label access
+        device_type = DeviceType(device_type)
         # Filter the reservations for this device type
         device_reservations = reservations_df[reservations_df['device_type'] == device_type][
             ["id", "name", "phone_number", "reservation_time", "location", "status", "notes"]

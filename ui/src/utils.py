@@ -2,12 +2,31 @@ from datetime import date, datetime, time
 from functools import wraps
 from typing import List, Optional, Tuple
 
+import pandas as pd
 import streamlit as st
 from pydantic import BaseModel, ValidationError
 
+from common.data_models import RentalSummary
 from common.utils import get_default_timezone
 from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
+
+
+def clean_dataframe_record(row: pd.DataFrame) -> dict:
+    """Extract a single-row DataFrame as a dict, converting pandas NA values to None.
+
+    pandas 3.0's default string dtype represents missing values as NaN rather than None, which
+    pydantic models reject; this normalizes them back to None before model construction.
+    """
+    record = row.to_dict(orient="records")[0]
+    cleaned = {}
+    for key, value in record.items():
+        try:
+            is_na = bool(pd.isna(value))
+        except (TypeError, ValueError):
+            is_na = False  # non-scalar values (e.g. lists) are never NA
+        cleaned[key] = None if is_na else value
+    return cleaned
 
 
 def display_validation_errors(errors: List[dict], validation_class: type[BaseModel]):
@@ -72,7 +91,8 @@ def get_rental_selection(
     rental_id = rental_id.split("Rental ID: ")[1][:-1] if rental_id else None
     if not rental_id:
         return rental_date, None, None
-    return rental_date, rental_id, rentals.loc[rentals["id"] == rental_id].to_dict(orient="records")[0]
+    rental_record = clean_dataframe_record(rentals.loc[rentals["id"] == rental_id])
+    return rental_date, rental_id, RentalSummary(**rental_record).model_dump()
 
 
 def clear_session_state_for_form(clear_prefixes: List[str]):
