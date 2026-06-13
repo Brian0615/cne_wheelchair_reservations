@@ -80,7 +80,7 @@ def display_dual_indicator_chart(
         ),
     )
     fig.update_layout(height=75, margin={"t": 20, "b": 0, "l": 2, "r": 2}, grid={"rows": 1, "columns": 2})
-    st.plotly_chart(fig, key=key, use_container_width=True, config={'displayModeBar': False})
+    st.plotly_chart(fig, key=key, config={'displayModeBar': False})
 
 
 def display_dual_indicator_reservation_chart(reservations: pd.DataFrame, location: Location):
@@ -201,7 +201,7 @@ def display_inventory_table(device_type: DeviceType, inventory: pd.DataFrame):
             "status": st.column_config.TextColumn(label=Device.model_fields["status"].title),
             "location": st.column_config.TextColumn(label=Device.model_fields["location"].title),
         },
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         key=f"{device_type.value.lower()}_inventory_table",
     )
@@ -243,7 +243,7 @@ def display_reservations_table(reservations: pd.DataFrame, device_type: DeviceTy
             "notes": st.column_config.TextColumn(label="Notes"),
         },
         column_order=["id", "name", "phone_number", "location", "reservation_time", "status", "rental_id", "notes"],
-        use_container_width=True,
+        width="stretch",
     )
 
 
@@ -283,7 +283,7 @@ def display_rentals_table(rentals: pd.DataFrame, device_type: DeviceType):
             "id", "name", "phone_number", "device_id", "pickup_location", "pickup_time", "deposit_payment_method",
             "return_location", "return_time", "items_left_behind", "notes"
         ],
-        use_container_width=True,
+        width="stretch",
     )
 
 
