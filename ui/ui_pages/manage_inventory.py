@@ -88,14 +88,14 @@ def display_manage_options(device_type: DeviceType):
     add_col.button(
         label="Add",
         icon=":material/add_circle:",
-        use_container_width=True,
+        width="stretch",
         on_click=add_scooters if device_type == DeviceType.SCOOTER else add_wheelchairs,
         key=f"manage_inventory_add_{device_type.lower()}s",
     )
     status_col.button(
         label="Update",
         icon=":material/edit_square:",
-        use_container_width=True,
+        width="stretch",
         on_click=update_scooters if device_type == DeviceType.SCOOTER else update_wheelchairs,
         args=(scooter_inventory if device_type == DeviceType.SCOOTER else wheelchair_inventory,),
         key=f"manage_inventory_update_{device_type.lower()}s",
@@ -103,7 +103,7 @@ def display_manage_options(device_type: DeviceType):
     transfer_col.button(
         label="Transfer",
         icon=":material/drag_pan:",
-        use_container_width=True,
+        width="stretch",
         on_click=transfer_scooters if device_type == DeviceType.SCOOTER else transfer_wheelchairs,
         args=(scooter_inventory if device_type == DeviceType.SCOOTER else wheelchair_inventory,),
         key=f"manage_inventory_transfer_{device_type.lower()}s",
@@ -111,7 +111,7 @@ def display_manage_options(device_type: DeviceType):
     remove_col.button(
         label="Remove",
         icon=":material/delete:",
-        use_container_width=True,
+        width="stretch",
         on_click=remove_scooters if device_type == DeviceType.SCOOTER else remove_wheelchairs,
         args=(scooter_inventory if device_type == DeviceType.SCOOTER else wheelchair_inventory,),
         key=f"manage_inventory_remove_{device_type.lower()}s",

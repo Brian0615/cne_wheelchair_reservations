@@ -29,7 +29,7 @@ with form_col:
                 "Download",
                 icon=":material/download:",
                 data=form_data,
-                use_container_width=True,
+                width="stretch",
                 file_name=f"rental_form_{rental_id}.pdf",
             )
         else:

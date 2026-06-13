@@ -23,7 +23,7 @@ with col2:
             data=pdf_data,
             file_name=f"reservations_{formatted_date}.pdf",
             mime="application/pdf",
-            use_container_width=True
+            width="stretch"
         )
 
 # Display reservations table
