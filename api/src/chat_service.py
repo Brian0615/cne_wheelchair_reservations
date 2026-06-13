@@ -18,8 +18,17 @@ from pydantic_ai.providers.google import GoogleProvider
 
 from api.src.dynamodb_service import DynamoDBService
 from common.cne_dates import CNEDates
-from common.constants import DeviceType, Location
-from common.data_models import ChatMessage, ChatRole, Device, RentalSummary, Reservation, ReservationCount
+from common.constants import DeviceStatus, DeviceType, Location, PaymentMethod
+from common.data_models import (
+    ChatMessage,
+    ChatRole,
+    Device,
+    Rental,
+    RentalSummary,
+    Reservation,
+    ReservationCount,
+    ReservationStatusCount,
+)
 from common.logger import initialize_logger
 from common.utils import get_default_timezone
 
@@ -41,9 +50,17 @@ this application.
 inventory questions"). Do not attempt to answer out-of-scope questions and do not call any tools for them.
 - Always use the provided tools to retrieve live data instead of guessing. Never invent rental IDs, names, \
 counts, or availability.
+- When a question references a specific rental, reservation, or device ID, prefer the by-ID lookup tools \
+(lookup_rental_by_id, lookup_reservation_by_id, lookup_device_by_id) over scanning lists.
+- There is no expected-return-time or "due back" data. For "overdue"/"outstanding"/"still out" questions, use \
+lookup_outstanding_rentals and make clear you are reporting rentals that have not been returned yet, not overdue ones.
+- There is no explicit "no-show" status. Approximate unfulfilled/no-show reservations from reservation_status_counts \
+(a reservation whose date has passed but is still Reserved/Confirmed/Pending rather than Picked Up or Completed), and \
+note that this is an approximation.
+- For fee and deposit amounts, use fee_and_deposit_schedule rather than guessing.
 - Be concise. The current CNE year is {cne_year}. When a question refers to today, or fair dates, use the available \
  tool calls to determine the relevant dates.
-
+- When information is asked generally (e.g. "How many rentals today?"), provide overall information as well as \
 When asked how to use the application, answer using the App Usage Guide below.
 
 ===== APP USAGE GUIDE =====
@@ -104,10 +121,19 @@ class ChatService:
                 self.lookup_reservations_on_date,
                 self.lookup_available_devices,
                 self.lookup_full_inventory,
+                self.lookup_rental_by_id,
+                self.lookup_reservation_by_id,
+                self.lookup_device_by_id,
+                self.lookup_devices_by_status,
+                self.lookup_current_rental_for_device,
+                self.lookup_outstanding_rentals,
+                self.search_reservations,
                 self.count_unreturned_rentals_on_date,
                 self.count_rentals_on_date,
                 self.count_available_devices_by_location,
                 self.reservation_counts,
+                self.reservation_status_counts,
+                self.fee_and_deposit_schedule,
         ):
             agent.tool_plain(tool)
 
@@ -206,6 +232,90 @@ class ChatService:
         items = self.db_service.get_full_inventory(cne_year=self.cne_year)
         return [Device(**item).model_dump(mode="json") for item in items]
 
+    def lookup_rental_by_id(self, rental_id: str) -> Optional[dict]:
+        """Look up a single rental by its ID (e.g. "W0820001").
+
+        Returns the full rental record — including renter info, payment amounts/methods, items left
+        behind, staff names, and return location/time/staff — or None if no such rental exists. Use
+        this whenever a question references a specific rental ID.
+        """
+        item = self.db_service.get_rental_by_id(cne_year=self.cne_year, rental_id=rental_id)
+        return Rental(**item).model_dump(mode="json") if item else None
+
+    def lookup_reservation_by_id(self, reservation_id: str) -> Optional[dict]:
+        """Look up a single reservation by its ID (e.g. "W0820001").
+
+        Returns the full reservation record — including pickup location, reservation time, status, and
+        the linked rental_id (if it has been picked up) — or None if no such reservation exists. Use
+        this whenever a question references a specific reservation ID.
+        """
+        item = self.db_service.get_reservation_by_id(cne_year=self.cne_year, reservation_id=reservation_id)
+        return Reservation(**item).model_dump(mode="json") if item else None
+
+    def lookup_device_by_id(self, device_id: str) -> Optional[dict]:
+        """Look up a single device by its ID (e.g. "W04") to see its current status and location.
+
+        Returns None if no such device exists. A status of "Rented" means it is currently out on a
+        rental; use lookup_current_rental_for_device to find who has it.
+        """
+        item = self.db_service.get_device_by_id(cne_year=self.cne_year, device_id=device_id)
+        return Device(**item).model_dump(mode="json") if item else None
+
+    def lookup_devices_by_status(
+            self,
+            status: DeviceStatus,
+            device_type: Optional[DeviceType] = None,
+            location: Optional[Location] = None,
+    ) -> List[dict]:
+        """List devices that currently have a given status, with their IDs and locations.
+
+        Args:
+            status: The device status to filter by (Available, Backup, Out of Service, or Rented).
+            device_type: Optionally restrict to a single device type (Scooter or Wheelchair).
+            location: Optionally restrict to a single location (BLC or PG).
+        """
+        items = self.db_service.get_devices_by_status(
+            cne_year=self.cne_year, status=status, device_type=device_type, location=location
+        )
+        return [Device(**item).model_dump(mode="json") for item in items]
+
+    def lookup_current_rental_for_device(self, device_id: str) -> Optional[dict]:
+        """Find the in-progress (not yet returned) rental currently on a device.
+
+        Returns the rental record (including who has it) or None if the device is not currently out on
+        a rental. Note: there is no expected-return-time tracked, so this cannot say when it is due back.
+        """
+        item = self.db_service.get_current_rental_for_device(cne_year=self.cne_year, device_id=device_id)
+        return Rental(**item).model_dump(mode="json") if item else None
+
+    def lookup_outstanding_rentals(self, device_type: Optional[DeviceType] = None) -> List[dict]:
+        """List all rentals that are still in progress (not yet returned) across the whole CNE year.
+
+        Use this for "outstanding"/"not yet returned"/"still out" questions. There is no
+        expected-return-time, so these are not necessarily "overdue" — only not-yet-returned.
+
+        Args:
+            device_type: Optionally restrict to a single device type (Scooter or Wheelchair).
+        """
+        items = self.db_service.get_outstanding_rentals(cne_year=self.cne_year, device_type=device_type)
+        return [RentalSummary(**item).model_dump(mode="json") for item in items]
+
+    def search_reservations(
+            self,
+            name: Optional[str] = None,
+            phone_number: Optional[str] = None,
+    ) -> List[dict]:
+        """Search reservations for the current CNE year by renter name and/or phone number.
+
+        Provide at least one of name (matched as a case-sensitive substring) or phone_number (exact
+        match). Returns matching reservations across all dates. Use this to answer "does <person> have
+        a reservation?".
+        """
+        items = self.db_service.search_reservations(
+            cne_year=self.cne_year, name=name, phone_number=phone_number
+        )
+        return [Reservation(**item).model_dump(mode="json") for item in items]
+
     # ==============================
     # AGGREGATE TOOLS
     # ==============================
@@ -221,10 +331,9 @@ class ChatService:
             date: The date to count unreturned rentals for.
             device_type: Optionally restrict to a single device type (Scooter or Wheelchair).
         """
-        items = self.db_service.get_rentals_on_date(
+        return self.db_service.count_rentals_on_date(
             date=date, device_type=device_type, in_progress_rentals_only=True
         )
-        return len(items)
 
     def count_rentals_on_date(
             self,
@@ -237,8 +346,7 @@ class ChatService:
             date: The date to count rentals for.
             device_type: Optionally restrict to a single device type (Scooter or Wheelchair).
         """
-        items = self.db_service.get_rentals_on_date(date=date, device_type=device_type)
-        return len(items)
+        return self.db_service.count_rentals_on_date(date=date, device_type=device_type)
 
     def count_available_devices_by_location(self, device_type: DeviceType) -> Dict[str, int]:
         """Count how many devices of a type are available for walk-in rentals at each location.
@@ -246,16 +354,38 @@ class ChatService:
         Args:
             device_type: The device type to count (Scooter or Wheelchair).
         """
-        return {
-            location.value: len(
-                self.db_service.get_available_device_ids(
-                    cne_year=self.cne_year, device_type=device_type, location=location
-                )
-            )
-            for location in Location
-        }
+        return self.db_service.count_available_devices_by_location(
+            cne_year=self.cne_year, device_type=device_type
+        )
 
     def reservation_counts(self) -> List[dict]:
         """Get reservation counts broken down by date, device type, and location for the current CNE year."""
         counts = self.db_service.get_reservation_count(self.cne_year)
         return [ReservationCount(**row).model_dump(mode="json") for row in counts.to_dict(orient="records")]
+
+    def reservation_status_counts(self) -> List[dict]:
+        """Get reservation counts broken down by status and device type for the current CNE year.
+
+        Includes every status (Pending Confirmation, Confirmed, Reserved, Picked Up, Completed,
+        Cancelled, Waitlisted). There is no explicit "no-show" status: a no-show / unfulfilled
+        reservation can be approximated as one whose date has passed but is still in a pre-pickup
+        status (Reserved/Confirmed/Pending) rather than Picked Up or Completed.
+        """
+        counts = self.db_service.get_reservation_status_counts(self.cne_year)
+        return [ReservationStatusCount(**row).model_dump(mode="json") for row in counts.to_dict(orient="records")]
+
+    def fee_and_deposit_schedule(self) -> dict:
+        """Get the rental fee and refundable deposit amounts (in CAD) for each device type, plus the
+        accepted payment methods. This is fixed reference data, not live database data.
+        """
+        return {
+            "fees_and_deposits": {
+                device_type.value: {
+                    "rental_fee": DeviceType.get_fee_amount(device_type),
+                    "deposit": DeviceType.get_deposit_amount(device_type),
+                }
+                for device_type in DeviceType
+            },
+            "accepted_fee_payment_methods": sorted(PaymentMethod.get_accepted_fee_payment_methods()),
+            "accepted_deposit_payment_methods": sorted(PaymentMethod.get_accepted_deposit_payment_methods()),
+        }

@@ -6,8 +6,8 @@ import pandas as pd
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, ToolCallPart, ToolReturnPart
 
 from api.src.chat_service import ChatService, _to_model_messages
-from common.constants import DeviceStatus, DeviceType, Location
-from common.data_models import ChatMessage, ChatRole, Device, RentalSummary
+from common.constants import DeviceStatus, DeviceType, Location, PaymentMethod, ReservationStatus
+from common.data_models import ChatMessage, ChatRole, Device, Rental, RentalSummary, Reservation
 from common.utils import get_default_timezone
 
 
@@ -17,6 +17,58 @@ def _make_chat_service() -> ChatService:
     service.db_service = MagicMock()
     service.cne_year = 2025
     return service
+
+
+def _make_rental(**overrides) -> Rental:
+    """Build a full Rental for tests."""
+    params = {
+        "cne_year": 2025,
+        "id": "W0820001",
+        "date": datetime.date(2025, 8, 20),
+        "device_id": "W01",
+        "device_type": DeviceType.WHEELCHAIR,
+        "reservation_id": "W0820001",
+        "pickup_location": Location.BLC,
+        "pickup_time": get_default_timezone().localize(datetime.datetime(2025, 8, 20, 11, 0)),
+        "status": "In Progress",
+        "name": "Test Renter Name",
+        "phone_number": "4168202370",
+        "address": "1234 Test St",
+        "city": "Test City",
+        "province": "Ontario",
+        "postal_code": "A1B2C3",
+        "country": "CAN",
+        "fee_payment_amount": 20,
+        "fee_payment_method": PaymentMethod.CASH,
+        "deposit_payment_amount": 50,
+        "deposit_payment_method": PaymentMethod.CASH,
+        "items_left_behind": [],
+        "notes": None,
+        "staff_name": "Test Staff",
+        "return_location": None,
+        "return_time": None,
+        "return_staff_name": None,
+    }
+    params.update(overrides)
+    return Rental(**params)
+
+
+def _make_reservation(**overrides) -> Reservation:
+    """Build a full Reservation for tests."""
+    params = {
+        "cne_year": 2025,
+        "id": "W0820001",
+        "date": datetime.date(2025, 8, 20),
+        "device_type": DeviceType.WHEELCHAIR,
+        "location": Location.BLC,
+        "reservation_time": get_default_timezone().localize(datetime.datetime(2025, 8, 20, 11, 0)),
+        "name": "Test Reservation Name",
+        "phone_number": "4168202370",
+        "notes": "N/A",
+        "status": ReservationStatus.RESERVED,
+    }
+    params.update(overrides)
+    return Reservation(**params)
 
 
 class TestChatServiceTools(TestCase):
@@ -98,30 +150,132 @@ class TestChatServiceTools(TestCase):
         self.assertEqual([device.model_dump(mode="json")], result)
         self.service.db_service.get_full_inventory.assert_called_once_with(cne_year=2025)
 
+    def test_lookup_rental_by_id_converts_item(self):
+        rental = _make_rental()
+        self.service.db_service.get_rental_by_id.return_value = rental.model_dump()
+        result = self.service.lookup_rental_by_id(rental_id="W0820001")
+        self.assertEqual(rental.model_dump(mode="json"), result)
+        self.service.db_service.get_rental_by_id.assert_called_once_with(cne_year=2025, rental_id="W0820001")
+
+    def test_lookup_rental_by_id_not_found(self):
+        self.service.db_service.get_rental_by_id.return_value = None
+        self.assertIsNone(self.service.lookup_rental_by_id(rental_id="W0820099"))
+
+    def test_lookup_reservation_by_id_converts_item(self):
+        reservation = _make_reservation()
+        self.service.db_service.get_reservation_by_id.return_value = reservation.model_dump()
+        result = self.service.lookup_reservation_by_id(reservation_id="W0820001")
+        self.assertEqual(reservation.model_dump(mode="json"), result)
+        self.service.db_service.get_reservation_by_id.assert_called_once_with(
+            cne_year=2025, reservation_id="W0820001"
+        )
+
+    def test_lookup_reservation_by_id_not_found(self):
+        self.service.db_service.get_reservation_by_id.return_value = None
+        self.assertIsNone(self.service.lookup_reservation_by_id(reservation_id="W0820099"))
+
+    def test_lookup_device_by_id_converts_item(self):
+        device = Device(
+            cne_year=2025, id="W04", type=DeviceType.WHEELCHAIR, status=DeviceStatus.RENTED, location=Location.BLC
+        )
+        self.service.db_service.get_device_by_id.return_value = device.model_dump()
+        result = self.service.lookup_device_by_id(device_id="W04")
+        self.assertEqual(device.model_dump(mode="json"), result)
+        self.service.db_service.get_device_by_id.assert_called_once_with(cne_year=2025, device_id="W04")
+
+    def test_lookup_device_by_id_not_found(self):
+        self.service.db_service.get_device_by_id.return_value = None
+        self.assertIsNone(self.service.lookup_device_by_id(device_id="W99"))
+
+    def test_lookup_devices_by_status_converts_items(self):
+        device = Device(
+            cne_year=2025, id="W02", type=DeviceType.WHEELCHAIR, status=DeviceStatus.OUT_OF_SERVICE,
+            location=Location.PG,
+        )
+        self.service.db_service.get_devices_by_status.return_value = [device.model_dump()]
+        result = self.service.lookup_devices_by_status(
+            status=DeviceStatus.OUT_OF_SERVICE, device_type=DeviceType.WHEELCHAIR, location=Location.PG
+        )
+        self.assertEqual([device.model_dump(mode="json")], result)
+        self.service.db_service.get_devices_by_status.assert_called_once_with(
+            cne_year=2025, status=DeviceStatus.OUT_OF_SERVICE, device_type=DeviceType.WHEELCHAIR, location=Location.PG
+        )
+
+    def test_lookup_current_rental_for_device_converts_item(self):
+        rental = _make_rental()
+        self.service.db_service.get_current_rental_for_device.return_value = rental.model_dump()
+        result = self.service.lookup_current_rental_for_device(device_id="W01")
+        self.assertEqual(rental.model_dump(mode="json"), result)
+        self.service.db_service.get_current_rental_for_device.assert_called_once_with(
+            cne_year=2025, device_id="W01"
+        )
+
+    def test_lookup_current_rental_for_device_none(self):
+        self.service.db_service.get_current_rental_for_device.return_value = None
+        self.assertIsNone(self.service.lookup_current_rental_for_device(device_id="W01"))
+
+    def test_lookup_outstanding_rentals_converts_items(self):
+        summary = RentalSummary(
+            cne_year=2025,
+            id="W0820001",
+            date=datetime.date(2025, 8, 20),
+            device_id="W01",
+            device_type=DeviceType.WHEELCHAIR,
+            reservation_id="W0820001",
+            pickup_location=Location.BLC,
+            pickup_time=get_default_timezone().localize(datetime.datetime(2025, 8, 20, 11, 0)),
+            status="In Progress",
+            name="Test Renter Name",
+            phone_number="4168202370",
+            deposit_payment_method="Cash",
+            items_left_behind=[],
+            notes=None,
+            return_location=None,
+            return_time=None,
+        )
+        self.service.db_service.get_outstanding_rentals.return_value = [summary.model_dump()]
+        result = self.service.lookup_outstanding_rentals(device_type=DeviceType.WHEELCHAIR)
+        self.assertEqual([summary.model_dump(mode="json")], result)
+        self.service.db_service.get_outstanding_rentals.assert_called_once_with(
+            cne_year=2025, device_type=DeviceType.WHEELCHAIR
+        )
+
+    def test_search_reservations_converts_items(self):
+        reservation = _make_reservation()
+        self.service.db_service.search_reservations.return_value = [reservation.model_dump()]
+        result = self.service.search_reservations(name="Test", phone_number="4168202370")
+        self.assertEqual([reservation.model_dump(mode="json")], result)
+        self.service.db_service.search_reservations.assert_called_once_with(
+            cne_year=2025, name="Test", phone_number="4168202370"
+        )
+
     # ── aggregate tools ───────────────────────────────────────────────────
 
     def test_count_unreturned_rentals_on_date(self):
-        self.service.db_service.get_rentals_on_date.return_value = [{}, {}, {}]
+        self.service.db_service.count_rentals_on_date.return_value = 3
         result = self.service.count_unreturned_rentals_on_date(date=datetime.date(2025, 8, 20))
         self.assertEqual(3, result)
-        self.service.db_service.get_rentals_on_date.assert_called_once_with(
+        self.service.db_service.count_rentals_on_date.assert_called_once_with(
             date=datetime.date(2025, 8, 20), device_type=None, in_progress_rentals_only=True
         )
 
     def test_count_rentals_on_date(self):
-        self.service.db_service.get_rentals_on_date.return_value = [{}, {}]
+        self.service.db_service.count_rentals_on_date.return_value = 2
         result = self.service.count_rentals_on_date(date=datetime.date(2025, 8, 20), device_type=DeviceType.SCOOTER)
         self.assertEqual(2, result)
-        self.service.db_service.get_rentals_on_date.assert_called_once_with(
+        self.service.db_service.count_rentals_on_date.assert_called_once_with(
             date=datetime.date(2025, 8, 20), device_type=DeviceType.SCOOTER
         )
 
     def test_count_available_devices_by_location(self):
-        self.service.db_service.get_available_device_ids.side_effect = lambda cne_year, device_type, location: (
-            ["S01", "S02"] if location == Location.BLC else ["S03"]
-        )
+        self.service.db_service.count_available_devices_by_location.return_value = {
+            Location.BLC.value: 2, Location.PG.value: 1
+        }
         result = self.service.count_available_devices_by_location(device_type=DeviceType.SCOOTER)
         self.assertEqual({Location.BLC.value: 2, Location.PG.value: 1}, result)
+        self.service.db_service.count_available_devices_by_location.assert_called_once_with(
+            cne_year=2025, device_type=DeviceType.SCOOTER
+        )
 
     def test_reservation_counts_converts_dataframe(self):
         self.service.db_service.get_reservation_count.return_value = pd.DataFrame([
@@ -131,6 +285,25 @@ class TestChatServiceTools(TestCase):
         self.assertEqual(1, len(result))
         self.assertEqual(5, result[0]["count"])
         self.service.db_service.get_reservation_count.assert_called_once_with(2025)
+
+    def test_reservation_status_counts_converts_dataframe(self):
+        self.service.db_service.get_reservation_status_counts.return_value = pd.DataFrame([
+            {"status": "Reserved", "device_type": "Wheelchair", "count": 3},
+            {"status": "Picked Up", "device_type": "Scooter", "count": 2},
+        ])
+        result = self.service.reservation_status_counts()
+        self.assertEqual(2, len(result))
+        self.assertEqual({"Reserved", "Picked Up"}, {row["status"] for row in result})
+        self.service.db_service.get_reservation_status_counts.assert_called_once_with(2025)
+
+    def test_fee_and_deposit_schedule_is_static(self):
+        result = self.service.fee_and_deposit_schedule()
+        self.assertEqual(45, result["fees_and_deposits"]["Scooter"]["rental_fee"])
+        self.assertEqual(100, result["fees_and_deposits"]["Scooter"]["deposit"])
+        self.assertEqual(20, result["fees_and_deposits"]["Wheelchair"]["rental_fee"])
+        self.assertEqual(50, result["fees_and_deposits"]["Wheelchair"]["deposit"])
+        self.assertIn(PaymentMethod.CASH, result["accepted_fee_payment_methods"])
+        self.service.db_service.assert_not_called()
 
 
 class TestChatServiceAnswer(TestCase):

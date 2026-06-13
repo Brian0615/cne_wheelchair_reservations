@@ -10,6 +10,7 @@ st.caption(
     "Ask about rentals, reservations, and inventory, or how to use the app. "
     "For example: *\"Look up rental W0820001\"* or *\"How many scooters are available at each location?\"*"
 )
+st.warning("This chatbot is powered by AI and may occasionally make mistakes. Always verify important information.")
 
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = []
