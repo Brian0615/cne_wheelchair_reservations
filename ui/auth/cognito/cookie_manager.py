@@ -1,4 +1,3 @@
-import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -46,7 +45,18 @@ class CognitoAuthCookieManager(CognitoAuthCookieManagerBase):
     """Cognito authenticator cookie manager that saves credentials to browser cookies."""
 
     def __init__(self) -> None:
-        self.cookie_manager = stx.CookieManager()
+        # The extra_streamlit_components widget renders a zero-height iframe (and injects
+        # spacing into the page) as soon as it is constructed. Reads now use
+        # st.context.cookies, so the widget is only needed to write/delete cookies. Create
+        # it lazily so normal page loads and refreshes never render it -- otherwise it
+        # leaves empty space at the top of every page.
+        self._cookie_manager: Optional[stx.CookieManager] = None
+
+    @property
+    def cookie_manager(self) -> stx.CookieManager:
+        if self._cookie_manager is None:
+            self._cookie_manager = stx.CookieManager()
+        return self._cookie_manager
 
     def set_credentials(self, credentials: Credentials) -> None:
         self.cookie_manager.set("id_token", credentials.id_token, key="set_id_token")
@@ -56,8 +66,11 @@ class CognitoAuthCookieManager(CognitoAuthCookieManagerBase):
         self.cookie_manager.set("token_type", credentials.token_type, key="set_token_type")
 
     def load_credentials(self) -> Optional[Credentials]:
-        cookies = self.cookie_manager.get_all("load_credentials_get_all")
-        time.sleep(0.3)
+        # Read from the request cookies, which are available synchronously on the very
+        # first script run of a session (e.g. after a page refresh). The cookie component
+        # (used for set/delete) only returns its values after a browser round-trip, so
+        # relying on it here would force an extra rerun and briefly flash the login page.
+        cookies = dict(st.context.cookies)
         try:
             return Credentials(**cookies)
         except ValidationError:

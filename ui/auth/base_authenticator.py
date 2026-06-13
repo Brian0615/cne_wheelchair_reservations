@@ -122,6 +122,20 @@ class BaseAuthenticator:
         """
         raise NotImplementedError("Subclasses must implement is_authenticated method")
 
+    def restore_session(self) -> bool:
+        """
+        Attempt to silently restore the session from persistent storage (e.g. cookies)
+        without rendering any login UI.
+
+        The default implementation performs no restoration and simply reports the current
+        authentication state. Subclasses that support persistent sessions should override
+        this to re-hydrate the session before any pages are rendered.
+
+        Returns:
+            bool: True if a session is active after the attempt, False otherwise.
+        """
+        return self.is_authenticated()
+
     def login(self) -> bool:
         """
         Placeholder method for handling user login.

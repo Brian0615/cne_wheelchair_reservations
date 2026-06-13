@@ -3,9 +3,12 @@ from typing import Any, List, Set
 
 import streamlit as st
 
+from common.logger import initialize_logger
 from common.utils import read_secret
 from ui.auth.base_authenticator import BaseAuthenticator
 from ui.auth.cognito.authenticator import CognitoAuthenticator as CognitoAuth
+
+logger = initialize_logger()
 
 
 class CognitoAuthenticator(BaseAuthenticator):
@@ -33,7 +36,7 @@ class CognitoAuthenticator(BaseAuthenticator):
             pool_id=read_secret(os.environ["AWS_COGNITO_USER_POOL_ID"]),
             app_client_id=read_secret(os.environ["AWS_COGNITO_CLIENT_ID"]),
             app_client_secret=read_secret(os.environ["AWS_COGNITO_CLIENT_SECRET"]),
-            use_cookies=False,
+            use_cookies=True,
         )
 
     def get_current_user(self) -> str:
@@ -70,6 +73,19 @@ class CognitoAuthenticator(BaseAuthenticator):
     def is_authenticated(self) -> bool:
         """ Checks if the user is authenticated."""
         return self.authenticator.is_logged_in()
+
+    def restore_session(self) -> bool:
+        """
+        Silently restore the session from cookies without rendering the login form.
+
+        Returns:
+            bool: True if a session was restored, False otherwise.
+        """
+        try:
+            return self.authenticator.restore_session()
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.warning("Failed to restore session from cookies: %s", e)
+            return False
 
     # pylint: disable=unused-argument,fixme
     def login(self, rendered: bool = False) -> bool:

@@ -80,17 +80,30 @@ class CognitoAuthenticatorBase(ABC):
             raise
 
     def _login_from_cookies(self) -> bool:
+        if self.session_manager.is_logged_out():
+            # The user explicitly logged out during this session. Request cookies are read
+            # from the connection's initial request and may still carry the (now cleared)
+            # tokens, so ignore them here to avoid logging the user straight back in.
+            logger.info("Session is logged out; ignoring saved cookies")
+            return False
+
         credentials = self.cookie_manager.load_credentials()
-        logged_in = False
-        if credentials:
-            logger.info("Found credentials in cookies, trying to log in ...")
-            logged_in = self._set_state_login(credentials=credentials)
+        if not credentials:
+            # No saved credentials in cookies -- nothing to restore. Do not call
+            # reset_credentials() here; there is nothing to clear and it would only add a
+            # needless cookie-component render.
+            logger.info("No saved credentials in cookies")
+            return False
+
+        logger.info("Found credentials in cookies, trying to log in ...")
+        logged_in = self._set_state_login(credentials=credentials, persist=False)
         if not logged_in:
-            logger.info("Clearing cookie credentials")
+            # Credentials were present but invalid/expired -- safe to clear.
+            logger.info("Clearing invalid cookie credentials")
             self.cookie_manager.reset_credentials()
         return logged_in
 
-    def _set_state_login(self, credentials: Credentials) -> bool:
+    def _set_state_login(self, credentials: Credentials, persist: bool = True) -> bool:
         try:
             claims, user = verify_access_token(
                 self.pool_id,
@@ -109,7 +122,11 @@ class CognitoAuthenticatorBase(ABC):
                 email = None
             groups = self._get_user_groups(username=claims["username"])
             self.session_manager.set_logged_in(username=claims["username"], email=email, groups=groups)
-            self.cookie_manager.set_credentials(credentials=credentials)
+            if persist:
+                # Only write cookies on a fresh login/reset. When restoring an existing
+                # session the cookies already exist, and re-writing them would render the
+                # cookie component (and its empty spacing) on every page.
+                self.cookie_manager.set_credentials(credentials=credentials)
             logger.info("Successfully logged in")
             return True
         logger.info("Could not log in")
@@ -125,7 +142,7 @@ class CognitoAuthenticatorBase(ABC):
         logger.info("_login_from_saved_credentials")
         session_state_credentials = self.session_manager.load_credentials()
         if session_state_credentials:
-            logged_in = self._set_state_login(credentials=session_state_credentials)
+            logged_in = self._set_state_login(credentials=session_state_credentials, persist=False)
             logger.info("Logged in with session state credentials: %s", logged_in)
         else:
             logger.info("No credentials in session state")
@@ -135,6 +152,12 @@ class CognitoAuthenticatorBase(ABC):
             logger.info("Logged in with cookies credentials: %s", logged_in)
         logger.info("_login_from_saved_credentials finished")
         return logged_in
+
+    def restore_session(self) -> bool:
+        """Silently restore the session from saved credentials (session state or request
+        cookies) without rendering a login form. Returns True if the session was restored.
+        """
+        return self._login_from_saved_credentials()
 
     @abstractmethod
     def login(self) -> bool:
