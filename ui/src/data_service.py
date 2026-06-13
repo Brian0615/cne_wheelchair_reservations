@@ -21,7 +21,7 @@ from common.data_models import (
     Reservation,
 )
 from common.logger import initialize_logger, timeit
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 logger = initialize_logger()
 
@@ -45,6 +45,7 @@ class APIError(Exception):
 
 DEFAULT_CACHE_TTL = 30
 DEFAULT_TIMEOUT = 5
+CHAT_TIMEOUT = 60
 
 
 def auto_process_api_errors(func):
@@ -426,3 +427,22 @@ class DataService:
         )
         self._clear_settings_functions_cache()
         return response.status_code, response.json()
+
+    # ==============================
+    # CHAT
+    # ==============================
+
+    @auto_process_api_errors
+    def chat(self, message: str, history: List[Dict[str, str]]) -> str:
+        """Ask the chatbot a question using the API.
+
+        Note: a longer timeout than the default is used since LLM responses are slower, and the response is
+        not cached since every message is unique.
+        """
+        response = self._make_request(
+            request_method=requests.post,
+            url_path="chat/ask",
+            json={"message": message, "history": history},
+            timeout=CHAT_TIMEOUT,
+        )
+        return response.json()

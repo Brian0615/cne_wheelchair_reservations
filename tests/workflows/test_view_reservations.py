@@ -3,7 +3,7 @@ from unittest.mock import patch
 from tests.shared_mock_data import MOCK_SCOOTER_RESERVATIONS, MOCK_WHEELCHAIR_RESERVATIONS
 from tests.workflows.base import WorkflowTestCase
 from tests.workflows.mock_responses import MockAPIResponses
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 from ui.src import reservation_utils
 
 

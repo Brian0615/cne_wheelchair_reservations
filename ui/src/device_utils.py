@@ -9,7 +9,7 @@ from plotly import graph_objects as go
 
 from common.constants import DeviceType, DeviceStatus, Location
 from common.data_models import NewDevice
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 
 

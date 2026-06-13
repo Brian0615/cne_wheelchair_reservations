@@ -33,6 +33,8 @@ Required environment variables for local testing (see `api.env` / `ui.env` for e
 
 - `API_HOST`, `API_PORT`, `AUTH_METHOD`, `AUTH_CONFIG_PATH`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
   `AWS_DEFAULT_REGION`, `PDF_PASSWORD`, `S3_BUCKET`, `CNE_YEAR`
+- `GEMINI_API_KEY` — Google AI Studio key used by the chatbot (`api/src/chat_service.py`); only needed when actually
+  calling the chatbot. Optionally `GEMINI_MODEL` (defaults to `gemini-3.1-flash-lite`).
 
 ### Docker
 
@@ -56,20 +58,26 @@ The compose file uses Docker secrets sourced from environment variables. Images 
 
 **API** (`api/`, port 8595) — FastAPI app. Entry point: `api/main.py`.
 
-- Routers in `api/routers/`: `devices`, `rentals`, `reservations`, `settings`
+- Routers in `api/routers/`: `devices`, `rentals`, `reservations`, `settings`, `chat`
 - All routers delegate to `api/src/dynamodb_service.py` (`DynamoDBService`) for persistence
 - `api/src/s3_service.py` handles PDF upload/download
+- `api/src/chat_service.py` runs the chatbot: a `pydantic-ai` agent (Google Gemini) whose tools are thin wrappers
+  over `DynamoDBService`. The agent is built lazily so importing the module needs no `GEMINI_API_KEY`. App-usage help
+  is sourced from `api/assets/reservations_manual.md` (regenerate this from `CNE Wheelchair Reservations Manual.docx`
+  whenever the manual changes). This is the only `pydantic-ai`-coupled module, keeping a later framework swap localized.
 - Router functions are decorated with `@auto_process_database_errors` (`api/src/utils.py`) to convert domain exceptions
   to HTTP 400/404 responses
 
 **UI** (`ui/`, port 8095) — Streamlit app. Entry point: `ui/main.py`.
 
 - Page navigation is role-gated: all users see Home/Rentals/Reservations/Inventory; admin users get
-  reservation/inventory management; editor users get rental creation/management
+  reservation/inventory management plus the Chatbot (`ui/ui_pages/chatbot.py`); editor users get rental
+  creation/management
 - Pages live in `ui/ui_pages/`; reusable form field components in `ui/forms/`
 - PDF forms are filled via PyMuPDF in `ui/pdf_forms/` using fillable PDFs from `ui/assets/`
 
-**Common** (`common/`) — shared enums, Pydantic data models, logger, and utils used by both services.
+**Common** (`common/`) — shared enums, Pydantic data models, logger, utils, and CNE date helpers
+(`common/cne_dates.py` `CNEDates`) used by both services.
 
 ### Data layer
 

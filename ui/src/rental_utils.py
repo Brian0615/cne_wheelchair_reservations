@@ -8,7 +8,7 @@ from common.utils import get_default_timezone
 from ui.forms import NewRentalForm
 from ui.pdf_forms.scooter_pdf_form import ScooterPDFForm
 from ui.pdf_forms.wheelchair_pdf_form import WheelchairPDFForm
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 from ui.src.utils import clear_session_state_for_form, process_validation_errors
 

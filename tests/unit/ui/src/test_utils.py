@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from streamlit.testing.v1 import AppTest
 
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 
 class TestUtils(TestCase):

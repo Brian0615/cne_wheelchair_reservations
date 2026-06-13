@@ -8,7 +8,7 @@ from datetime import datetime
 from tests.workflows.base import WorkflowTestCase
 from tests.workflows.mock_responses import MockAPIResponses
 from ui.src import reservation_utils, utils
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 
 

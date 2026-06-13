@@ -7,7 +7,7 @@ from unittest.mock import patch
 from common.constants import Location
 from common.data_models import CompletedRental
 from common.utils import get_default_timezone
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 from ui.src.rental_utils import submit_complete_rental_form
 

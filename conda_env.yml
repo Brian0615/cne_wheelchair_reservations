@@ -27,6 +27,7 @@ dependencies:
   - pip:
       - extra-streamlit-components>=0.1.80,<0.2
       - pycognito>=2024.5,<2025
+      - pydantic-ai-slim[google]>=1.0,<2
       - pymupdf>=1.27.1,<1.28
       - streamlit-authenticator>=0.4.0,<0.5
       - streamlit-extras

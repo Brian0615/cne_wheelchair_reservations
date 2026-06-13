@@ -48,3 +48,12 @@ class ReservationCount(BaseModel):
     device_type: DeviceType = Field(title="Reservation Type")
     location: Location = Field(title="Pickup Location")
     count: Annotated[int, Field(title="Reservation Count", ge=0)]
+
+
+class ReservationStatusCount(BaseModel):
+    """Data validation class for reservation counts broken down by status"""
+    model_config = ConfigDict(extra="forbid")
+
+    status: ReservationStatus = Field(title="Status")
+    device_type: DeviceType = Field(title="Reservation Type")
+    count: Annotated[int, Field(title="Reservation Count", ge=0)]
