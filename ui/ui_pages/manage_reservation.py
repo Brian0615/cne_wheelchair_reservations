@@ -7,7 +7,7 @@ from ui.forms import ReservationForm
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
 from ui.src.reservation_utils import submit_update_reservation_form, update_reservation_status
-from ui.src.utils import display_validation_errors, get_date_input
+from ui.src.utils import clean_dataframe_record, display_validation_errors, get_date_input
 
 initialize_page(page_header="Manage Reservations")
 
@@ -37,7 +37,7 @@ reservation_id = reservation_col.selectbox(
 if not reservation_id:
     st.stop()
 reservation_id = reservation_id.split("-")[0].strip()
-reservation = Reservation(**reservations.loc[reservations["id"] == reservation_id].to_dict(orient="records")[0])
+reservation = Reservation(**clean_dataframe_record(reservations.loc[reservations["id"] == reservation_id]))
 disable_edits = reservation.status in {
     ReservationStatus.PICKED_UP,
     ReservationStatus.COMPLETED,

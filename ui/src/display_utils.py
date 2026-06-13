@@ -224,7 +224,7 @@ def display_reservations_table(reservations: pd.DataFrame, device_type: DeviceTy
 
     # turn into styler
     reservations_styler = reservations.set_index("id").style
-    reservations_styler = reservations_styler.applymap(
+    reservations_styler = reservations_styler.map(
         lambda value: f'background-color: {Colour.get_reservation_table_status_colour(value)}',
         subset=["status"],
     )
