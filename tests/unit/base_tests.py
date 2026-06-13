@@ -35,7 +35,21 @@ class BaseTestCases:
             {"AttributeName": "cne_year", "AttributeType": "N"},
             {"AttributeName": "id", "AttributeType": "S"}
         ]
+        __DATE_GSI_ATTRIBUTE_DEFINITIONS = [
+            {"AttributeName": "cne_year", "AttributeType": "N"},
+            {"AttributeName": "id", "AttributeType": "S"},
+            {"AttributeName": "date", "AttributeType": "S"},
+        ]
         __DEFAULT_PROVISIONED_THROUGHPUT = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
+        __DATE_GSI = [{
+            "IndexName": "cne_year-date",
+            "KeySchema": [
+                {"AttributeName": "cne_year", "KeyType": "HASH"},
+                {"AttributeName": "date", "KeyType": "RANGE"},
+            ],
+            "Projection": {"ProjectionType": "ALL"},
+            "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        }]
 
         @classmethod
         def setUpClass(cls):
@@ -61,13 +75,15 @@ class BaseTestCases:
             self.rentals_table = self.dynamodb.create_table(
                 TableName="cne_rentals",
                 KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
-                AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
+                AttributeDefinitions=self.__DATE_GSI_ATTRIBUTE_DEFINITIONS,
+                GlobalSecondaryIndexes=self.__DATE_GSI,
                 ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
             )
             self.reservations_table = self.dynamodb.create_table(
                 TableName="cne_reservations",
                 KeySchema=self.__DEFAULT_TABLE_KEY_SCHEMA,
-                AttributeDefinitions=self.__DEFAULT_ATTRIBUTE_DEFINITIONS,
+                AttributeDefinitions=self.__DATE_GSI_ATTRIBUTE_DEFINITIONS,
+                GlobalSecondaryIndexes=self.__DATE_GSI,
                 ProvisionedThroughput=self.__DEFAULT_PROVISIONED_THROUGHPUT,
             )
 
