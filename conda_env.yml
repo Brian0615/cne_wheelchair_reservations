@@ -4,30 +4,31 @@ channels:
   - conda-forge
   - main
 dependencies:
-  - boto3[version='>1.37.28,<1.38']
+  - boto3[version='>1.43.9,<1.44']
   - ca-certificates[version='>=2024.8']
-  - certifi[version='>=2024.8']
-  - fastapi[version='>=0.115,<1']
-  - moto==5.1.1
-  - numpy[version='>=2.4.5,<3']
+  - certifi[version='>=2026.5.20,<2027']
+  - fastapi[version='>=0.136,<1']
+  - moto[version='>=5.2.2,<5.3']
+  - numpy[version='>=2.4.6,<3']
   - openssl[version='>=3.3,<4']
-  - pandas[version='>=2.2,<3']
-  - pandera[version='>=0.20','<1']
-  - phonenumbers[version='>=8.13.0,<9']
+  - pandas[version='>=3.0.3,<4']
+  - pandera[version='>=0.31.1','<1']
+  - phonenumbers[version='>=9.0.30,<10']
   - pip[version='>=24.2,<25']
-  - plotly[version='>=5.24,<6']
+  - plotly[version='>=6.8,<7']
   - pycountry[version='>=24.6.1,<25']
-  - pydantic[version='>=2.10,<3']
-  - pydantic-extra-types[version='>=2.9,<3']
+  - pydantic[version='>=2.13.4,<3']
+  - pydantic-ai-slim[version='>=1.0,<2']
+  - pydantic-extra-types[version='>=2.10.5,<3']
   - pylint[version'>=4.0.5,<5']
   - pytest[version='>=7.0,<8']
   - pytest-cov[version='>=3.0,<4']
   - python[version='>=3.13,<3.14']
-  - streamlit[version='>=1.57,<1.58']
+  - streamlit[version='>=1.58,<1.59']
   - pip:
       - extra-streamlit-components>=0.1.80,<0.2
       - pycognito>=2024.5,<2025
       - pydantic-ai-slim[google]>=1.0,<2
-      - pymupdf>=1.27.1,<1.28
-      - streamlit-authenticator>=0.4.0,<0.5
+      - pymupdf>=1.27.2,<1.28
+      - streamlit-authenticator>=0.4.2,<0.5
       - streamlit-extras
