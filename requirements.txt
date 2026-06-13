@@ -14,6 +14,6 @@ pydantic>=2.10,<3
 pydantic-ai-slim[google]>=1.0,<2
 pydantic-extra-types>=2.9,<3
 pymupdf>=1.27.1,<1.28
-reportlab>=4.4,<4.5
+reportlab>=4.5.1,<4.6
 streamlit>=1.57,<1.58
 streamlit-authenticator>=0.4,<1
