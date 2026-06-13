@@ -37,6 +37,67 @@ class TestDynamoDBServiceReservations(BaseTestCases.BaseDynamoDBServiceTest):
         response = self.service.get_reservations_on_date(date=date(2025, 8, 21))
         self.assertEqual(len(response), 0)
 
+    def test_get_reservation_by_id(self):
+        self.assertIsNone(self.service.get_reservation_by_id(cne_year=2025, reservation_id="S0820001"))
+
+        reservation = self._generate_mock_new_reservation()
+        reservation.id = self.service.insert_reservation(reservation=reservation)
+
+        item = self.service.get_reservation_by_id(cne_year=2025, reservation_id=reservation.id)
+        self.assertEqual(Reservation(**item), Reservation(**reservation.model_dump()))
+
+        self.assertIsNone(self.service.get_reservation_by_id(cne_year=2025, reservation_id="S0820099"))
+        self.assertIsNone(self.service.get_reservation_by_id(cne_year=2026, reservation_id=reservation.id))
+
+    def test_search_reservations(self):
+        self.service.insert_reservation(
+            reservation=self._generate_mock_new_reservation(overrides={"name": "Alice Anderson"})
+        )
+        self.service.insert_reservation(
+            reservation=self._generate_mock_new_reservation(
+                overrides={"name": "Bob Brown", "phone_number": "4378202370"}
+            )
+        )
+
+        # no criteria returns nothing
+        self.assertEqual(self.service.search_reservations(cne_year=2025), [])
+
+        # name substring (case-sensitive)
+        by_name = self.service.search_reservations(cne_year=2025, name="Alice")
+        self.assertEqual([r["name"] for r in by_name], ["Alice Anderson"])
+
+        # exact phone number
+        by_phone = self.service.search_reservations(cne_year=2025, phone_number="4378202370")
+        self.assertEqual([r["name"] for r in by_phone], ["Bob Brown"])
+
+        # both together must match the same record
+        self.assertEqual(self.service.search_reservations(cne_year=2025, name="Alice", phone_number="4378202370"), [])
+
+    def test_get_reservation_status_counts(self):
+        self.assertTrue(self.service.get_reservation_status_counts(cne_year=2025).empty)
+
+        self.service.insert_reservation(
+            reservation=self._generate_mock_new_reservation(overrides={"status": ReservationStatus.RESERVED})
+        )
+        self.service.insert_reservation(
+            reservation=self._generate_mock_new_reservation(overrides={"status": ReservationStatus.RESERVED})
+        )
+        self.service.insert_reservation(
+            reservation=self._generate_mock_new_reservation(overrides={"status": ReservationStatus.CANCELLED})
+        )
+        self.service.insert_reservation(
+            reservation=self._generate_mock_new_reservation(
+                overrides={"status": ReservationStatus.PICKED_UP, "rental_id": "S0820010"}
+            )
+        )
+
+        counts = self.service.get_reservation_status_counts(cne_year=2025)
+        status_to_count = dict(zip(counts["status"], counts["count"]))
+        # cancelled and waitlisted are NOT filtered out (unlike get_reservation_count)
+        self.assertEqual(status_to_count[ReservationStatus.RESERVED], 2)
+        self.assertEqual(status_to_count[ReservationStatus.CANCELLED], 1)
+        self.assertEqual(status_to_count[ReservationStatus.PICKED_UP], 1)
+
     def test_insert_reservation(self):
         reservation = self._generate_mock_new_reservation()
         response = self.service.insert_reservation(reservation=reservation)

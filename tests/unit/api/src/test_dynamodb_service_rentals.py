@@ -332,6 +332,72 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
         self.assertEqual(self.service.devices_table.scan()["Items"][0]["status"], DeviceStatus.AVAILABLE)
         self.assertEqual(self.service.devices_table.scan()["Items"][1]["status"], DeviceStatus.RENTED)
 
+    def test_get_rental_by_id(self):
+        self.assertIsNone(self.service.get_rental_by_id(cne_year=2025, rental_id="W0820001"))
+
+        self.service.add_devices(devices=[
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.AVAILABLE)
+        ])
+        rental = self._generate_mock_new_rental(overrides={"reservation_id": None})
+        rental_id = self.service.insert_rental(rental=rental)
+
+        item = self.service.get_rental_by_id(cne_year=2025, rental_id=rental_id)
+        self.assertIsNotNone(item)
+        self.assertEqual(Rental(**item), Rental(id=rental_id, **rental.model_dump(mode="json")))
+
+        self.assertIsNone(self.service.get_rental_by_id(cne_year=2025, rental_id="W0820099"))
+        self.assertIsNone(self.service.get_rental_by_id(cne_year=2026, rental_id=rental_id))
+
+    def test_get_current_rental_for_device(self):
+        self.assertIsNone(self.service.get_current_rental_for_device(cne_year=2025, device_id="W01"))
+
+        self.service.add_devices(devices=[
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.AVAILABLE)
+        ])
+        rental = self._generate_mock_new_rental(overrides={"reservation_id": None})
+        rental_id = self.service.insert_rental(rental=rental)
+
+        item = self.service.get_current_rental_for_device(cne_year=2025, device_id="W01")
+        self.assertEqual(item["id"], rental_id)
+        self.assertEqual(item["status"], RentalStatus.IN_PROGRESS)
+
+        # a device with no in-progress rental returns None
+        self.assertIsNone(self.service.get_current_rental_for_device(cne_year=2025, device_id="W02"))
+
+        # once completed, the device no longer has a current rental
+        completed_rental = self._generate_mock_completed_rental(overrides={"id": rental_id, "reservation_id": None})
+        self.service.complete_rental(rental=completed_rental)
+        self.assertIsNone(self.service.get_current_rental_for_device(cne_year=2025, device_id="W01"))
+
+    def test_get_outstanding_rentals(self):
+        self.assertEqual(self.service.get_outstanding_rentals(cne_year=2025), [])
+
+        self.service.add_devices(devices=[
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.AVAILABLE),
+            NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.AVAILABLE),
+        ])
+        wheelchair_rental = self._generate_mock_new_rental(overrides={"reservation_id": None})
+        self.service.insert_rental(rental=wheelchair_rental)
+        scooter_rental = self._generate_mock_new_rental(overrides={
+            "reservation_id": None, "device_id": "S01", "device_type": DeviceType.SCOOTER,
+        })
+        scooter_rental_id = self.service.insert_rental(rental=scooter_rental)
+
+        outstanding = self.service.get_outstanding_rentals(cne_year=2025)
+        self.assertEqual(len(outstanding), 2)
+
+        # filter by device type
+        outstanding_wc = self.service.get_outstanding_rentals(cne_year=2025, device_type=DeviceType.WHEELCHAIR)
+        self.assertEqual([r["device_id"] for r in outstanding_wc], ["W01"])
+
+        # completing a rental drops it from the outstanding list
+        completed_rental = self._generate_mock_completed_rental(overrides={
+            "id": scooter_rental_id, "device_id": "S01", "reservation_id": None,
+        })
+        self.service.complete_rental(rental=completed_rental)
+        outstanding = self.service.get_outstanding_rentals(cne_year=2025)
+        self.assertEqual([r["device_id"] for r in outstanding], ["W01"])
+
     def test_insert_rental_reserved(self):
         self.service.add_devices(devices=[
             NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.AVAILABLE)
@@ -360,3 +426,21 @@ class TestDynamoDBServiceRentals(BaseTestCases.BaseDynamoDBServiceTest):
                 msg="Exception should be raised if rental specifies a non-editable reservation",
         ):
             self.service.insert_rental(rental=rental)
+
+    def test_count_rentals_on_date(self):
+        for rental_id, status in [
+            ("W0820001", RentalStatus.IN_PROGRESS),
+            ("W0820002", RentalStatus.COMPLETED),
+            ("S0820001", RentalStatus.IN_PROGRESS),
+        ]:
+            self.service.rentals_table.put_item(Item={
+                "cne_year": 2025, "id": rental_id, "date": "2025-08-20", "status": status,
+                "device_type": DeviceType.WHEELCHAIR if rental_id.startswith("W") else DeviceType.SCOOTER,
+            })
+
+        self.assertEqual(3, self.service.count_rentals_on_date(date=date(2025, 8, 20)))
+        self.assertEqual(2,
+                         self.service.count_rentals_on_date(date=date(2025, 8, 20), device_type=DeviceType.WHEELCHAIR))
+        self.assertEqual(1, self.service.count_rentals_on_date(date=date(2025, 8, 20), device_type=DeviceType.SCOOTER))
+        self.assertEqual(2, self.service.count_rentals_on_date(date=date(2025, 8, 20), in_progress_rentals_only=True))
+        self.assertEqual(0, self.service.count_rentals_on_date(date=date(2025, 8, 21)))

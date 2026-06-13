@@ -84,6 +84,52 @@ class TestDynamoDBServiceDevices(BaseTestCases.BaseDynamoDBServiceTest):
         response = self.service.get_full_inventory(cne_year=2026)
         self.assertEqual(len(response), 0)
 
+    def test_get_device_by_id(self):
+        self.assertIsNone(self.service.get_device_by_id(cne_year=2025, device_id="S01"))
+
+        self.service.add_devices(devices=[
+            NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.AVAILABLE),
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.PG, status=DeviceStatus.RENTED),
+        ])
+
+        device = self.service.get_device_by_id(cne_year=2025, device_id="W01")
+        self.assertEqual(device["id"], "W01")
+        self.assertEqual(device["status"], DeviceStatus.RENTED)
+        self.assertEqual(device["location"], Location.PG)
+
+        self.assertIsNone(self.service.get_device_by_id(cne_year=2025, device_id="W99"))
+        self.assertIsNone(self.service.get_device_by_id(cne_year=2026, device_id="W01"))
+
+    def test_get_devices_by_status(self):
+        self.service.add_devices(devices=[
+            NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC,
+                      status=DeviceStatus.OUT_OF_SERVICE),
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.PG,
+                      status=DeviceStatus.OUT_OF_SERVICE),
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.BACKUP),
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.PG, status=DeviceStatus.AVAILABLE),
+        ])
+
+        out_of_service = self.service.get_devices_by_status(cne_year=2025, status=DeviceStatus.OUT_OF_SERVICE)
+        self.assertEqual(sorted(d["id"] for d in out_of_service), ["S01", "W01"])
+
+        # filter by device type
+        out_of_service_wc = self.service.get_devices_by_status(
+            cne_year=2025, status=DeviceStatus.OUT_OF_SERVICE, device_type=DeviceType.WHEELCHAIR
+        )
+        self.assertEqual([d["id"] for d in out_of_service_wc], ["W01"])
+
+        # filter by location
+        out_of_service_pg = self.service.get_devices_by_status(
+            cne_year=2025, status=DeviceStatus.OUT_OF_SERVICE, location=Location.PG
+        )
+        self.assertEqual([d["id"] for d in out_of_service_pg], ["W01"])
+
+        backups = self.service.get_devices_by_status(cne_year=2025, status=DeviceStatus.BACKUP)
+        self.assertEqual([d["id"] for d in backups], ["W02"])
+
+        self.assertEqual(self.service.get_devices_by_status(cne_year=2025, status=DeviceStatus.RENTED), [])
+
     def test_remove_devices(self):
         devices = [
             NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.AVAILABLE),
@@ -137,3 +183,19 @@ class TestDynamoDBServiceDevices(BaseTestCases.BaseDynamoDBServiceTest):
 
         with self.assertRaises(DeviceNotFoundException, msg="Updating a non-existing device should raise an error"):
             self.service.update_devices_status(2025, ["S05"], DeviceStatus.BACKUP)
+
+    def test_count_available_devices_by_location(self):
+        devices = [
+            NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.AVAILABLE),
+            NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.AVAILABLE),
+            NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.PG, status=DeviceStatus.AVAILABLE),
+            NewDevice(cne_year=2025, type=DeviceType.SCOOTER, location=Location.BLC, status=DeviceStatus.RENTED),
+            NewDevice(cne_year=2025, type=DeviceType.WHEELCHAIR, location=Location.BLC, status=DeviceStatus.AVAILABLE),
+        ]
+        self.service.add_devices(devices)
+
+        result = self.service.count_available_devices_by_location(cne_year=2025, device_type=DeviceType.SCOOTER)
+        self.assertEqual({Location.BLC.value: 2, Location.PG.value: 1}, result)
+
+        result = self.service.count_available_devices_by_location(cne_year=2025, device_type=DeviceType.WHEELCHAIR)
+        self.assertEqual({Location.BLC.value: 1, Location.PG.value: 0}, result)

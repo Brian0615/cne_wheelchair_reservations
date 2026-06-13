@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 from unittest.mock import Mock
 
 from common.constants import DeviceType, Location
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 _CNE_YEAR = CNEDates.get_cne_year()
 _DEFAULT_DATE = str(CNEDates.get_default_date())

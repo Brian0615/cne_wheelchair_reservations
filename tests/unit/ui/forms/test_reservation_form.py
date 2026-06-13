@@ -6,7 +6,7 @@ from streamlit.testing.v1 import AppTest
 from common.constants import DeviceType, ReservationStatus, Location
 from common.data_models import Reservation
 from common.utils import get_default_timezone
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 
 class TestReservationForm(TestCase):

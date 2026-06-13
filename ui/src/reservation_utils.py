@@ -19,8 +19,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from common.constants import ReservationStatus, DeviceType, Location
 from common.data_models.reservation import Reservation, NewReservation
 from common.utils import get_default_timezone
+from common.cne_dates import CNEDates
 from ui.forms.reservation_form import ReservationForm
-from ui.src.constants import CNEDates, Colour
+from ui.src.constants import Colour
 from ui.src.data_service import DataService
 from ui.src.display_utils import coerce_pandas_aware_datetime
 from ui.src.utils import process_validation_errors

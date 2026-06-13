@@ -17,7 +17,7 @@ from common.data_models import CompletedRental, NewRental, NewReservation, Reser
 from common.utils import get_default_timezone
 from tests.unit.mock_requests import MockRequests
 from ui.auth.local_authenticator import LocalAuthenticator
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 
 # pylint: disable=too-few-public-methods

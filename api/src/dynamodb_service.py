@@ -7,6 +7,7 @@ import boto3
 import botocore
 import pandas as pd
 from boto3.dynamodb.conditions import Attr, Key
+from pydantic import TypeAdapter, ValidationError
 
 from api.src.exceptions import (
     DeviceNotFoundException,
@@ -17,10 +18,23 @@ from api.src.exceptions import (
 )
 from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus, RentalStatus
 from common.data_models import CompletedRental, NewDevice, NewReservation, Reservation, NewRental, ChangeDeviceInfo
+from common.data_models.fields import PhoneNumberField
 from common.logger import initialize_logger, timeit
 from common.utils import read_secret
 
 logger = initialize_logger()
+
+# phone numbers are stored in a normalized form (e.g. "tel:+1-416-820-2370"), so search inputs must be
+# normalized the same way before comparison
+_PHONE_NUMBER_ADAPTER = TypeAdapter(PhoneNumberField)
+
+
+def _normalize_phone_number(phone_number: str) -> str:
+    """Normalize a phone number to the stored format; return it unchanged if it cannot be parsed."""
+    try:
+        return str(_PHONE_NUMBER_ADAPTER.validate_python(phone_number))
+    except ValidationError:
+        return phone_number
 
 
 class DynamoDBService:
@@ -201,9 +215,57 @@ class DynamoDBService:
         return [item["id"] for item in response["Items"]]
 
     @timeit(logger=logger)
+    def count_available_devices_by_location(self, cne_year: int, device_type: DeviceType) -> Dict[str, int]:
+        """Count available devices of a given type per location in a single query."""
+        response = self.devices_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year) & Key("id").begins_with(device_type.get_prefix()),
+            FilterExpression=Attr("status").eq(DeviceStatus.AVAILABLE),
+            ProjectionExpression="#loc",
+            ExpressionAttributeNames={"#loc": "location"},
+        )
+        counts: Dict[str, int] = {loc.value: 0 for loc in Location}
+        for item in response["Items"]:
+            loc = item.get("location")
+            if loc in counts:
+                counts[loc] += 1
+        return counts
+
+    @timeit(logger=logger)
     def get_full_inventory(self, cne_year: int):
         """Get the full inventory of devices"""
         response = self.devices_table.query(KeyConditionExpression=Key("cne_year").eq(cne_year))
+        return response.get("Items", [])
+
+    @timeit(logger=logger)
+    def get_device_by_id(self, cne_year: int, device_id: str) -> Optional[dict]:
+        """Get a single device by its ID. Returns None if no such device exists."""
+        response = self.devices_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year) & Key("id").eq(device_id),
+        )
+        items = response.get("Items", [])
+        return items[0] if items else None
+
+    @timeit(logger=logger)
+    def get_devices_by_status(
+            self,
+            cne_year: int,
+            status: DeviceStatus,
+            device_type: Optional[DeviceType] = None,
+            location: Optional[Location] = None,
+    ) -> List[dict]:
+        """Get the full records of devices with a given status, optionally filtered by type and location."""
+        key_condition_expression = Key("cne_year").eq(cne_year)
+        if device_type is not None:
+            key_condition_expression &= Key("id").begins_with(device_type.get_prefix())
+
+        filter_expression = Attr("status").eq(status)
+        if location is not None:
+            filter_expression &= Attr("location").eq(location)
+
+        response = self.devices_table.query(
+            KeyConditionExpression=key_condition_expression,
+            FilterExpression=filter_expression,
+        )
         return response.get("Items", [])
 
     @timeit(logger=logger)
@@ -455,6 +517,72 @@ class DynamoDBService:
         return response.get("Items", [])
 
     @timeit(logger=logger)
+    def count_rentals_on_date(
+            self,
+            date: datetime.date,
+            device_type: DeviceType = None,
+            in_progress_rentals_only: bool = False,
+    ) -> int:
+        """Count rentals on a given date without fetching item data."""
+        key_condition_expression = Key("cne_year").eq(date.year)
+        filter_expression = None
+        if device_type is not None:
+            id_prefix = device_type.get_prefix()
+            key_condition_expression &= Key("id").begins_with(f"{id_prefix}{date.strftime('%m%d')}")
+        else:
+            filter_expression = Attr("date").eq(date.isoformat())
+
+        if in_progress_rentals_only:
+            status_filter = Attr("status").eq(RentalStatus.IN_PROGRESS)
+            filter_expression = status_filter if filter_expression is None else filter_expression & status_filter
+
+        kwargs: Dict[str, Any] = dict(KeyConditionExpression=key_condition_expression, Select="COUNT")
+        if filter_expression is not None:
+            kwargs["FilterExpression"] = filter_expression
+        response = self.rentals_table.query(**kwargs)
+        return response["Count"]
+
+    @timeit(logger=logger)
+    def get_rental_by_id(self, cne_year: int, rental_id: str) -> Optional[dict]:
+        """Get a single rental by its ID, including all details. Returns None if no such rental exists."""
+        response = self.rentals_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year) & Key("id").eq(rental_id),
+        )
+        items = response.get("Items", [])
+        return items[0] if items else None
+
+    @timeit(logger=logger)
+    def get_current_rental_for_device(self, cne_year: int, device_id: str) -> Optional[dict]:
+        """Get the in-progress (not yet returned) rental currently on a device, if any."""
+        response = self.rentals_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year),
+            FilterExpression=Attr("device_id").eq(device_id) & Attr("status").eq(RentalStatus.IN_PROGRESS),
+        )
+        items = response.get("Items", [])
+        return items[0] if items else None
+
+    @timeit(logger=logger)
+    def get_outstanding_rentals(self, cne_year: int, device_type: Optional[DeviceType] = None) -> List[dict]:
+        """Get all rentals that are still in progress (not yet returned) across the whole CNE year."""
+        projection_expression = (
+            "cne_year, id, #date, device_id, device_type, pickup_location, pickup_time, reservation_id, #name, "
+            "#status, phone_number, deposit_payment_method, items_left_behind, notes, return_location, return_time"
+        )
+        expression_attribute_names = {"#date": "date", "#name": "name", "#status": "status"}
+
+        filter_expression = Attr("status").eq(RentalStatus.IN_PROGRESS)
+        if device_type is not None:
+            filter_expression &= Attr("device_type").eq(device_type)
+
+        response = self.rentals_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year),
+            FilterExpression=filter_expression,
+            ProjectionExpression=projection_expression,
+            ExpressionAttributeNames=expression_attribute_names,
+        )
+        return response.get("Items", [])
+
+    @timeit(logger=logger)
     def insert_rental(self, rental: NewRental):
         """Insert a new rental."""
         rental_id = self._get_new_rental_or_reservation_id(
@@ -552,6 +680,57 @@ class DynamoDBService:
 
         reservations = pd.DataFrame(reservations).groupby(["date", "device_type", "location"])
         return reservations.value_counts().reset_index(drop=False)
+
+    @timeit(logger=logger)
+    def get_reservation_status_counts(self, cne_year: int) -> pd.DataFrame:
+        """Get the count of reservations broken down by status and device type for the given CNE year."""
+        reservations = self.reservations_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year),
+            ProjectionExpression="#status, #device_type",
+            ExpressionAttributeNames={
+                "#status": "status",
+                "#device_type": "device_type",
+            },
+        )
+        reservations = reservations.get("Items", [])
+        if not reservations:
+            return pd.DataFrame({"status": [], "device_type": [], "count": []})
+
+        reservations = pd.DataFrame(reservations).groupby(["status", "device_type"])
+        return reservations.value_counts().reset_index(drop=False)
+
+    @timeit(logger=logger)
+    def get_reservation_by_id(self, cne_year: int, reservation_id: str) -> Optional[dict]:
+        """Get a single reservation by its ID. Returns None if no such reservation exists."""
+        response = self.reservations_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year) & Key("id").eq(reservation_id),
+        )
+        items = response.get("Items", [])
+        return items[0] if items else None
+
+    @timeit(logger=logger)
+    def search_reservations(
+            self,
+            cne_year: int,
+            name: Optional[str] = None,
+            phone_number: Optional[str] = None,
+    ) -> List[dict]:
+        """Search reservations for the CNE year by renter name (substring) and/or phone number (exact)."""
+        filter_expression = None
+        if name:
+            filter_expression = Attr("name").contains(name)
+        if phone_number:
+            phone_filter = Attr("phone_number").eq(_normalize_phone_number(phone_number))
+            filter_expression = phone_filter if filter_expression is None else filter_expression & phone_filter
+
+        if filter_expression is None:
+            return []
+
+        response = self.reservations_table.query(
+            KeyConditionExpression=Key("cne_year").eq(cne_year),
+            FilterExpression=filter_expression,
+        )
+        return response.get("Items", [])
 
     @timeit(logger=logger)
     def get_reservations_on_date(

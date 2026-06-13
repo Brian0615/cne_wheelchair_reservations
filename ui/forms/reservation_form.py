@@ -7,7 +7,7 @@ from common.data_models import Reservation
 from common.utils import get_default_timezone
 from ui.forms.base_form import BaseForm
 from ui.forms.form_fields import ButtonField, DateField, PhoneNumberField, SelectboxField, TextField, TimeField
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 
 
 # pylint: disable=too-few-public-methods

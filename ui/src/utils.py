@@ -6,7 +6,7 @@ import streamlit as st
 from pydantic import BaseModel, ValidationError
 
 from common.utils import get_default_timezone
-from ui.src.constants import CNEDates
+from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 
 

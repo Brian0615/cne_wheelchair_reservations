@@ -14,10 +14,12 @@ class MockRequests:
             mock_inventory_data: Optional[List[Dict]] = None,
             mock_reservations_data: Optional[List[Dict]] = None,
             mock_rentals_data: Optional[List[Dict]] = None,
+            mock_chat_response: str = "This is a mocked chatbot response.",
     ):
         self.mock_inventory_data = mock_inventory_data if mock_inventory_data is not None else []
         self.mock_reservations_data = mock_reservations_data if mock_reservations_data is not None else []
         self.mock_rentals_data = mock_rentals_data if mock_rentals_data is not None else []
+        self.mock_chat_response = mock_chat_response
 
     def mock_requests_get(self, url, *args, **kwargs):  # pylint: disable=unused-argument,too-many-return-statements
         """Mock the requests.get method"""
@@ -50,8 +52,7 @@ class MockRequests:
             return Mock(status_code=200, json=Mock(return_value=100))
         raise ValueError(f"Unsupported API url for mocking requests.get: {url}")
 
-    @staticmethod
-    def mock_requests_post(url, *args, **kwargs):  # pylint: disable=unused-argument
+    def mock_requests_post(self, url, *args, **kwargs):  # pylint: disable=unused-argument
         """Mock the requests.post method"""
         if "change_device" in url:
             return Mock(status_code=200)
@@ -59,6 +60,8 @@ class MockRequests:
             return Mock(status_code=200, json=Mock(return_value={}))
         if "update_reservation_status" in url:
             return Mock(status_code=200)
+        if "chat/ask" in url:
+            return Mock(status_code=200, json=Mock(return_value=self.mock_chat_response))
         raise ValueError(f"Unsupported API url for mocking requests.post: {url}")
 
     @staticmethod
