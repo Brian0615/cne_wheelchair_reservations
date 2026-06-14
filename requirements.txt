@@ -1,7 +1,7 @@
 boto3>=1.43.27,<1.44
 certifi>=2026.5.20,<2027
 extra_streamlit_components>=0.1.80,<0.2
-fastapi>=0.136.3,<1
+fastapi>=0.137.0,<1
 moto>=5.2.2,<5.3
 numpy>=2.4.6,<3
 pandas>=3.0.3,<4
