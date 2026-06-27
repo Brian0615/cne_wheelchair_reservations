@@ -187,9 +187,12 @@ class RentalSummary(BaseModel):
     cne_year_and_date_validator = model_validator(mode="after")(check_cne_year_and_date)
     device_id_and_type_validator = model_validator(mode="after")(check_device_id_and_type)
 
-    # validator to convert pandas NaT to None
-    @field_validator("return_time", mode="before")
+    # validator to convert pandas NaT/NA to None for all optional fields
+    @field_validator("return_time", "return_location", "notes", mode="before")
     @classmethod
     def convert_nat_to_none(cls, value):
-        """Convert pandas NaT to None"""
-        return None if pd.isna(value) else value
+        """Convert pandas NaT/NA to None"""
+        try:
+            return None if pd.isna(value) else value
+        except (TypeError, ValueError):
+            return value

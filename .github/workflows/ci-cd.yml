@@ -55,7 +55,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          python -m pytest --cov=api --cov=ui --cov=common --cov-report=html --cov-report=xml --junitxml=test-results.xml tests/
+          python -m pytest --cov=api --cov=ui --cov=common --cov-report=html --cov-report=xml --junitxml=test-results.xml --cov-fail-under=80 tests/
 
   build_and_push:
     name: Build and Push Docker
