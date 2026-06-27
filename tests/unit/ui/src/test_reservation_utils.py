@@ -40,6 +40,13 @@ class TestReservationUtils(TestCase):
         submit_new_reservation_form(reservation=reservation, is_waitlisted=False)
 
     @staticmethod
+    def _run_submit_new_reservation_form_waitlisted(reservation):
+        """Run submit_new_reservation_form with is_waitlisted=True"""
+        from ui.src.reservation_utils import submit_new_reservation_form
+
+        submit_new_reservation_form(reservation=reservation, is_waitlisted=True)
+
+    @staticmethod
     def _run_submit_update_reservation_form(reservation):
         """Run the submit update reservation form function"""
         from ui.src.reservation_utils import submit_update_reservation_form
@@ -141,6 +148,37 @@ class TestReservationUtils(TestCase):
 
                 mock_update_reservation.assert_not_called()
                 self.assertIsNotNone(at.session_state["update_reservation_form_errors"])
+
+    def test_submit_new_reservation_form_waitlisted(self):
+        """Test that is_waitlisted=True creates a reservation with WAITLISTED status"""
+        with patch.object(
+                DataService,
+                attribute="add_new_reservation",
+                return_value=(200, "S0901001")
+        ) as mock_add_new_reservation:
+            with patch.object(reservation_utils, "display_success_dialog"):
+                reservation_dict = self.mock_reservation.model_dump()
+                reservation_dict["reservation_time"] = reservation_dict["reservation_time"].time()
+                AppTest.from_function(
+                    self._run_submit_new_reservation_form_waitlisted, args=(reservation_dict,)
+                ).run()
+
+                called_reservation = mock_add_new_reservation.call_args[1]["reservation"]
+                self.assertEqual(ReservationStatus.WAITLISTED, called_reservation.status)
+
+    def test_on_dismiss_success_dialog_clears_force_waitlist(self):
+        """on_dismiss_success_dialog removes the force_waitlist checkbox value from session state"""
+
+        def run():
+            import streamlit as st
+            from ui.src.reservation_utils import on_dismiss_success_dialog
+
+            st.session_state["new_reservation_force_waitlist"] = True
+            on_dismiss_success_dialog()
+
+        at = AppTest.from_function(run).run()
+        with self.assertRaises(KeyError):
+            _ = at.session_state["new_reservation_force_waitlist"]
 
     def test_create_reservation_availability_chart_zero_limit(self):
         """Test that create_reservation_availability_chart does not raise ZeroDivisionError when limit is 0"""

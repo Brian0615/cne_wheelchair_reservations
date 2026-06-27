@@ -20,6 +20,7 @@ from common.constants import ReservationStatus, DeviceType, Location
 from common.data_models.reservation import Reservation, NewReservation
 from common.utils import get_default_timezone
 from common.cne_dates import CNEDates
+from ui.forms.new_reservation_form import NewReservationForm
 from ui.forms.reservation_form import ReservationForm
 from ui.src.constants import Colour
 from ui.src.data_service import DataService
@@ -29,7 +30,7 @@ from ui.src.utils import process_validation_errors
 
 def on_dismiss_success_dialog():
     """Callback for when the success dialog is dismissed"""
-    ReservationForm(key_prefix="new_reservation").clear_form()
+    NewReservationForm(key_prefix="new_reservation").clear_form()
     ReservationForm(key_prefix="update_reservation").clear_form()
 
 

@@ -99,9 +99,15 @@ class ReservationForm(BaseForm):
         # third row of form
         result["notes"] = self.fields["notes"].render_field(disabled=other_fields_disabled)
 
+        # hook for subclasses to inject extra fields before the submit button
+        self._render_extra_fields(result, other_fields_disabled)
+
         # add spacer
         st.write("")
 
         # form submission
         is_submitted = self.fields["is_submitted"].render_field(disabled=other_fields_disabled)
         return result, is_submitted
+
+    def _render_extra_fields(self, result: dict, disabled: bool = False):
+        """Extension point for subclasses to inject additional fields before the submit button."""

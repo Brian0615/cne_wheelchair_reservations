@@ -3,7 +3,7 @@ import streamlit as st
 
 from common.constants import DeviceType
 from common.data_models.reservation import NewReservation
-from ui.forms import ReservationForm
+from ui.forms import NewReservationForm
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
 from ui.src.reservation_utils import submit_new_reservation_form, get_reservation_counts, \
@@ -29,10 +29,11 @@ with st.expander("View Reservation Availability", expanded=False):
             )
 
 # Display the reservation form
-reservation_form = ReservationForm(key_prefix="new_reservation")
+reservation_form = NewReservationForm(key_prefix="new_reservation")
 with st.container(border=True):
     reservation_form.initialize_form()
     reservation_info, is_submitted = reservation_form.render_form()
+force_waitlist = reservation_info.pop("force_waitlist", False)
 
 errors = st.session_state.get("new_reservation_form_errors")
 if errors:
@@ -65,6 +66,8 @@ if reservation_info and reservation_info.get("date") and reservation_info.get("d
                 **Reservations Available**: There {'are' if num_available > 1 else 'is'} **{num_available}** remaining
                 {device_str} reservation{'s' if num_available > 1 else ''} available for the selected date
             """)
+
+is_waitlisted = is_waitlisted or force_waitlist
 
 if is_submitted:
     submit_new_reservation_form(reservation=reservation_info, is_waitlisted=is_waitlisted)
