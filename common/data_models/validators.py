@@ -36,7 +36,7 @@ def check_postal_code(model):
     - Validate format matches letter-number-letter number-letter-number
     """
     if model.postal_code is None:
-        return None
+        return model
 
     # Strip whitespace and convert to uppercase
     postal_code = model.postal_code.strip().upper()
@@ -62,6 +62,9 @@ def check_province_state(model):
     # Only apply for Canada or US
     if model.country not in {"CAN", "USA"}:
         return model
+
+    if not model.province:
+        raise ValueError(f"Province/state is required for country: {pycountry.countries.lookup(model.country).name}")
 
     subdivisions = pycountry.subdivisions.get(country_code=pycountry.countries.lookup(model.country).alpha_2)
     if not subdivisions:

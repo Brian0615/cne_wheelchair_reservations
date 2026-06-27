@@ -168,10 +168,11 @@ class TestValidators(unittest.TestCase):
             check_province_state(model)
 
     def test_check_postal_code_none(self):
-        """Test check_postal_code with None postal code."""
+        """Test check_postal_code with None postal code returns the model unchanged."""
         model = MockPostalModel(country="CAN", postal_code=None)
         result = check_postal_code(model)
-        self.assertIsNone(result)
+        self.assertIs(result, model)
+        self.assertIsNone(result.postal_code)
 
     def test_check_postal_code_valid_canadian(self):
         """Test check_postal_code with valid Canadian postal codes."""
