@@ -15,6 +15,7 @@ from api.src.exceptions import (
     ReservationNotFoundOrNotEditableException,
     RentalNotFoundOrNotEditableException,
     DeviceNotFoundOrInvalidStatusException,
+    UniqueViolation,
 )
 from common.constants import DeviceType, Location, DeviceStatus, ReservationStatus, RentalStatus
 from common.data_models import CompletedRental, NewDevice, NewReservation, Reservation, NewRental, ChangeDeviceInfo
@@ -152,6 +153,18 @@ class DynamoDBService:
             }
         }
 
+    @staticmethod
+    def _paginate(table_method, **kwargs) -> List[dict]:
+        """Fetch all pages from a DynamoDB query or scan, returning the combined item list."""
+        items: List[dict] = []
+        while True:
+            response = table_method(**kwargs)
+            items.extend(response.get("Items", []))
+            if "LastEvaluatedKey" not in response:
+                break
+            kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+        return items
+
     # ==============================
     # DEVICES
     # ==============================
@@ -159,16 +172,16 @@ class DynamoDBService:
     @timeit(logger=logger)
     def add_devices(self, devices: List[NewDevice]):
         """Add devices to the inventory"""
-        response = self.devices_table.scan(ProjectionExpression="cne_year, id")
+        all_items = self._paginate(self.devices_table.scan, ProjectionExpression="cne_year, id")
 
         # identify the next available IDs for each device type and year in the database
         existing_ids = {
             prefix: {
                 year: [
                     int(item["id"][1:])
-                    for item in response["Items"]
+                    for item in all_items
                     if item["id"].startswith(prefix) and item["cne_year"] == year
-                ] for year in set(item["cne_year"] for item in response["Items"])
+                ] for year in {item["cne_year"] for item in all_items}
             }
             for prefix in [x.get_prefix() for x in DeviceType]
         }
@@ -383,7 +396,7 @@ class DynamoDBService:
                 if cancellation_reasons[1]["Code"] == "ConditionalCheckFailed":
                     raise DeviceNotFoundOrInvalidStatusException(
                         cne_year=change_info.cne_year,
-                        device_id=change_info.old_device_id,
+                        device_id=change_info.new_device_id,
                         expected_status=DeviceStatus.AVAILABLE,
                     ) from exc
                 if cancellation_reasons[2]["Code"] == "ConditionalCheckFailed":
@@ -489,31 +502,31 @@ class DynamoDBService:
         )
         expression_attribute_names = {"#date": "date", "#name": "name", "#status": "status"}
 
-        key_condition_expression = Key("cne_year").eq(date.year)
-        filter_expression = None
-        if device_type is not None:
-            id_prefix = device_type.get_prefix()
-            key_condition_expression &= Key("id").begins_with(f"{id_prefix}{date.strftime('%m%d')}")
-        else:
-            filter_expression = Attr("date").eq(date.isoformat())
+        filter_expression = Attr("status").eq(RentalStatus.IN_PROGRESS) if in_progress_rentals_only else None
 
-        if in_progress_rentals_only:
-            status_filter = Attr("status").eq(RentalStatus.IN_PROGRESS)
-            filter_expression = status_filter if filter_expression is None else filter_expression & status_filter
+        if device_type is not None:
+            # if device_type is given, then the device prefix can be used
+            kwargs = {
+                "KeyConditionExpression": (
+                        Key("cne_year").eq(date.year)
+                        & Key("id").begins_with(f"{device_type.get_prefix()}{date.strftime('%m%d')}")
+                ),
+                "ProjectionExpression": projection_expression,
+                "ExpressionAttributeNames": expression_attribute_names,
+            }
+        else:
+            # if device_type is not specified, use the cne_year-date GSI to query all rentals on the date efficiently
+            kwargs = {
+                "IndexName": "cne_year-date",
+                "KeyConditionExpression": Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
+                "ProjectionExpression": projection_expression,
+                "ExpressionAttributeNames": expression_attribute_names,
+            }
 
         if filter_expression is not None:
-            response = self.rentals_table.query(
-                KeyConditionExpression=key_condition_expression,
-                FilterExpression=filter_expression,
-                ProjectionExpression=projection_expression,
-                ExpressionAttributeNames=expression_attribute_names,
-            )
-        else:
-            response = self.rentals_table.query(
-                KeyConditionExpression=key_condition_expression,
-                ProjectionExpression=projection_expression,
-                ExpressionAttributeNames=expression_attribute_names,
-            )
+            kwargs["FilterExpression"] = filter_expression
+
+        response = self.rentals_table.query(**kwargs)
         return response.get("Items", [])
 
     @timeit(logger=logger)
@@ -524,19 +537,25 @@ class DynamoDBService:
             in_progress_rentals_only: bool = False,
     ) -> int:
         """Count rentals on a given date without fetching item data."""
-        key_condition_expression = Key("cne_year").eq(date.year)
-        filter_expression = None
+        filter_expression = Attr("status").eq(RentalStatus.IN_PROGRESS) if in_progress_rentals_only else None
+
         if device_type is not None:
-            id_prefix = device_type.get_prefix()
-            key_condition_expression &= Key("id").begins_with(f"{id_prefix}{date.strftime('%m%d')}")
+            # if device_type is given, then the device prefix can be used
+            kwargs: Dict[str, Any] = {
+                "KeyConditionExpression": (
+                        Key("cne_year").eq(date.year)
+                        & Key("id").begins_with(f"{device_type.get_prefix()}{date.strftime('%m%d')}")
+                ),
+                "Select": "COUNT",
+            }
         else:
-            filter_expression = Attr("date").eq(date.isoformat())
+            # if device_type is not specified, use the cne_year-date GSI to query all rentals on the date efficiently
+            kwargs = {
+                "IndexName": "cne_year-date",
+                "KeyConditionExpression": Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
+                "Select": "COUNT",
+            }
 
-        if in_progress_rentals_only:
-            status_filter = Attr("status").eq(RentalStatus.IN_PROGRESS)
-            filter_expression = status_filter if filter_expression is None else filter_expression & status_filter
-
-        kwargs: Dict[str, Any] = dict(KeyConditionExpression=key_condition_expression, Select="COUNT")
         if filter_expression is not None:
             kwargs["FilterExpression"] = filter_expression
         response = self.rentals_table.query(**kwargs)
@@ -574,13 +593,13 @@ class DynamoDBService:
         if device_type is not None:
             filter_expression &= Attr("device_type").eq(device_type)
 
-        response = self.rentals_table.query(
+        return self._paginate(
+            self.rentals_table.query,
             KeyConditionExpression=Key("cne_year").eq(cne_year),
             FilterExpression=filter_expression,
             ProjectionExpression=projection_expression,
             ExpressionAttributeNames=expression_attribute_names,
         )
-        return response.get("Items", [])
 
     @timeit(logger=logger)
     def insert_rental(self, rental: NewRental):
@@ -605,6 +624,7 @@ class DynamoDBService:
                 "Put": {
                     "TableName": self.rentals_table.name,
                     "Item": {"id": rental_id, **rental.model_dump(mode="json")},
+                    "ConditionExpression": "attribute_not_exists(id)",
                 }
             },
         ]
@@ -645,6 +665,10 @@ class DynamoDBService:
                         cne_year=rental.cne_year,
                         device_id=rental.device_id,
                         expected_status=DeviceStatus.AVAILABLE,
+                    ) from exc
+                if cancellation_reasons[1]["Code"] == "ConditionalCheckFailed":
+                    raise UniqueViolation(
+                        f"Rental ID {rental_id} already exists (cne_year={rental.cne_year})"
                     ) from exc
                 if rental.reservation_id and cancellation_reasons[2]["Code"] == "ConditionalCheckFailed":
                     raise NewReservationNotFoundOrNotEditableException(
@@ -726,11 +750,11 @@ class DynamoDBService:
         if filter_expression is None:
             return []
 
-        response = self.reservations_table.query(
+        return self._paginate(
+            self.reservations_table.query,
             KeyConditionExpression=Key("cne_year").eq(cne_year),
             FilterExpression=filter_expression,
         )
-        return response.get("Items", [])
 
     @timeit(logger=logger)
     def get_reservations_on_date(
@@ -740,31 +764,33 @@ class DynamoDBService:
             exclude_picked_up_reservations: bool = False,
     ) -> List[dict]:
         """Get all reservations on a given date."""
-        key_condition_expression = Key('cne_year').eq(date.year)
-
         filter_expression = None
-        if device_type is not None:
-            id_prefix = device_type.get_prefix()
-            key_condition_expression &= Key('id').begins_with(f"{id_prefix}{date.strftime('%m%d')}")
-        else:
-            filter_expression = Attr('date').eq(date.isoformat())
-
         if exclude_picked_up_reservations:
-            status_filter = ~Attr('status').is_in([
+            filter_expression = ~Attr('status').is_in([
                 ReservationStatus.PICKED_UP,
                 ReservationStatus.COMPLETED,
                 ReservationStatus.CANCELLED,
             ])
-            filter_expression = status_filter if filter_expression is None else filter_expression & status_filter
+
+        if device_type is not None:
+            # if device_type is given, then the device prefix can be used
+            kwargs = {
+                "KeyConditionExpression": (
+                        Key('cne_year').eq(date.year)
+                        & Key('id').begins_with(f"{device_type.get_prefix()}{date.strftime('%m%d')}")
+                ),
+            }
+        else:
+            # if device_type is not specified, use the cne_year-date GSI to query all reservations on date efficiently
+            kwargs = {
+                "IndexName": "cne_year-date",
+                "KeyConditionExpression": Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
+            }
 
         if filter_expression is not None:
-            response = self.reservations_table.query(
-                KeyConditionExpression=key_condition_expression,
-                FilterExpression=filter_expression
-            )
-        else:
-            response = self.reservations_table.query(KeyConditionExpression=key_condition_expression)
+            kwargs["FilterExpression"] = filter_expression
 
+        response = self.reservations_table.query(**kwargs)
         return response.get('Items', [])
 
     @timeit(logger=logger)
