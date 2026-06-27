@@ -14,6 +14,14 @@ updates:
     # update all dependency types (direct and indirect)
     allow:
       - dependency-type: "all"
+    # group minor and patch pip updates into a single PR; major bumps get their own PR
+    groups:
+      pip-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     # optionals: you can uncomment and set reviewers or assignees
     # reviewers: ["your-github-username"]
     # assignees: ["your-github-username"]
@@ -23,6 +31,14 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # group minor and patch GitHub Actions updates into a single PR; major bumps get their own PR
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
 # Note: Dependabot will update Python packages listed in requirements files (e.g. requirements.txt)
 # but it does not automatically bump runtime Python versions in files like conda_env.yml.
