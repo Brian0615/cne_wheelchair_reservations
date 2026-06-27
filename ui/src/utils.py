@@ -97,11 +97,9 @@ def get_rental_selection(
 
 def clear_session_state_for_form(clear_prefixes: List[str]):
     """Clear session state data with a given list of prefixes"""
-    for key in st.session_state.keys():
-        if any(key.startswith(prefix) for prefix in clear_prefixes):
-            del st.session_state[key]
-            if "items_left_behind" in key:
-                continue
+    keys_to_delete = [k for k in st.session_state.keys() if any(k.startswith(p) for p in clear_prefixes)]
+    for key in keys_to_delete:
+        del st.session_state[key]
 
 
 def initialize_form(
