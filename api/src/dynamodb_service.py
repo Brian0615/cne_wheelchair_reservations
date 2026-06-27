@@ -181,7 +181,7 @@ class DynamoDBService:
                     int(item["id"][1:])
                     for item in all_items
                     if item["id"].startswith(prefix) and item["cne_year"] == year
-                ] for year in set(item["cne_year"] for item in all_items)
+                ] for year in {item["cne_year"] for item in all_items}
             }
             for prefix in [x.get_prefix() for x in DeviceType]
         }
@@ -506,22 +506,22 @@ class DynamoDBService:
 
         if device_type is not None:
             # if device_type is given, then the device prefix can be used
-            kwargs = dict(
-                KeyConditionExpression=(
+            kwargs = {
+                "KeyConditionExpression": (
                         Key("cne_year").eq(date.year)
                         & Key("id").begins_with(f"{device_type.get_prefix()}{date.strftime('%m%d')}")
                 ),
-                ProjectionExpression=projection_expression,
-                ExpressionAttributeNames=expression_attribute_names,
-            )
+                "ProjectionExpression": projection_expression,
+                "ExpressionAttributeNames": expression_attribute_names,
+            }
         else:
             # if device_type is not specified, use the cne_year-date GSI to query all rentals on the date efficiently
-            kwargs = dict(
-                IndexName="cne_year-date",
-                KeyConditionExpression=Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
-                ProjectionExpression=projection_expression,
-                ExpressionAttributeNames=expression_attribute_names,
-            )
+            kwargs = {
+                "IndexName": "cne_year-date",
+                "KeyConditionExpression": Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
+                "ProjectionExpression": projection_expression,
+                "ExpressionAttributeNames": expression_attribute_names,
+            }
 
         if filter_expression is not None:
             kwargs["FilterExpression"] = filter_expression
@@ -541,20 +541,20 @@ class DynamoDBService:
 
         if device_type is not None:
             # if device_type is given, then the device prefix can be used
-            kwargs: Dict[str, Any] = dict(
-                KeyConditionExpression=(
+            kwargs: Dict[str, Any] = {
+                "KeyConditionExpression": (
                         Key("cne_year").eq(date.year)
                         & Key("id").begins_with(f"{device_type.get_prefix()}{date.strftime('%m%d')}")
                 ),
-                Select="COUNT",
-            )
+                "Select": "COUNT",
+            }
         else:
             # if device_type is not specified, use the cne_year-date GSI to query all rentals on the date efficiently
-            kwargs = dict(
-                IndexName="cne_year-date",
-                KeyConditionExpression=Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
-                Select="COUNT",
-            )
+            kwargs = {
+                "IndexName": "cne_year-date",
+                "KeyConditionExpression": Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
+                "Select": "COUNT",
+            }
 
         if filter_expression is not None:
             kwargs["FilterExpression"] = filter_expression
@@ -774,18 +774,18 @@ class DynamoDBService:
 
         if device_type is not None:
             # if device_type is given, then the device prefix can be used
-            kwargs = dict(
-                KeyConditionExpression=(
+            kwargs = {
+                "KeyConditionExpression": (
                         Key('cne_year').eq(date.year)
                         & Key('id').begins_with(f"{device_type.get_prefix()}{date.strftime('%m%d')}")
                 ),
-            )
+            }
         else:
             # if device_type is not specified, use the cne_year-date GSI to query all reservations on date efficiently
-            kwargs = dict(
-                IndexName="cne_year-date",
-                KeyConditionExpression=Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
-            )
+            kwargs = {
+                "IndexName": "cne_year-date",
+                "KeyConditionExpression": Key("cne_year").eq(date.year) & Key("date").eq(date.isoformat()),
+            }
 
         if filter_expression is not None:
             kwargs["FilterExpression"] = filter_expression
