@@ -21,6 +21,7 @@ class LocalAuthenticator(BaseAuthenticator):
             cookie_key=auth_config['cookie']['key'],
             cookie_expiry_days=auth_config['cookie']['expiry_days'],
             auto_hash=True,
+            login_sleep_time=0,
         )
         return authenticator
 
