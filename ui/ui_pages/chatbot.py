@@ -15,6 +15,22 @@ st.warning("This chatbot is powered by AI and may occasionally make mistakes. Al
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = []
 
+
+def clear_chat():
+    """Discard the conversation so the next question starts with no history."""
+    st.session_state["chat_messages"] = []
+
+
+_, clear_col = st.columns([3, 1], vertical_alignment="bottom")
+clear_col.button(
+    label="Clear Chat",
+    width="stretch",
+    icon=":material/delete_sweep:",
+    key="clear_chat",
+    disabled=not st.session_state["chat_messages"],
+    on_click=clear_chat,
+)
+
 # render the prior conversation
 for message in st.session_state["chat_messages"]:
     with st.chat_message(message["role"]):
@@ -36,3 +52,5 @@ if prompt := st.chat_input("Ask a question..."):
         if answer is not None:
             st.markdown(answer)
             st.session_state["chat_messages"].append({"role": "assistant", "content": answer})
+            # rerun so the clear chat button above picks up that a conversation now exists
+            st.rerun()
