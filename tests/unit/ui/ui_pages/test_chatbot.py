@@ -25,3 +25,26 @@ class TestChatbot(BaseTestCases.BaseUIPageTest):
         self.assertIn("How many rentals are in progress?", rendered)
         self.assertIn("There is 1 rental in progress today.", rendered)
         self.assertEqual(2, len(at.session_state["chat_messages"]))
+
+    def test_clear_chat_button_disabled_when_conversation_is_empty(self):
+        """There is nothing to clear on a fresh page, so the button should be disabled."""
+        at = self._run_app_test_with_mock_requests(mock_requests=MockRequests())
+        self.assertTrue(at.button(key="clear_chat").disabled, "The clear chat button should start disabled")
+
+    def test_clear_chat_button_removes_the_conversation(self):
+        """Clicking clear chat should empty the history and stop rendering the prior messages."""
+        mock_requests = MockRequests(mock_chat_response="There is 1 rental in progress today.")
+        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests)
+
+        at.chat_input[0].set_value("How many rentals are in progress?")
+        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+        self.assertFalse(at.button(key="clear_chat").disabled, "The clear chat button should enable once a "
+                                                               "conversation exists")
+
+        at.button(key="clear_chat").click()
+        at = self._run_app_test_with_mock_requests(mock_requests=mock_requests, at=at)
+
+        self.assertEqual([], at.session_state["chat_messages"])
+        rendered = [md.value for md in at.markdown]
+        self.assertNotIn("How many rentals are in progress?", rendered)
+        self.assertNotIn("There is 1 rental in progress today.", rendered)

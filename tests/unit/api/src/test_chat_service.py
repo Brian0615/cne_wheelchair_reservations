@@ -1,11 +1,13 @@
 import datetime
+import re
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, ToolCallPart, ToolReturnPart
 
 from api.src.chat_service import ChatService, _to_model_messages
+from common.cne_dates import CNEDates
 from common.constants import DeviceStatus, DeviceType, Location, PaymentMethod, ReservationStatus
 from common.data_models import ChatMessage, ChatRole, Device, Rental, RentalSummary, Reservation
 from common.utils import get_default_timezone
@@ -304,6 +306,42 @@ class TestChatServiceTools(TestCase):
         self.assertEqual(50, result["fees_and_deposits"]["Wheelchair"]["deposit"])
         self.assertIn(PaymentMethod.CASH, result["accepted_fee_payment_methods"])
         self.service.db_service.assert_not_called()
+
+
+class TestChatServiceSystemPrompt(TestCase):
+    """Tests for system prompt construction."""
+
+    def setUp(self):
+        self.service = _make_chat_service()
+
+    def test_system_prompt_includes_cne_year_and_fair_dates(self):
+        fair_start, fair_end = CNEDates.get_cne_start_end_dates()
+        prompt = self.service._system_prompt()  # pylint: disable=protected-access
+        self.assertIn(str(self.service.cne_year), prompt)
+        self.assertIn(fair_start.date().isoformat(), prompt)
+        self.assertIn(fair_end.date().isoformat(), prompt)
+
+    def test_system_prompt_appends_usage_guide(self):
+        prompt = self.service._system_prompt()  # pylint: disable=protected-access
+        self.assertIn("===== APP USAGE GUIDE =====", prompt)
+        self.assertIn("===== END APP USAGE GUIDE =====", prompt)
+
+    def test_system_prompt_does_not_bake_in_todays_date(self):
+        """The agent is cached, so today's date must come from get_today rather than the prompt."""
+        fair_start, fair_end = CNEDates.get_cne_start_end_dates()
+        prompt = self.service._system_prompt()  # pylint: disable=protected-access
+
+        # the fair start/end are the only dates that may legitimately be hard-coded into the prompt
+        dates_in_prompt = set(re.findall(r"\d{4}-\d{2}-\d{2}", prompt))
+        self.assertEqual({fair_start.date().isoformat(), fair_end.date().isoformat()}, dates_in_prompt)
+        self.assertIn("get_today", prompt)
+
+    def test_system_prompt_survives_braces_in_usage_guide(self):
+        """Braces in the manual must not break prompt construction (the guide is not .format()-ed)."""
+        guide_block = '\n===== APP USAGE GUIDE =====\nSet {"limit": 5} in the {config} field.\n'
+        with patch("api.src.chat_service._APP_USAGE_GUIDE_BLOCK", guide_block):
+            prompt = self.service._system_prompt()  # pylint: disable=protected-access
+        self.assertIn('Set {"limit": 5} in the {config} field.', prompt)
 
 
 class TestChatServiceAnswer(TestCase):
