@@ -1,4 +1,4 @@
-boto3>=1.43.60,<1.44
+boto3>=1.43.62,<1.44
 certifi>=2026.5.20,<2027
 extra_streamlit_components>=0.1.81,<0.2
 fastapi>=0.138.0,<1
