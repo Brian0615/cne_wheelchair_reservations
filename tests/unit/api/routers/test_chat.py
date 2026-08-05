@@ -7,6 +7,7 @@ from moto import mock_aws
 
 import api.routers.chat as chat_module
 from api.routers import chat_router
+from common.data_models import ChatResponse
 
 
 def _make_app():
@@ -29,14 +30,34 @@ class TestChatRouter(TestCase):
         self.patcher.stop()
 
     def test_ask_returns_answer(self):
-        self.mock_service.answer.return_value = "There is 1 rental in progress."
+        self.mock_service.answer.return_value = ChatResponse(
+            answer="There is 1 rental in progress.",
+            model="gemini-3.5-flash-lite",
+            input_tokens=100,
+            output_tokens=23,
+            cache_read_tokens=0,
+            total_tokens=123,
+        )
         response = self.client.post("/chat/ask", json={"message": "how many rentals?", "history": []})
         self.assertEqual(200, response.status_code)
-        self.assertEqual("There is 1 rental in progress.", response.json())
+        self.assertEqual(
+            {
+                "answer": "There is 1 rental in progress.",
+                "model": "gemini-3.5-flash-lite",
+                "input_tokens": 100,
+                "output_tokens": 23,
+                "cache_read_tokens": 0,
+                "total_tokens": 123,
+            },
+            response.json(),
+        )
         self.mock_service.answer.assert_called_once()
 
     def test_ask_passes_message_and_history(self):
-        self.mock_service.answer.return_value = "ok"
+        self.mock_service.answer.return_value = ChatResponse(
+            answer="ok", model="gemini-3.5-flash-lite", input_tokens=1, output_tokens=1, cache_read_tokens=0,
+            total_tokens=2,
+        )
         history = [
             {"role": "user", "content": "hello"},
             {"role": "assistant", "content": "hi, how can I help?"},
@@ -49,7 +70,10 @@ class TestChatRouter(TestCase):
         self.assertEqual("hello", kwargs["history"][0].content)
 
     def test_ask_defaults_to_empty_history(self):
-        self.mock_service.answer.return_value = "ok"
+        self.mock_service.answer.return_value = ChatResponse(
+            answer="ok", model="gemini-3.5-flash-lite", input_tokens=1, output_tokens=1, cache_read_tokens=0,
+            total_tokens=2,
+        )
         response = self.client.post("/chat/ask", json={"message": "hi"})
         self.assertEqual(200, response.status_code)
         _, kwargs = self.mock_service.answer.call_args

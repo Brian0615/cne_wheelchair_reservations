@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 from unittest.mock import Mock
 
 from common.constants import DeviceStatus
-from common.data_models import Device
+from common.data_models import ChatRequest, Device
 
 
 # pylint: disable=too-few-public-methods
@@ -15,11 +15,19 @@ class MockRequests:
             mock_reservations_data: Optional[List[Dict]] = None,
             mock_rentals_data: Optional[List[Dict]] = None,
             mock_chat_response: str = "This is a mocked chatbot response.",
+            mock_chat_model: str = "gemini-3.5-flash-lite",
+            mock_chat_input_tokens: int = 80,
+            mock_chat_output_tokens: int = 20,
+            mock_chat_cache_read_tokens: int = 0,
     ):
         self.mock_inventory_data = mock_inventory_data if mock_inventory_data is not None else []
         self.mock_reservations_data = mock_reservations_data if mock_reservations_data is not None else []
         self.mock_rentals_data = mock_rentals_data if mock_rentals_data is not None else []
         self.mock_chat_response = mock_chat_response
+        self.mock_chat_model = mock_chat_model
+        self.mock_chat_input_tokens = mock_chat_input_tokens
+        self.mock_chat_output_tokens = mock_chat_output_tokens
+        self.mock_chat_cache_read_tokens = mock_chat_cache_read_tokens
 
     def mock_requests_get(self, url, *args, **kwargs):  # pylint: disable=unused-argument,too-many-return-statements
         """Mock the requests.get method"""
@@ -61,7 +69,20 @@ class MockRequests:
         if "update_reservation_status" in url:
             return Mock(status_code=200)
         if "chat/ask" in url:
-            return Mock(status_code=200, json=Mock(return_value=self.mock_chat_response))
+            # validate against the real request model, mirroring the API, so a payload the real
+            # endpoint would reject (e.g. extra keys) fails here too instead of only in production
+            ChatRequest(**kwargs["json"])
+            return Mock(
+                status_code=200,
+                json=Mock(return_value={
+                    "answer": self.mock_chat_response,
+                    "model": self.mock_chat_model,
+                    "input_tokens": self.mock_chat_input_tokens,
+                    "output_tokens": self.mock_chat_output_tokens,
+                    "cache_read_tokens": self.mock_chat_cache_read_tokens,
+                    "total_tokens": self.mock_chat_input_tokens + self.mock_chat_output_tokens,
+                }),
+            )
         raise ValueError(f"Unsupported API url for mocking requests.post: {url}")
 
     @staticmethod
