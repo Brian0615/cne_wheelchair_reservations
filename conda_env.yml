@@ -24,7 +24,7 @@ dependencies:
   - pytest[version='>=7.0,<8']
   - pytest-cov[version='>=3.0,<4']
   - python[version='>=3.13,<3.14']
-  - streamlit[version='>=1.58,<1.59']
+  - streamlit[version='>=1.60.0,<1.61']
   - pip:
       - extra-streamlit-components>=0.1.80,<0.2
       - pycognito>=2024.5,<2025
