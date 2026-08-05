@@ -121,8 +121,14 @@ class TestCognitoAuthenticator(TestCase):
         self.assertTrue(logged_in)
         authenticator.cookie_manager.reset_credentials.assert_not_called()
 
-    def test_login_from_cookies_invalid_clears_cookies(self):
-        """Cookie credentials that fail verification are cleared."""
+    def test_login_from_cookies_invalid_does_not_reset_cookies(self):
+        """Cookie credentials that fail verification are left alone (not cleared).
+
+        Calling reset_credentials() here would lazily mount the stx.CookieManager iframe
+        on an otherwise passive page load, racing with the rest of the script (e.g. the
+        login form rendering later in the same run) and causing the "Missing Submit
+        Button" flash. Stale credentials are harmless and get overwritten on next login.
+        """
         authenticator = self._build_authenticator()
         authenticator.cookie_manager.load_credentials.return_value = self._mock_credentials()
 
@@ -130,7 +136,7 @@ class TestCognitoAuthenticator(TestCase):
             logged_in = authenticator._login_from_cookies()
 
         self.assertFalse(logged_in)
-        authenticator.cookie_manager.reset_credentials.assert_called_once()
+        authenticator.cookie_manager.reset_credentials.assert_not_called()
 
     def test_login_from_cookies_ignored_after_logout(self):
         """After an explicit logout, stale request cookies must not log the user back in."""
@@ -158,16 +164,40 @@ class TestCognitoAuthenticator(TestCase):
         authenticator.cookie_manager.set_credentials.assert_not_called()
 
     def test_set_state_login_persist_true_writes_cookie(self):
-        """A fresh login must persist the credentials to cookies."""
+        """A fresh login must persist the credentials to cookies, and must wait for the
+        cookie component's browser round-trip to complete before returning.
+
+        Without this wait, a caller that reruns immediately afterwards (as login() does)
+        tears down the cookie-setting component before its document.cookie write actually
+        lands in the browser -- confirmed by manual reproduction -- silently losing the
+        session, so a refresh right after logging in logs the user back out.
+        """
         authenticator = self._build_authenticator()
         with patch(
                 "ui.auth.cognito.authenticator.verify_access_token",
                 return_value=({"username": "u"}, MagicMock(email="u@example.com")),
-        ), patch.object(CognitoAuthenticator, "_get_user_groups", return_value=[]):
+        ), patch.object(CognitoAuthenticator, "_get_user_groups", return_value=[]), patch(
+            "ui.auth.cognito.authenticator.time.sleep"
+        ) as mock_sleep:
             logged_in = authenticator._set_state_login(self._mock_credentials(), persist=True)
 
         self.assertTrue(logged_in)
         authenticator.cookie_manager.set_credentials.assert_called_once()
+        mock_sleep.assert_called_once()
+
+    def test_set_state_login_persist_false_does_not_wait(self):
+        """Restoring a session doesn't write cookies, so there's nothing to wait for."""
+        authenticator = self._build_authenticator()
+        with patch(
+                "ui.auth.cognito.authenticator.verify_access_token",
+                return_value=({"username": "u"}, MagicMock(email="u@example.com")),
+        ), patch.object(CognitoAuthenticator, "_get_user_groups", return_value=[]), patch(
+            "ui.auth.cognito.authenticator.time.sleep"
+        ) as mock_sleep:
+            logged_in = authenticator._set_state_login(self._mock_credentials(), persist=False)
+
+        self.assertTrue(logged_in)
+        mock_sleep.assert_not_called()
 
     def test_login_no_credentials(self):
         """Test that the login fails when no credentials are provided."""

@@ -98,9 +98,15 @@ class CognitoAuthenticatorBase(ABC):
         logger.info("Found credentials in cookies, trying to log in ...")
         logged_in = self._set_state_login(credentials=credentials, persist=False)
         if not logged_in:
-            # Credentials were present but invalid/expired -- safe to clear.
-            logger.info("Clearing invalid cookie credentials")
-            self.cookie_manager.reset_credentials()
+            # Deliberately not calling reset_credentials() here: cookies are read via
+            # st.context.cookies (synchronous), so clearing them would require lazily
+            # mounting the stx.CookieManager iframe on what is otherwise a completely
+            # passive page load. That mount races with the rest of the script (e.g. the
+            # login form being rendered later in this same run), which is exactly what
+            # causes the "Missing Submit Button" flash. Stale/expired credentials are
+            # harmless -- verification will simply keep failing -- and get overwritten
+            # the next time the user logs in successfully (see _set_state_login persist).
+            logger.info("Ignoring invalid cookie credentials")
         return logged_in
 
     def _set_state_login(self, credentials: Credentials, persist: bool = True) -> bool:
@@ -127,6 +133,14 @@ class CognitoAuthenticatorBase(ABC):
                 # session the cookies already exist, and re-writing them would render the
                 # cookie component (and its empty spacing) on every page.
                 self.cookie_manager.set_credentials(credentials=credentials)
+                # The cookie component sets document.cookie asynchronously in the browser
+                # (via an iframe postMessage round-trip). The caller calls st.rerun() right
+                # after this returns, which tears down that component before the round-trip
+                # completes -- confirmed by manual reproduction, the write is silently
+                # dropped and the "session" never actually reaches the browser, so refreshing
+                # immediately after logging in logs the user right back out. Give the
+                # round-trip time to land before anything reruns the script.
+                time.sleep(0.5)
             logger.info("Successfully logged in")
             return True
         logger.info("Could not log in")
