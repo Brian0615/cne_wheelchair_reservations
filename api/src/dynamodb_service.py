@@ -498,7 +498,8 @@ class DynamoDBService:
         """Get all rentals on a given date"""
         projection_expression = (
             "cne_year, id, #date, device_id, device_type, pickup_location, pickup_time, reservation_id, #name, "
-            "#status, phone_number, deposit_payment_method, items_left_behind, notes, return_location, return_time"
+            "#status, phone_number, deposit_payment_method, deposit_payment_amount, items_left_behind, notes, "
+            "return_location, return_time"
         )
         expression_attribute_names = {"#date": "date", "#name": "name", "#status": "status"}
 
@@ -585,7 +586,8 @@ class DynamoDBService:
         """Get all rentals that are still in progress (not yet returned) across the whole CNE year."""
         projection_expression = (
             "cne_year, id, #date, device_id, device_type, pickup_location, pickup_time, reservation_id, #name, "
-            "#status, phone_number, deposit_payment_method, items_left_behind, notes, return_location, return_time"
+            "#status, phone_number, deposit_payment_method, deposit_payment_amount, items_left_behind, notes, "
+            "return_location, return_time"
         )
         expression_attribute_names = {"#date": "date", "#name": "name", "#status": "status"}
 

@@ -132,6 +132,7 @@ class TestRentalsRouter(TestCase):
                 "name": "John Doe",
                 "phone_number": "+1 416-820-2370",
                 "deposit_payment_method": "Cash",
+                "deposit_payment_amount": 50,
                 "items_left_behind": [],
                 "notes": None,
                 "return_location": None,

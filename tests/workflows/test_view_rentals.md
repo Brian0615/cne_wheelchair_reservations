@@ -14,6 +14,14 @@
 2. Page fetches rentals for the selected date
 3. Rental table updates to show results for the new date
 
+### Download late returns report
+
+1. User views rentals for a date that has unreturned rentals
+2. A "Download Late Returns" button appears next to the date picker (same position as the
+   reservations page's export button)
+3. Clicking it downloads a PDF listing the unreturned rentals, split by device type, with a
+   signature column and "Issued by" / "Received by" sign-off lines
+
 ## Edge Cases
 
 ### No rentals on selected date

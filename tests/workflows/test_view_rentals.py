@@ -1,7 +1,10 @@
+from unittest.mock import patch
+
 from tests.shared_mock_data import MOCK_SCOOTER_RENTALS, MOCK_WHEELCHAIR_RENTALS
 from tests.workflows.base import WorkflowTestCase
 from tests.workflows.mock_responses import MockAPIResponses
 from common.cne_dates import CNEDates
+from ui.src import rental_utils
 
 
 class ViewRentalsWorkflowTests(WorkflowTestCase):
@@ -54,3 +57,20 @@ class ViewRentalsWorkflowTests(WorkflowTestCase):
                     f"Should warn that there are no {other_name} rentals",
                 )
                 self.assertEqual(1, len(at.dataframe), "Exactly one device type table should be shown")
+
+    def test_pdf_export_called_when_late_returns_exist(self):
+        """When there are unreturned rentals for the date, the late returns PDF export can be triggered."""
+        responses = MockAPIResponses(rentals=MOCK_SCOOTER_RENTALS)
+        with patch.object(rental_utils, "export_late_returns_to_pdf", return_value=b"mock_pdf"):
+            at = self._run(responses)
+        self.assertEqual(0, len(at.error), "Page should load without errors when late returns exist")
+
+    def test_no_late_returns_pdf_export_not_needed(self):
+        """When all of the day's rentals have been returned, the page still loads without errors."""
+        all_returned = [
+            {**rental, "return_time": f"{rental['date']}T18:00:00-04:00", "return_location": rental["pickup_location"]}
+            for rental in MOCK_SCOOTER_RENTALS
+        ]
+        responses = MockAPIResponses(rentals=all_returned)
+        at = self._run(responses)
+        self.assertEqual(0, len(at.error), "Page should load without errors when there are no late returns")

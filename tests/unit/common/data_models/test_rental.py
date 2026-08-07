@@ -143,6 +143,7 @@ class TestRentalSummary(TestCase):
         "name": "John Doe",
         "phone_number": "4168202370",
         "deposit_payment_method": PaymentMethod.CASH,
+        "deposit_payment_amount": 50,
         "items_left_behind": [],
         "notes": None,
         "return_location": None,
