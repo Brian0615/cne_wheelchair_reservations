@@ -288,8 +288,9 @@ def export_reservations_to_pdf(reservations_df: pd.DataFrame, date: datetime.dat
         # Prepare table data
         table_data = [[col.replace('_', ' ').title().replace("Id", "ID") for col in device_reservations.columns]]
         for _, row in device_reservations.iterrows():
-            # Leave cells empty for None values instead of showing "None"
-            table_data.append(['' if item is None else str(item) for item in row.tolist()])
+            # Leave cells empty for missing values instead of showing "None"/"nan" (pandas can upcast a
+            # None from an object-dtype column to NaN when mixed with the other string-dtype columns here)
+            table_data.append(['' if pd.isna(item) else str(item) for item in row.tolist()])
 
         # Create table
         table = Table(

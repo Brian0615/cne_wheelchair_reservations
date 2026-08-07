@@ -177,6 +177,7 @@ class RentalSummary(BaseModel):
     phone_number: PhoneNumberField
 
     deposit_payment_method: DepositPaymentMethodField
+    deposit_payment_amount: DepositPaymentAmountField
     items_left_behind: ItemsLeftBehindField
     notes: NotesField
 

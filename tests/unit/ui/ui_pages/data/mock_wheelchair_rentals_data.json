@@ -11,6 +11,7 @@
     "pickup_time": "2024-08-30T10:00:00-04:00",
     "status": "In Progress",
     "deposit_payment_method": "Credit Card",
+    "deposit_payment_amount": 25,
     "return_location": null,
     "return_time": null,
     "items_left_behind": [],
@@ -28,6 +29,7 @@
     "pickup_time": "2024-08-30T12:00:00-04:00",
     "status": "Completed",
     "deposit_payment_method": "Credit Card",
+    "deposit_payment_amount": 25,
     "return_location": "PG",
     "return_time": "2024-08-30T20:00:00+00:00",
     "items_left_behind": [
@@ -47,6 +49,7 @@
     "pickup_time": "2024-08-30T12:00:00-04:00",
     "status": "In Progress",
     "deposit_payment_method": "Cash",
+    "deposit_payment_amount": 25,
     "return_location": null,
     "return_time": null,
     "items_left_behind": [
