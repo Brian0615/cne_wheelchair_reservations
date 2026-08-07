@@ -113,18 +113,18 @@ class TestChatServiceTools(TestCase):
     def setUp(self):
         self.service = _make_chat_service()
 
-    # ── context tools ─────────────────────────────────────────────────────
+    # ── context tools ──────────────────────────────────
 
     def test_get_today_returns_iso_date(self):
         today = datetime.datetime.now(get_default_timezone()).date().isoformat()
-        self.assertEqual(today, self.service.get_today())
+        self.assertEqual(self.service.get_today(), today)
 
     def test_get_usage_guide_returns_manual_text(self):
         from api.src.chat_service import _APP_USAGE_GUIDE  # pylint: disable=import-outside-toplevel
 
-        self.assertEqual(_APP_USAGE_GUIDE, self.service.get_usage_guide())
+        self.assertEqual(self.service.get_usage_guide(), _APP_USAGE_GUIDE)
 
-    # ── lookup tools ──────────────────────────────────────────────────────
+    # ── lookup tools ────────────────────────────────────
 
     def test_lookup_rentals_on_date_converts_items(self):
         summary = RentalSummary(
@@ -149,7 +149,7 @@ class TestChatServiceTools(TestCase):
 
         result = self.service.lookup_rentals_on_date(date=datetime.date(2025, 8, 20))
 
-        self.assertEqual([summary.model_dump(mode="json")], result)
+        self.assertEqual(result, [summary.model_dump(mode="json")])
         self.service.db_service.get_rentals_on_date.assert_called_once_with(
             date=datetime.date(2025, 8, 20), device_type=None, in_progress_rentals_only=False
         )
@@ -160,7 +160,7 @@ class TestChatServiceTools(TestCase):
         result = self.service.lookup_rentals_on_date(
             date=datetime.date(2025, 8, 20), device_type=DeviceType.SCOOTER, in_progress_only=True
         )
-        self.assertEqual([summary.model_dump(mode="json")], result)
+        self.assertEqual(result, [summary.model_dump(mode="json")])
         self.service.db_service.get_rentals_on_date.assert_called_once_with(
             date=datetime.date(2025, 8, 20), device_type=DeviceType.SCOOTER, in_progress_rentals_only=True
         )
@@ -177,7 +177,7 @@ class TestChatServiceTools(TestCase):
         result = self.service.lookup_reservations_on_date(
             date=datetime.date(2025, 8, 20), device_type=DeviceType.WHEELCHAIR
         )
-        self.assertEqual([reservation.model_dump(mode="json")], result)
+        self.assertEqual(result, [reservation.model_dump(mode="json")])
         self.service.db_service.get_reservations_on_date.assert_called_once_with(
             date=datetime.date(2025, 8, 20), device_type=DeviceType.WHEELCHAIR
         )
@@ -193,7 +193,7 @@ class TestChatServiceTools(TestCase):
     def test_lookup_available_devices(self):
         self.service.db_service.get_available_device_ids.return_value = ["W01", "W02"]
         result = self.service.lookup_available_devices(device_type=DeviceType.WHEELCHAIR, location=Location.BLC)
-        self.assertEqual(["W01", "W02"], result)
+        self.assertEqual(result, ["W01", "W02"])
         self.service.db_service.get_available_device_ids.assert_called_once_with(
             cne_year=2025, device_type=DeviceType.WHEELCHAIR, location=Location.BLC
         )
@@ -209,7 +209,7 @@ class TestChatServiceTools(TestCase):
         )
         self.service.db_service.get_full_inventory.return_value = [device.model_dump()]
         result = self.service.lookup_full_inventory()
-        self.assertEqual([device.model_dump(mode="json")], result)
+        self.assertEqual(result, [device.model_dump(mode="json")])
         self.service.db_service.get_full_inventory.assert_called_once_with(cne_year=2025)
 
     def test_lookup_full_inventory_reports_no_data_instead_of_empty_list(self):
@@ -221,7 +221,7 @@ class TestChatServiceTools(TestCase):
         rental = _make_rental()
         self.service.db_service.get_rental_by_id.return_value = rental.model_dump()
         result = self.service.lookup_rental_by_id(rental_id="W0820001")
-        self.assertEqual(rental.model_dump(mode="json"), result)
+        self.assertEqual(result, rental.model_dump(mode="json"))
         self.service.db_service.get_rental_by_id.assert_called_once_with(cne_year=2025, rental_id="W0820001")
 
     def test_lookup_rental_by_id_not_found(self):
@@ -232,7 +232,7 @@ class TestChatServiceTools(TestCase):
         reservation = _make_reservation()
         self.service.db_service.get_reservation_by_id.return_value = reservation.model_dump()
         result = self.service.lookup_reservation_by_id(reservation_id="W0820001")
-        self.assertEqual(reservation.model_dump(mode="json"), result)
+        self.assertEqual(result, reservation.model_dump(mode="json"))
         self.service.db_service.get_reservation_by_id.assert_called_once_with(
             cne_year=2025, reservation_id="W0820001"
         )
@@ -247,7 +247,7 @@ class TestChatServiceTools(TestCase):
         )
         self.service.db_service.get_device_by_id.return_value = device.model_dump()
         result = self.service.lookup_device_by_id(device_id="W04")
-        self.assertEqual(device.model_dump(mode="json"), result)
+        self.assertEqual(result, device.model_dump(mode="json"))
         self.service.db_service.get_device_by_id.assert_called_once_with(cne_year=2025, device_id="W04")
 
     def test_lookup_device_by_id_not_found(self):
@@ -263,7 +263,7 @@ class TestChatServiceTools(TestCase):
         result = self.service.lookup_devices_by_status(
             status=DeviceStatus.OUT_OF_SERVICE, device_type=DeviceType.WHEELCHAIR, location=Location.PG
         )
-        self.assertEqual([device.model_dump(mode="json")], result)
+        self.assertEqual(result, [device.model_dump(mode="json")])
         self.service.db_service.get_devices_by_status.assert_called_once_with(
             cne_year=2025, status=DeviceStatus.OUT_OF_SERVICE, device_type=DeviceType.WHEELCHAIR, location=Location.PG
         )
@@ -277,7 +277,7 @@ class TestChatServiceTools(TestCase):
         rental = _make_rental()
         self.service.db_service.get_current_rental_for_device.return_value = rental.model_dump()
         result = self.service.lookup_current_rental_for_device(device_id="W01")
-        self.assertEqual(rental.model_dump(mode="json"), result)
+        self.assertEqual(result, rental.model_dump(mode="json"))
         self.service.db_service.get_current_rental_for_device.assert_called_once_with(
             cne_year=2025, device_id="W01"
         )
@@ -307,7 +307,7 @@ class TestChatServiceTools(TestCase):
         )
         self.service.db_service.get_outstanding_rentals.return_value = [summary.model_dump()]
         result = self.service.lookup_outstanding_rentals(device_type=DeviceType.WHEELCHAIR)
-        self.assertEqual([summary.model_dump(mode="json")], result)
+        self.assertEqual(result, [summary.model_dump(mode="json")])
         self.service.db_service.get_outstanding_rentals.assert_called_once_with(
             cne_year=2025, device_type=DeviceType.WHEELCHAIR
         )
@@ -321,7 +321,7 @@ class TestChatServiceTools(TestCase):
         reservation = _make_reservation()
         self.service.db_service.search_reservations.return_value = [reservation.model_dump()]
         result = self.service.search_reservations(name="Test", phone_number="4168202370")
-        self.assertEqual([reservation.model_dump(mode="json")], result)
+        self.assertEqual(result, [reservation.model_dump(mode="json")])
         self.service.db_service.search_reservations.assert_called_once_with(
             cne_year=2025, name="Test", phone_number="4168202370"
         )
@@ -331,12 +331,12 @@ class TestChatServiceTools(TestCase):
         result = self.service.search_reservations(name="Nobody")
         self.assertIsInstance(result, str)
 
-    # ── aggregate tools ───────────────────────────────────────────────────
+    # ── aggregate tools ────────────────────────────────
 
     def test_count_unreturned_rentals_on_date(self):
         self.service.db_service.count_rentals_on_date.return_value = 3
         result = self.service.count_unreturned_rentals_on_date(date=datetime.date(2025, 8, 20))
-        self.assertEqual(3, result)
+        self.assertEqual(result, 3)
         self.service.db_service.count_rentals_on_date.assert_called_once_with(
             date=datetime.date(2025, 8, 20), device_type=None, in_progress_rentals_only=True
         )
@@ -344,7 +344,7 @@ class TestChatServiceTools(TestCase):
     def test_count_rentals_on_date(self):
         self.service.db_service.count_rentals_on_date.return_value = 2
         result = self.service.count_rentals_on_date(date=datetime.date(2025, 8, 20), device_type=DeviceType.SCOOTER)
-        self.assertEqual(2, result)
+        self.assertEqual(result, 2)
         self.service.db_service.count_rentals_on_date.assert_called_once_with(
             date=datetime.date(2025, 8, 20), device_type=DeviceType.SCOOTER
         )
@@ -354,7 +354,7 @@ class TestChatServiceTools(TestCase):
             Location.BLC.value: 2, Location.PG.value: 1
         }
         result = self.service.count_available_devices_by_location(device_type=DeviceType.SCOOTER)
-        self.assertEqual({Location.BLC.value: 2, Location.PG.value: 1}, result)
+        self.assertEqual(result, {Location.BLC.value: 2, Location.PG.value: 1})
         self.service.db_service.count_available_devices_by_location.assert_called_once_with(
             cne_year=2025, device_type=DeviceType.SCOOTER
         )
@@ -364,8 +364,8 @@ class TestChatServiceTools(TestCase):
             {"date": "2025-08-20", "device_type": "Scooter", "location": "BLC", "count": 5},
         ])
         result = self.service.reservation_counts()
-        self.assertEqual(1, len(result))
-        self.assertEqual(5, result[0]["count"])
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["count"], 5)
         self.service.db_service.get_reservation_count.assert_called_once_with(2025)
 
     def test_reservation_counts_reports_no_data_instead_of_empty_list(self):
@@ -381,8 +381,8 @@ class TestChatServiceTools(TestCase):
             {"status": "Picked Up", "device_type": "Scooter", "count": 2},
         ])
         result = self.service.reservation_status_counts()
-        self.assertEqual(2, len(result))
-        self.assertEqual({"Reserved", "Picked Up"}, {row["status"] for row in result})
+        self.assertEqual(len(result), 2)
+        self.assertEqual({row["status"] for row in result}, {"Reserved", "Picked Up"})
         self.service.db_service.get_reservation_status_counts.assert_called_once_with(2025)
 
     def test_reservation_status_counts_reports_no_data_instead_of_empty_list(self):
@@ -394,10 +394,10 @@ class TestChatServiceTools(TestCase):
 
     def test_fee_and_deposit_schedule_is_static(self):
         result = self.service.fee_and_deposit_schedule()
-        self.assertEqual(45, result["fees_and_deposits"]["Scooter"]["rental_fee"])
-        self.assertEqual(100, result["fees_and_deposits"]["Scooter"]["deposit"])
-        self.assertEqual(20, result["fees_and_deposits"]["Wheelchair"]["rental_fee"])
-        self.assertEqual(50, result["fees_and_deposits"]["Wheelchair"]["deposit"])
+        self.assertEqual(result["fees_and_deposits"]["Scooter"]["rental_fee"], 45)
+        self.assertEqual(result["fees_and_deposits"]["Scooter"]["deposit"], 100)
+        self.assertEqual(result["fees_and_deposits"]["Wheelchair"]["rental_fee"], 20)
+        self.assertEqual(result["fees_and_deposits"]["Wheelchair"]["deposit"], 50)
         self.assertIn(PaymentMethod.CASH, result["accepted_fee_payment_methods"])
         self.service.db_service.assert_not_called()
 
@@ -428,7 +428,7 @@ class TestChatServiceSystemPrompt(TestCase):
 
         # the fair start/end are the only dates that may legitimately be hard-coded into the prompt
         dates_in_prompt = set(re.findall(r"\d{4}-\d{2}-\d{2}", prompt))
-        self.assertEqual({fair_start.date().isoformat(), fair_end.date().isoformat()}, dates_in_prompt)
+        self.assertEqual(dates_in_prompt, {fair_start.date().isoformat(), fair_end.date().isoformat()})
         self.assertIn("get_today", prompt)
 
     def test_get_usage_guide_survives_braces_in_manual(self):
@@ -436,7 +436,7 @@ class TestChatServiceSystemPrompt(TestCase):
         guide_text = 'Set {"limit": 5} in the {config} field.'
         with patch("api.src.chat_service._APP_USAGE_GUIDE", guide_text):
             result = self.service.get_usage_guide()
-        self.assertEqual(guide_text, result)
+        self.assertEqual(result, guide_text)
 
 
 class TestChatServiceAnswer(TestCase):
@@ -448,12 +448,12 @@ class TestChatServiceAnswer(TestCase):
             ChatMessage(role=ChatRole.ASSISTANT, content="hi there"),
         ]
         messages = _to_model_messages(history)
-        self.assertEqual(2, len(messages))
+        self.assertEqual(len(messages), 2)
         self.assertIsInstance(messages[0], ModelRequest)
         self.assertIsInstance(messages[1], ModelResponse)
 
     def test_to_model_messages_empty(self):
-        self.assertEqual([], _to_model_messages([]))
+        self.assertEqual(_to_model_messages([]), [])
 
     @staticmethod
     def _mock_usage(input_tokens=10, output_tokens=5, cache_read_tokens=0, cache_write_tokens=0):
@@ -479,14 +479,14 @@ class TestChatServiceAnswer(TestCase):
 
         result = service.answer("how many rentals?", [ChatMessage(role=ChatRole.USER, content="hi")])
 
-        self.assertEqual("the answer", result.answer)
-        self.assertEqual(GEMINI_MODEL_FALLBACK_CHAIN[0], result.model)
-        self.assertEqual(100, result.input_tokens)
-        self.assertEqual(20, result.output_tokens)
-        self.assertEqual(0, result.cache_read_tokens)
-        self.assertEqual(120, result.total_tokens)
+        self.assertEqual(result.answer, "the answer")
+        self.assertEqual(result.model, GEMINI_MODEL_FALLBACK_CHAIN[0])
+        self.assertEqual(result.input_tokens, 100)
+        self.assertEqual(result.output_tokens, 20)
+        self.assertEqual(result.cache_read_tokens, 0)
+        self.assertEqual(result.total_tokens, 120)
         _, kwargs = mock_agent.run_sync.call_args
-        self.assertEqual(1, len(kwargs["message_history"]))
+        self.assertEqual(len(kwargs["message_history"]), 1)
 
     def test_answer_handles_no_history(self):
         service = _make_chat_service()
@@ -496,7 +496,7 @@ class TestChatServiceAnswer(TestCase):
         )
         service._agents = {GEMINI_MODEL_FALLBACK_CHAIN[0]: mock_agent}  # pylint: disable=protected-access
 
-        self.assertEqual("hi", service.answer("hello").answer)
+        self.assertEqual(service.answer("hello").answer, "hi")
 
     def test_answer_debug_logs_messages_tool_calls_responses_and_usage(self):
         service = _make_chat_service()
@@ -539,8 +539,8 @@ class TestChatServiceAnswer(TestCase):
 
         result = service.answer("hello")
 
-        self.assertEqual(GEMINI_MODEL_FALLBACK_CHAIN[0], result.model)
-        self.assertEqual(0, service._current_model_index)  # pylint: disable=protected-access
+        self.assertEqual(result.model, GEMINI_MODEL_FALLBACK_CHAIN[0])
+        self.assertEqual(service._current_model_index, 0)  # pylint: disable=protected-access
 
     def test_answer_falls_back_to_next_model_on_rate_limit(self):
         """If the current model's rate limit is hit, the next model in the chain should be tried."""
@@ -560,8 +560,8 @@ class TestChatServiceAnswer(TestCase):
 
         result = service.answer("hello")
 
-        self.assertEqual(GEMINI_MODEL_FALLBACK_CHAIN[1], result.model)
-        self.assertEqual(1, service._current_model_index)  # pylint: disable=protected-access
+        self.assertEqual(result.model, GEMINI_MODEL_FALLBACK_CHAIN[1])
+        self.assertEqual(service._current_model_index, 1)  # pylint: disable=protected-access
         rate_limited_agent.run_sync.assert_called_once()
         healthy_agent.run_sync.assert_called_once()
 
@@ -584,8 +584,8 @@ class TestChatServiceAnswer(TestCase):
 
         result = service.answer("hello", [ChatMessage(role=ChatRole.USER, content="hi")])
 
-        self.assertEqual(GEMINI_MODEL_FALLBACK_CHAIN[0], result.model)
-        self.assertEqual(0, service._current_model_index)  # pylint: disable=protected-access
+        self.assertEqual(result.model, GEMINI_MODEL_FALLBACK_CHAIN[0])
+        self.assertEqual(service._current_model_index, 0)  # pylint: disable=protected-access
 
     def test_answer_raises_when_every_model_is_rate_limited(self):
         """If every model in the chain is rate-limited, the last error should propagate."""
@@ -607,4 +607,4 @@ class TestChatServiceAnswer(TestCase):
 
         with self.assertRaises(ModelHTTPError):
             service.answer("hello")
-        self.assertEqual(0, service._current_model_index)  # pylint: disable=protected-access
+        self.assertEqual(service._current_model_index, 0)  # pylint: disable=protected-access
