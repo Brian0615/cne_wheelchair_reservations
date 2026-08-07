@@ -1,13 +1,13 @@
 import io
 from datetime import date, datetime
+from typing import List
 
 import pandas as pd
 import streamlit as st
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer
 
 from common.constants import DeviceType, WALK_IN_RESERVATION_ID, RentalStatus
 from common.data_models import CompletedRental, NewRental, ChangeDeviceInfo
@@ -16,9 +16,8 @@ from ui.forms import NewRentalForm
 from ui.pdf_forms.scooter_pdf_form import ScooterPDFForm
 from ui.pdf_forms.wheelchair_pdf_form import WheelchairPDFForm
 from common.cne_dates import CNEDates
-from ui.src.constants import Colour
 from ui.src.data_service import DataService
-from ui.src.reservation_utils import load_fonts
+from ui.src.reservation_utils import build_styled_table, load_fonts
 from ui.src.utils import clear_session_state_for_form, process_validation_errors
 
 
@@ -186,6 +185,41 @@ def change_rental_device(change_data: dict):
         display_change_device_success_dialog(change_data)
 
 
+def _append_device_late_returns_table(
+        elements: List,
+        device_late_returns: pd.DataFrame,
+        device_type: DeviceType,
+        columns: List[str],
+        column_headers: dict,
+        regular_font: str,
+        bold_font: str,
+) -> None:
+    """Append a heading and styled table of one device type's late returns to elements."""
+    elements.append(
+        Paragraph(
+            text=f"{device_type} Late Returns",
+            style=ParagraphStyle(name='CustomHeading2', parent=getSampleStyleSheet()['Heading2'],
+                                  fontName=bold_font)
+        )
+    )
+    elements.append(Spacer(1, 0.1 * inch))
+
+    # the device ID column is labelled with the device type itself
+    headers = [str(device_type) if col == "device_id" else column_headers[col] for col in columns]
+    table_data = [headers]
+    for _, row in device_late_returns.sort_values(by="rental_id").iterrows():
+        table_data.append(['' if pd.isna(item) else str(item) for item in row.tolist()])
+
+    table = build_styled_table(
+        table_data,
+        col_widths=[x * inch for x in (0.8, 1.75, 1.5, 0.75, 0.75, 0.75, 0.75, 1.25, 0.75)],
+        regular_font=regular_font,
+        bold_font=bold_font,
+    )
+    elements.append(table)
+    elements.append(Spacer(1, 0.3 * inch))
+
+
 def export_late_returns_to_pdf(rentals_df: pd.DataFrame, rental_date: date) -> bytes:
     """
     Export a day's late (not yet returned) rentals to a PDF file, with a signature column
@@ -266,57 +300,16 @@ def export_late_returns_to_pdf(rentals_df: pd.DataFrame, rental_date: date) -> b
 
         for device_type in DeviceType:
             device_late_returns = late_returns[late_returns["device_type"] == device_type][columns]
-            if device_late_returns.empty:
-                continue
-            device_late_returns = device_late_returns.sort_values(by="rental_id")
-
-            elements.append(
-                Paragraph(
-                    text=f"{device_type} Late Returns",
-                    style=ParagraphStyle(name='CustomHeading2', parent=getSampleStyleSheet()['Heading2'],
-                                          fontName=bold_font)
+            if not device_late_returns.empty:
+                _append_device_late_returns_table(
+                    elements=elements,
+                    device_late_returns=device_late_returns,
+                    device_type=device_type,
+                    columns=columns,
+                    column_headers=column_headers,
+                    regular_font=regular_font,
+                    bold_font=bold_font,
                 )
-            )
-            elements.append(Spacer(1, 0.1 * inch))
-
-            # Prepare table data; the device ID column is labelled with the device type itself
-            headers = [str(device_type) if col == "device_id" else column_headers[col] for col in columns]
-            table_data = [headers]
-            for _, row in device_late_returns.iterrows():
-                table_data.append(['' if pd.isna(item) else str(item) for item in row.tolist()])
-
-            # Create table
-            table = Table(
-                table_data,
-                repeatRows=1,
-                colWidths=[x * inch for x in (0.8, 1.75, 1.5, 0.75, 0.75, 0.75, 0.75, 1.25, 0.75)],
-            )
-
-            # Apply table styles
-            table_style = TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), Colour.TABLE_HEADER),  # Header background
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),  # Header text color
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Center all cells
-                ('ALIGN', (1, 0), (1, -1), 'LEFT'),  # Left-align Name column
-                ('FONTNAME', (0, 0), (-1, 0), bold_font),  # Bold for header
-                ('FONTSIZE', (0, 0), (-1, 0), 11),  # Header font size
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),  # Header padding
-                ('BACKGROUND', (0, 1), (-1, -1), colors.white),  # Data rows background
-                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),  # Data rows text color
-                ('FONTNAME', (0, 1), (-1, -1), regular_font),  # Data rows font
-                ('FONTSIZE', (0, 1), (-1, -1), 10),  # Data rows font size
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertically center all text
-                ('WORDWRAP', (0, 0), (-1, -1), True),  # Enable text wrapping for all cells
-            ])
-
-            # Add alternating row colors
-            for i in range(1, len(table_data)):
-                if i % 2 == 0:
-                    table_style.add('BACKGROUND', (0, i), (-1, i), Colour.TABLE_ALTERNATE_LIGHT_GREY)
-
-            table.setStyle(table_style)
-            elements.append(table)
-            elements.append(Spacer(1, 0.3 * inch))
 
     # Signature lines for handing off the late returns and deposits to CNE late returns staff
     elements.append(Spacer(1, 0.75 * inch))

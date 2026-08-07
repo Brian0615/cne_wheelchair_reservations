@@ -227,6 +227,45 @@ def load_fonts():
     return regular_font, bold_font
 
 
+def build_styled_table(
+        table_data: list,
+        col_widths: list,
+        regular_font: str,
+        bold_font: str,
+        left_align_columns: tuple = (1,),
+) -> Table:
+    """
+    Build a Table flowable with the header/stripe styling shared by the PDF exports in this app:
+    a bold header row, centered cells (except the given left-aligned columns), and alternating
+    row backgrounds.
+    """
+    table = Table(table_data, repeatRows=1, colWidths=col_widths)
+    table_style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), Colour.TABLE_HEADER),  # Header background
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),  # Header text color
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Center all cells
+        ('FONTNAME', (0, 0), (-1, 0), bold_font),  # Bold for header
+        ('FONTSIZE', (0, 0), (-1, 0), 11),  # Header font size
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),  # Header padding
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),  # Data rows background
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),  # Data rows text color
+        ('FONTNAME', (0, 1), (-1, -1), regular_font),  # Data rows font
+        ('FONTSIZE', (0, 1), (-1, -1), 10),  # Data rows font size
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertically center all text
+        ('WORDWRAP', (0, 0), (-1, -1), True),  # Enable text wrapping for all cells
+    ])
+    for col in left_align_columns:
+        table_style.add('ALIGN', (col, 0), (col, -1), 'LEFT')
+
+    # Add alternating row colors
+    for i in range(1, len(table_data)):
+        if i % 2 == 0:
+            table_style.add('BACKGROUND', (0, i), (-1, i), Colour.TABLE_ALTERNATE_LIGHT_GREY)
+
+    table.setStyle(table_style)
+    return table
+
+
 def export_reservations_to_pdf(reservations_df: pd.DataFrame, date: datetime.date) -> bytes:
     """
     Export reservations to a PDF file with one page per device type.
@@ -293,36 +332,13 @@ def export_reservations_to_pdf(reservations_df: pd.DataFrame, date: datetime.dat
             table_data.append(['' if pd.isna(item) else str(item) for item in row.tolist()])
 
         # Create table
-        table = Table(
+        table = build_styled_table(
             table_data,
-            repeatRows=1,
-            colWidths=[x * inch for x in (0.8, 1.75, 1.5, 0.95, 0.95, 1.75, 1.75, 0.8)],
+            col_widths=[x * inch for x in (0.8, 1.75, 1.5, 0.95, 0.95, 1.75, 1.75, 0.8)],
+            regular_font=regular_font,
+            bold_font=bold_font,
+            left_align_columns=(1, 6),  # Name, Notes
         )
-
-        # Apply table styles
-        table_style = TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), Colour.TABLE_HEADER),  # Header background
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),  # Header text color
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Center all cells
-            ('ALIGN', (1, 0), (1, -1), 'LEFT'),  # Left-align Name column
-            ('ALIGN', (6, 0), (6, -1), 'LEFT'),  # Left-align Notes column
-            ('FONTNAME', (0, 0), (-1, 0), bold_font),  # Bold for header
-            ('FONTSIZE', (0, 0), (-1, 0), 11),  # Header font size
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),  # Header padding
-            ('BACKGROUND', (0, 1), (-1, -1), colors.white),  # Data rows background
-            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),  # Data rows text color
-            ('FONTNAME', (0, 1), (-1, -1), regular_font),  # Data rows font
-            ('FONTSIZE', (0, 1), (-1, -1), 10),  # Data rows font size
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertically center all text
-            ('WORDWRAP', (0, 0), (-1, -1), True),  # Enable text wrapping for all cells
-        ])
-
-        # Add alternating row colors
-        for i in range(1, len(table_data)):
-            if i % 2 == 0:
-                table_style.add('BACKGROUND', (0, i), (-1, i), Colour.TABLE_ALTERNATE_LIGHT_GREY)
-
-        table.setStyle(table_style)
         elements.append(table)
         elements.append(PageBreak())
 
