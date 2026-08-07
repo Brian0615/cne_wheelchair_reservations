@@ -7,6 +7,7 @@ from moto import mock_aws
 
 import api.routers.chat as chat_module
 from api.routers import chat_router
+from common.data_models import ChatResponse
 
 
 def _make_app():
@@ -29,35 +30,58 @@ class TestChatRouter(TestCase):
         self.patcher.stop()
 
     def test_ask_returns_answer(self):
-        self.mock_service.answer.return_value = "There is 1 rental in progress."
+        self.mock_service.answer.return_value = ChatResponse(
+            answer="There is 1 rental in progress.",
+            model="gemini-3.5-flash-lite",
+            input_tokens=100,
+            output_tokens=23,
+            cache_read_tokens=0,
+            total_tokens=123,
+        )
         response = self.client.post("/chat/ask", json={"message": "how many rentals?", "history": []})
-        self.assertEqual(200, response.status_code)
-        self.assertEqual("There is 1 rental in progress.", response.json())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "answer": "There is 1 rental in progress.",
+                "model": "gemini-3.5-flash-lite",
+                "input_tokens": 100,
+                "output_tokens": 23,
+                "cache_read_tokens": 0,
+                "total_tokens": 123,
+            },
+        )
         self.mock_service.answer.assert_called_once()
 
     def test_ask_passes_message_and_history(self):
-        self.mock_service.answer.return_value = "ok"
+        self.mock_service.answer.return_value = ChatResponse(
+            answer="ok", model="gemini-3.5-flash-lite", input_tokens=1, output_tokens=1, cache_read_tokens=0,
+            total_tokens=2,
+        )
         history = [
             {"role": "user", "content": "hello"},
             {"role": "assistant", "content": "hi, how can I help?"},
         ]
         response = self.client.post("/chat/ask", json={"message": "and then?", "history": history})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(response.status_code, 200)
         _, kwargs = self.mock_service.answer.call_args
-        self.assertEqual("and then?", kwargs["message"])
-        self.assertEqual(2, len(kwargs["history"]))
-        self.assertEqual("hello", kwargs["history"][0].content)
+        self.assertEqual(kwargs["message"], "and then?")
+        self.assertEqual(len(kwargs["history"]), 2)
+        self.assertEqual(kwargs["history"][0].content, "hello")
 
     def test_ask_defaults_to_empty_history(self):
-        self.mock_service.answer.return_value = "ok"
+        self.mock_service.answer.return_value = ChatResponse(
+            answer="ok", model="gemini-3.5-flash-lite", input_tokens=1, output_tokens=1, cache_read_tokens=0,
+            total_tokens=2,
+        )
         response = self.client.post("/chat/ask", json={"message": "hi"})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(response.status_code, 200)
         _, kwargs = self.mock_service.answer.call_args
-        self.assertEqual([], kwargs["history"])
+        self.assertEqual(kwargs["history"], [])
 
     def test_ask_rejects_invalid_role(self):
         response = self.client.post(
             "/chat/ask",
             json={"message": "hi", "history": [{"role": "system", "content": "x"}]},
         )
-        self.assertEqual(422, response.status_code)
+        self.assertEqual(response.status_code, 422)

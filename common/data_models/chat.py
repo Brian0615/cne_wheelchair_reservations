@@ -24,3 +24,15 @@ class ChatRequest(BaseModel):
 
     message: str = Field(title="Message")
     history: List[ChatMessage] = Field(title="Conversation History", default_factory=list)
+
+
+class ChatResponse(BaseModel):
+    """Response body for the chatbot endpoint"""
+    model_config = ConfigDict(extra="forbid")
+
+    answer: str = Field(title="Answer")
+    model: str = Field(title="Model", description="The Gemini model that produced this answer.")
+    input_tokens: int = Field(title="Input Tokens")
+    output_tokens: int = Field(title="Output Tokens")
+    cache_read_tokens: int = Field(title="Cache Read Tokens", description="Input tokens served from cache.")
+    total_tokens: int = Field(title="Total Tokens", description="Input tokens plus output tokens.")

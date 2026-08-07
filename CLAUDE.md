@@ -34,7 +34,10 @@ Required environment variables for local testing (see `api.env` / `ui.env` for e
 - `API_HOST`, `API_PORT`, `AUTH_METHOD`, `AUTH_CONFIG_PATH`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
   `AWS_DEFAULT_REGION`, `PDF_PASSWORD`, `S3_BUCKET`, `CNE_YEAR`
 - `GEMINI_API_KEY` — Google AI Studio key used by the chatbot (`api/src/chat_service.py`); only needed when actually
-  calling the chatbot. Optionally `GEMINI_MODEL` (defaults to `gemini-3.1-flash-lite`).
+  calling the chatbot. Optionally `GEMINI_MODEL` to pin a single model; if unset, the chatbot rotates through
+  `gemini-3.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-2.5-flash-lite`, falling back to the next model when
+  one hits its rate limit (wrapping back to the first after the last) and always restarting at the first model for
+  a new conversation.
 
 ### Docker
 

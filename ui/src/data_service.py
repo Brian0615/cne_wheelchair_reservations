@@ -12,6 +12,7 @@ from requests import JSONDecodeError
 from common.constants import DeviceStatus, DeviceType, Location, ReservationStatus
 from common.data_models import (
     ChangeDeviceInfo,
+    ChatResponse,
     CompletedRental,
     Device,
     NewDevice,
@@ -433,7 +434,7 @@ class DataService:
     # ==============================
 
     @auto_process_api_errors
-    def chat(self, message: str, history: List[Dict[str, str]]) -> str:
+    def chat(self, message: str, history: List[Dict[str, str]]) -> ChatResponse:
         """Ask the chatbot a question using the API.
 
         Note: a longer timeout than the default is used since LLM responses are slower, and the response is
@@ -445,4 +446,4 @@ class DataService:
             json={"message": message, "history": history},
             timeout=CHAT_TIMEOUT,
         )
-        return response.json()
+        return ChatResponse(**response.json())
