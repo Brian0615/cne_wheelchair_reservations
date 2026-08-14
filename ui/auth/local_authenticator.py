@@ -50,6 +50,10 @@ class LocalAuthenticator(BaseAuthenticator):
         """Check if the current user is an editor"""
         return self.is_admin_user() or "editor" in self.get_current_user_groups()
 
+    def is_display_user(self) -> bool:
+        """Check if the current user is a display-only (TV/kiosk) user"""
+        return "display" in self.get_current_user_groups()
+
     def is_authenticated(self) -> bool:
         """Check if the user is authenticated"""
         return st.session_state.get("authentication_status", False) is True

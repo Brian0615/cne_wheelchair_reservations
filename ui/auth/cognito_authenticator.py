@@ -70,6 +70,15 @@ class CognitoAuthenticator(BaseAuthenticator):
         """
         return self.is_admin_user() or "cne-editor" in self.get_current_user_groups()
 
+    def is_display_user(self) -> bool:
+        """
+        Checks if the current user is a display-only (TV/kiosk) user.
+
+        Returns:
+            bool: True if the user is a display-only user, False otherwise.
+        """
+        return "cne-display" in self.get_current_user_groups()
+
     def is_authenticated(self) -> bool:
         """ Checks if the user is authenticated."""
         return self.authenticator.is_logged_in()

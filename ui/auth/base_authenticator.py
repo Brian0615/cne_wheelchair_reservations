@@ -107,6 +107,21 @@ class BaseAuthenticator:
         """
         raise NotImplementedError("Subclasses must implement is_editor_user method")
 
+    def is_display_user(self) -> bool:
+        """
+        Checks if the current user is a display-only (TV/kiosk) user.
+
+        This method must be implemented by subclasses to provide the logic
+        for determining whether a user holds the display-only role.
+
+        Returns:
+            bool: True if the user is a display-only user, False otherwise.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in a subclass.
+        """
+        raise NotImplementedError("Subclasses must implement is_display_user method")
+
     def is_authenticated(self) -> bool:
         """
         Checks if the user is currently authenticated.

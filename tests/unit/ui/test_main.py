@@ -63,3 +63,84 @@ class TestMain(unittest.TestCase):
             assert len(page_list) >= 1, "At least one page should be available when authenticated."
             assert not any(page.title == "Login" for page in page_list), \
                 "The login page should not be available when authenticated."
+
+    @staticmethod
+    def test_main_display_only_user_sees_only_dashboard():
+        """A display-only user should see ONLY the Dashboard page."""
+
+        st.navigation = Mock()
+
+        with patch.multiple(
+                LocalAuthenticator,
+                _initialize_authenticator=MagicMock(),
+                login=MagicMock(return_value=False),
+        ):
+            at = AppTest.from_file(TestMain.__APP_PATH)
+            at.session_state["authentication_status"] = True
+            at.session_state["roles"] = ["display"]
+            at.run()
+            page_list = st.navigation.call_args.kwargs["pages"]
+            page_list = sum(page_list.values(), [])
+            assert len(page_list) == 1 and page_list[0].title == "Dashboard", \
+                "Only the Dashboard page should be available to a display-only user."
+
+    @staticmethod
+    def test_main_display_and_editor_user_sees_only_dashboard():
+        """A user with both display and editor roles (but not admin) should still see only Dashboard."""
+
+        st.navigation = Mock()
+
+        with patch.multiple(
+                LocalAuthenticator,
+                _initialize_authenticator=MagicMock(),
+                login=MagicMock(return_value=False),
+        ):
+            at = AppTest.from_file(TestMain.__APP_PATH)
+            at.session_state["authentication_status"] = True
+            at.session_state["roles"] = ["display", "editor"]
+            at.run()
+            page_list = st.navigation.call_args.kwargs["pages"]
+            page_list = sum(page_list.values(), [])
+            assert len(page_list) == 1 and page_list[0].title == "Dashboard", \
+                "Editor pages should not leak in for a display-only user."
+
+    @staticmethod
+    def test_main_admin_user_sees_dashboard_with_full_page_set():
+        """An admin user should see the Dashboard page in addition to their full page set."""
+
+        st.navigation = Mock()
+
+        with patch.multiple(
+                LocalAuthenticator,
+                _initialize_authenticator=MagicMock(),
+                login=MagicMock(return_value=False),
+        ):
+            at = AppTest.from_file(TestMain.__APP_PATH)
+            at.session_state["authentication_status"] = True
+            at.session_state["roles"] = ["admin"]
+            at.run()
+            page_list = st.navigation.call_args.kwargs["pages"]
+            page_titles = [page.title for page in sum(page_list.values(), [])]
+            assert "Dashboard" in page_titles, "Admins should see the Dashboard page."
+            assert "Home" in page_titles and "Manage Inventory" in page_titles, \
+                "Admins should still see their full baseline and privileged page set."
+
+    @staticmethod
+    def test_main_editor_user_does_not_see_dashboard():
+        """A plain editor user (no admin/display role) should not see the Dashboard page."""
+
+        st.navigation = Mock()
+
+        with patch.multiple(
+                LocalAuthenticator,
+                _initialize_authenticator=MagicMock(),
+                login=MagicMock(return_value=False),
+        ):
+            at = AppTest.from_file(TestMain.__APP_PATH)
+            at.session_state["authentication_status"] = True
+            at.session_state["roles"] = ["editor"]
+            at.run()
+            page_list = st.navigation.call_args.kwargs["pages"]
+            page_titles = [page.title for page in sum(page_list.values(), [])]
+            assert "Dashboard" not in page_titles, \
+                "Plain editor users should not gain Dashboard access."
