@@ -77,7 +77,7 @@ def auto_process_api_errors(func):
     return wrapper
 
 
-# pylint: disable=no-self-argument
+# pylint: disable=no-self-argument,too-many-public-methods
 # noinspection PyMethodParameters
 class DataService:
     """Service class to interact with the API."""
@@ -161,12 +161,9 @@ class DataService:
         return response.json()
 
     # pylint: disable=not-an-iterable
-    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
-    @timeit(logger=logger)
-    @auto_process_api_errors
-    def get_full_inventory(_self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Get the full inventory of devices using the API."""
-        response = _self._make_request(
+    def _fetch_full_inventory(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Fetch the full inventory of devices from the API (not cached)."""
+        response = self._make_request(
             request_method=requests.get,
             url_path="devices/get_full_inventory",
             params={"cne_year": CNEDates.get_cne_year()},
@@ -180,6 +177,24 @@ class DataService:
             inventory[inventory["type"] == DeviceType.SCOOTER],
             inventory[inventory["type"] == DeviceType.WHEELCHAIR],
         )
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_full_inventory(_self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Get the full inventory of devices using the API."""
+        return _self._fetch_full_inventory()
+
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_full_inventory_bypass_cache(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Get the full inventory of devices using the API, bypassing the shared cache.
+
+        Intended for near-real-time consumers (e.g. the Inventory Dashboard) that need a fresh
+        fetch on every call without evicting get_full_inventory's cache for other concurrent
+        sessions/pages, which calling get_full_inventory.clear() would do.
+        """
+        return self._fetch_full_inventory()
 
     @timeit(logger=logger)
     @auto_process_api_errors
@@ -234,17 +249,14 @@ class DataService:
         self._clear_rentals_functions_cache()
         return response.status_code, response.json()
 
-    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
-    @timeit(logger=logger)
-    @auto_process_api_errors
-    def get_rentals_on_date(
-            _self,
+    def _fetch_rentals_on_date(
+            self,
             rental_date: datetime.date,
             device_type: Optional[DeviceType] = None,
             in_progress_rentals_only: bool = False,
     ) -> pd.DataFrame:
-        """Get the rentals on a specific date using the API."""
-        response = _self._make_request(
+        """Fetch the rentals on a specific date from the API (not cached)."""
+        response = self._make_request(
             request_method=requests.get,
             url_path="rentals/get_rentals_on_date",
             params={
@@ -258,6 +270,36 @@ class DataService:
         if rentals.empty:
             return rentals
         return rentals.sort_values(by="id")
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_rentals_on_date(
+            _self,
+            rental_date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            in_progress_rentals_only: bool = False,
+    ) -> pd.DataFrame:
+        """Get the rentals on a specific date using the API."""
+        return _self._fetch_rentals_on_date(
+            rental_date=rental_date, device_type=device_type, in_progress_rentals_only=in_progress_rentals_only
+        )
+
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_rentals_on_date_bypass_cache(
+            self,
+            rental_date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            in_progress_rentals_only: bool = False,
+    ) -> pd.DataFrame:
+        """Get the rentals on a specific date using the API, bypassing the shared cache.
+
+        See get_full_inventory_bypass_cache for why this exists alongside get_rentals_on_date.
+        """
+        return self._fetch_rentals_on_date(
+            rental_date=rental_date, device_type=device_type, in_progress_rentals_only=in_progress_rentals_only
+        )
 
     @auto_process_api_errors
     def change_rental_device(self, change_device_info: ChangeDeviceInfo):
@@ -316,18 +358,14 @@ class DataService:
         response["date"] = pd.to_datetime(response["date"])
         return response
 
-    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
-    @timeit(logger=logger)
-    @auto_process_api_errors
-    def get_reservations_on_date(
-            _self,
+    def _fetch_reservations_on_date(
+            self,
             date: datetime.date,
             device_type: Optional[DeviceType] = None,
             exclude_picked_up_reservations: bool = False,
     ) -> pd.DataFrame:
-        """Get the reservations on a specific date using the API."""
-
-        response = _self._make_request(
+        """Fetch the reservations on a specific date from the API (not cached)."""
+        response = self._make_request(
             request_method=requests.get,
             url_path="reservations/get_reservations_on_date",
             params={
@@ -342,6 +380,36 @@ class DataService:
             return reservations
         reservations["reservation_time"] = pd.to_datetime(reservations["reservation_time"], utc=True)
         return reservations
+
+    @st.cache_data(ttl=DEFAULT_CACHE_TTL, show_spinner=False)
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_reservations_on_date(
+            _self,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            exclude_picked_up_reservations: bool = False,
+    ) -> pd.DataFrame:
+        """Get the reservations on a specific date using the API."""
+        return _self._fetch_reservations_on_date(
+            date=date, device_type=device_type, exclude_picked_up_reservations=exclude_picked_up_reservations
+        )
+
+    @timeit(logger=logger)
+    @auto_process_api_errors
+    def get_reservations_on_date_bypass_cache(
+            self,
+            date: datetime.date,
+            device_type: Optional[DeviceType] = None,
+            exclude_picked_up_reservations: bool = False,
+    ) -> pd.DataFrame:
+        """Get the reservations on a specific date using the API, bypassing the shared cache.
+
+        See get_full_inventory_bypass_cache for why this exists alongside get_reservations_on_date.
+        """
+        return self._fetch_reservations_on_date(
+            date=date, device_type=device_type, exclude_picked_up_reservations=exclude_picked_up_reservations
+        )
 
     @timeit(logger=logger)
     @auto_process_api_errors

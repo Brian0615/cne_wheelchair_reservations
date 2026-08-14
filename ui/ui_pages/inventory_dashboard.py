@@ -61,17 +61,15 @@ def _render_dashboard():
     every 30s -- the sidebar (Welcome/Logout/version, from initialize_page() above) is
     not rerun on each tick.
     """
+    # get_full_inventory/get_reservations_on_date/get_rentals_on_date are cached with ttl=30s
+    # for other pages. That's stacked with a 30s fragment tick here could show data up to ~60s
+    # stale in the worst case -- and since st.cache_data is process-global, calling .clear() on
+    # them would also evict that cache for every other concurrent session/page. The *_bypass_cache
+    # variants fetch fresh data on every call without touching the shared cache at all.
     data_service = DataService()
-    # These are all cached with ttl=30s. Left alone, that cache stacked with a 30s
-    # fragment tick could show data up to ~60s stale in the worst case. Force-clear the
-    # caches before each tick so staleness is bounded by the fragment interval alone.
-    data_service.get_full_inventory.clear()
-    data_service.get_reservations_on_date.clear()
-    data_service.get_rentals_on_date.clear()
-
-    full_inventory = data_service.get_full_inventory()
-    reservations = data_service.get_reservations_on_date(CNEDates.get_default_date())
-    rentals = data_service.get_rentals_on_date(CNEDates.get_default_date())
+    full_inventory = data_service.get_full_inventory_bypass_cache()
+    reservations = data_service.get_reservations_on_date_bypass_cache(CNEDates.get_default_date())
+    rentals = data_service.get_rentals_on_date_bypass_cache(CNEDates.get_default_date())
     if full_inventory is None:
         st.error("**Error**: Unable to load inventory. Please try again later.")
         return
