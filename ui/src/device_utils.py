@@ -12,6 +12,8 @@ from common.data_models import NewDevice
 from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 
+_TRANSPARENT_BACKGROUND = "rgba(0, 0, 0, 0)"
+
 
 def get_manage_devices_str(action: str, device_type: DeviceType, num_devices: int) -> str:
     """Get the string for labelling UI components related to managing devices"""
@@ -145,8 +147,8 @@ def create_inventory_chart(inventory: pd.DataFrame):
         width=num_per_row * 50,
         height=35 * num_rows,
         margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
-        plot_bgcolor="rgba(0, 0, 0, 0)",
-        paper_bgcolor="rgba(0, 0, 0, 0)",
+        plot_bgcolor=_TRANSPARENT_BACKGROUND,
+        paper_bgcolor=_TRANSPARENT_BACKGROUND,
     )
     fig.update_xaxes(range=[0, num_per_row], visible=False, showgrid=False, zeroline=False)
     fig.update_yaxes(range=[-2 * num_rows, 0], visible=False, showgrid=False, zeroline=False)
@@ -264,8 +266,8 @@ def create_dashboard_inventory_chart(inventory: pd.DataFrame):
         width=int(chart_width_units * 90),
         height=35 * (_DASHBOARD_CHART_MAX_ROWS + 1),
         margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
-        plot_bgcolor="rgba(0, 0, 0, 0)",
-        paper_bgcolor="rgba(0, 0, 0, 0)",
+        plot_bgcolor=_TRANSPARENT_BACKGROUND,
+        paper_bgcolor=_TRANSPARENT_BACKGROUND,
     )
     fig.update_xaxes(range=[0, chart_width_units], visible=False, showgrid=False, zeroline=False)
     fig.update_yaxes(
@@ -308,8 +310,8 @@ def create_dashboard_legend_chart():
         width=180 * len(statuses),
         height=40,
         margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
-        plot_bgcolor="rgba(0, 0, 0, 0)",
-        paper_bgcolor="rgba(0, 0, 0, 0)",
+        plot_bgcolor=_TRANSPARENT_BACKGROUND,
+        paper_bgcolor=_TRANSPARENT_BACKGROUND,
     )
     fig.update_xaxes(range=[0, len(statuses)], visible=False, showgrid=False, zeroline=False)
     fig.update_yaxes(range=[-1.5, 0], visible=False, showgrid=False, zeroline=False)
