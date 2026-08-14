@@ -12,6 +12,8 @@ from common.data_models import NewDevice
 from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 
+_TRANSPARENT_BACKGROUND = "rgba(0, 0, 0, 0)"
+
 
 def get_manage_devices_str(action: str, device_type: DeviceType, num_devices: int) -> str:
     """Get the string for labelling UI components related to managing devices"""
@@ -133,6 +135,41 @@ def remove_devices(data_service: DataService, device_type: DeviceType, inventory
     return None
 
 
+def _add_device_status_cell(fig: go.Figure, bbox: Tuple[float, float, float, float], device: pd.Series):
+    """Add a coloured cell (status-filled rectangle + centered ID label) to a chart at the given
+    (x0, y0, x1, y1) bounding box. Shared by create_inventory_chart and create_dashboard_inventory_chart
+    so both charts render device cells identically.
+    """
+    x0, y0, x1, y1 = bbox
+    colour = DeviceStatus.get_device_status_colour(device["status"])
+    fig.add_trace(
+        go.Scatter(
+            x=[x0, x0, x1, x1, x0],
+            y=[y0, y1, y1, y0, y0],
+            fill="toself",
+            fillcolor=colour,
+            line_color=colour,
+            mode="lines",
+            text=f"<b>{device['id']}</b><br>Status: {device['status']}<br>Location: {device['location']}",
+            hoverinfo="text",
+            hoverlabel={"font_size": 14},
+            showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[(x0 + x1) / 2.0],
+            y=[(y0 + y1) / 2.0],
+            mode="text",
+            text=device["id"],
+            textfont={"color": "#EEEEEE", "size": 14},
+            textposition="middle center",
+            showlegend=False,
+            hoverinfo="skip",
+        )
+    )
+
+
 # noinspection PyTypeChecker
 def create_inventory_chart(inventory: pd.DataFrame):
     """Create a chart to display the inventory."""
@@ -145,40 +182,157 @@ def create_inventory_chart(inventory: pd.DataFrame):
         width=num_per_row * 50,
         height=35 * num_rows,
         margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
-        plot_bgcolor="rgba(0, 0, 0, 0)",
-        paper_bgcolor="rgba(0, 0, 0, 0)",
+        plot_bgcolor=_TRANSPARENT_BACKGROUND,
+        paper_bgcolor=_TRANSPARENT_BACKGROUND,
     )
     fig.update_xaxes(range=[0, num_per_row], visible=False, showgrid=False, zeroline=False)
     fig.update_yaxes(range=[-2 * num_rows, 0], visible=False, showgrid=False, zeroline=False)
     for i, (_, device) in enumerate(inventory.iterrows()):
-        x0, y0, x1, y1 = (
+        bbox = (
             i % num_per_row,
             -2 * (i // num_per_row),
             (i % num_per_row) + 0.8,
             -2 * (i // num_per_row) - 1.5
         )
+        _add_device_status_cell(fig, bbox, device)
+    return fig
+
+
+_DASHBOARD_CHART_MAX_ROWS = 10
+_DASHBOARD_CHART_LOCATIONS: List[Location] = list(Location)
+# Extra horizontal spacing (in column-width units) inserted between column pairs/blocks, on top of
+# the normal 0.2-unit gap between the two columns within a pair, so wraparound blocks read as
+# visually distinct groups rather than one continuous row of columns.
+_DASHBOARD_CHART_BLOCK_GAP = 0.6
+
+
+def _dashboard_chart_column_x_start(col_index: int, num_locations: int) -> float:
+    """Get the x-axis start position for a chart column, adding extra spacing between blocks."""
+    block, offset_within_block = divmod(col_index, num_locations)
+    return block * (num_locations + _DASHBOARD_CHART_BLOCK_GAP) + offset_within_block
+
+
+def _dashboard_chart_cell_bbox(
+        col_index: int, row_index: int, num_locations: int
+) -> Tuple[float, float, float, float]:
+    """Get the (x0, y0, x1, y1) bounding box for a dashboard chart cell at the given column/row."""
+    x_start = _dashboard_chart_column_x_start(col_index, num_locations)
+    y0 = -2 * (row_index + 1)
+    return x_start, y0, x_start + 0.8, y0 - 1.5
+
+
+def _add_dashboard_chart_column_headers(fig: go.Figure, num_columns: int, num_locations: int):
+    """Add the location label above each column of the dashboard chart."""
+    for col_index in range(num_columns):
+        location = _DASHBOARD_CHART_LOCATIONS[col_index % num_locations]
+        x_start = _dashboard_chart_column_x_start(col_index, num_locations)
+        fig.add_trace(
+            go.Scatter(
+                x=[x_start + 0.4],
+                y=[-0.5],
+                mode="text",
+                text=f"<b>{location}</b>",
+                textfont={"size": 14},
+                showlegend=False,
+                hoverinfo="skip",
+            )
+        )
+
+
+def get_dashboard_chart_column_weight(inventory: pd.DataFrame) -> int:
+    """Get the number of row-blocks create_dashboard_inventory_chart will need for this inventory.
+
+    Since the chart wraps into a new column pair every _DASHBOARD_CHART_MAX_ROWS devices, this
+    tracks the chart's actual rendered width (unlike a raw device count) -- e.g. 11 devices need
+    2 blocks (same width as up to 20 devices), not marginally more than 9 devices' single block.
+    Intended for weighting st.columns(...) so multiple dashboard charts share space proportionally
+    to how wide they'll actually render, rather than by raw device count.
+    """
+    return max(1, math.ceil(len(inventory) / _DASHBOARD_CHART_MAX_ROWS))
+
+
+# noinspection PyTypeChecker
+def create_dashboard_inventory_chart(inventory: pd.DataFrame):
+    """Create a chart for the Inventory Dashboard: devices are listed in ID order, one row per device
+    (up to _DASHBOARD_CHART_MAX_ROWS). Each row has one column per location (BLC, PG) -- a device's ID
+    is drawn in whichever column matches its current location, leaving the other column blank for that
+    row. Once there are more devices than fit in a single block of rows, an additional column pair is
+    added to the right so the chart wraps around instead of growing taller than the fixed row limit.
+    """
+    sorted_inventory = inventory.sort_values("id").reset_index(drop=True)
+    num_locations = len(_DASHBOARD_CHART_LOCATIONS)
+    num_blocks = get_dashboard_chart_column_weight(sorted_inventory)
+    num_columns = num_blocks * num_locations
+    # num_blocks columns-worth of width, plus one inter-block gap between each pair of blocks
+    # (none before the first block or after the last).
+    chart_width_units = num_blocks * num_locations + (num_blocks - 1) * _DASHBOARD_CHART_BLOCK_GAP
+
+    fig = go.Figure()
+    fig.update_layout(
+        autosize=False,
+        width=int(chart_width_units * 90),
+        height=35 * (_DASHBOARD_CHART_MAX_ROWS + 1),
+        margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
+        plot_bgcolor=_TRANSPARENT_BACKGROUND,
+        paper_bgcolor=_TRANSPARENT_BACKGROUND,
+    )
+    fig.update_xaxes(range=[0, chart_width_units], visible=False, showgrid=False, zeroline=False)
+    fig.update_yaxes(
+        range=[-2 * (_DASHBOARD_CHART_MAX_ROWS + 1), 0], visible=False, showgrid=False, zeroline=False
+    )
+
+    _add_dashboard_chart_column_headers(fig, num_columns, num_locations)
+
+    for i, (_, device) in enumerate(sorted_inventory.iterrows()):
+        block, row_index = divmod(i, _DASHBOARD_CHART_MAX_ROWS)
+        location_index = _DASHBOARD_CHART_LOCATIONS.index(Location(device["location"]))
+        col_index = block * num_locations + location_index
+        bbox = _dashboard_chart_cell_bbox(col_index, row_index, num_locations)
+        _add_device_status_cell(fig, bbox, device)
+    return fig
+
+
+# noinspection PyTypeChecker
+def create_dashboard_legend_chart():
+    """Create a Plotly legend mapping each DeviceStatus to its colour, using the same coloured-cell
+    style as create_dashboard_inventory_chart so the two visually match."""
+    statuses = list(DeviceStatus)
+
+    fig = go.Figure()
+    fig.update_layout(
+        autosize=False,
+        width=180 * len(statuses),
+        height=40,
+        margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
+        plot_bgcolor=_TRANSPARENT_BACKGROUND,
+        paper_bgcolor=_TRANSPARENT_BACKGROUND,
+    )
+    fig.update_xaxes(range=[0, len(statuses)], visible=False, showgrid=False, zeroline=False)
+    fig.update_yaxes(range=[-1.5, 0], visible=False, showgrid=False, zeroline=False)
+
+    for i, status in enumerate(statuses):
+        x0, y0, x1, y1 = i + 0.1, -0.3, i + 0.3, -1.2
+        colour = DeviceStatus.get_device_status_colour(status)
         fig.add_trace(
             go.Scatter(
                 x=[x0, x0, x1, x1, x0],
                 y=[y0, y1, y1, y0, y0],
                 fill="toself",
-                fillcolor=DeviceStatus.get_device_status_colour(device["status"]),
-                line_color=DeviceStatus.get_device_status_colour(device["status"]),
+                fillcolor=colour,
+                line_color=colour,
                 mode="lines",
-                text=f"<b>{device['id']}</b><br>Status: {device['status']}<br>Location: {device['location']}",
-                hoverinfo="text",
-                hoverlabel={"font_size": 14},
                 showlegend=False,
+                hoverinfo="skip",
             )
         )
         fig.add_trace(
             go.Scatter(
-                x=[(x0 + x1) / 2.0],
+                x=[x1 + 0.15],
                 y=[(y0 + y1) / 2.0],
                 mode="text",
-                text=device["id"],
-                textfont={"color": "#EEEEEE", "size": 14},
-                textposition="middle center",
+                text=status,
+                textfont={"size": 14},
+                textposition="middle right",
                 showlegend=False,
                 hoverinfo="skip",
             )

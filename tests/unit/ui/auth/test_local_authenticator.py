@@ -33,3 +33,29 @@ class TestLocalAuthenticatorInitialization(TestCase):
                 auto_hash=True,
                 login_sleep_time=0,
             )
+
+
+class TestLocalAuthenticatorRoleChecks(TestCase):
+    """Tests for LocalAuthenticator.is_admin_user/is_editor_user/is_display_user."""
+
+    def test_is_display_user_true_with_display_role(self):
+        instance = object.__new__(LocalAuthenticator)
+        with patch.object(LocalAuthenticator, "get_current_user_groups", return_value=["display"]):
+            self.assertTrue(instance.is_display_user())
+
+    def test_is_display_user_false_without_display_role(self):
+        instance = object.__new__(LocalAuthenticator)
+        with patch.object(LocalAuthenticator, "get_current_user_groups", return_value=["admin"]):
+            self.assertFalse(instance.is_display_user())
+
+    def test_is_display_user_false_with_no_roles(self):
+        instance = object.__new__(LocalAuthenticator)
+        with patch.object(LocalAuthenticator, "get_current_user_groups", return_value=[]):
+            self.assertFalse(instance.is_display_user())
+
+    def test_is_display_user_true_for_admin_and_display(self):
+        """is_display_user() is a pure role check; admin does not exclude it -- the
+        'admin wins' precedence is main.py's responsibility, not this method's."""
+        instance = object.__new__(LocalAuthenticator)
+        with patch.object(LocalAuthenticator, "get_current_user_groups", return_value=["admin", "display"]):
+            self.assertTrue(instance.is_display_user())
