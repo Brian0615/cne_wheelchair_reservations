@@ -81,6 +81,26 @@ class FormSpec:
     checkbox_dx: float
 
 
+def _runs_in_line(chars: List[dict], matches: Callable[[str], bool], min_length: int) -> List[Blank]:
+    """Find every maximal run of matching characters within one line of chars."""
+    results = []
+    index = 0
+    while index < len(chars):
+        if not matches(chars[index]["c"]):
+            index += 1
+            continue
+        end = index
+        while end < len(chars) and matches(chars[end]["c"]):
+            end += 1
+        if end - index >= min_length:
+            rect = pymupdf.Rect(chars[index]["bbox"])
+            for position in range(index, end):
+                rect |= pymupdf.Rect(chars[position]["bbox"])
+            results.append(("".join(char["c"] for char in chars[:index]), rect))
+        index = end
+    return results
+
+
 def _char_runs(page: pymupdf.Page, matches: Callable[[str], bool], min_length: int) -> List[Blank]:
     """Find every maximal run of matching characters, with the text preceding it."""
     results = []
@@ -89,20 +109,7 @@ def _char_runs(page: pymupdf.Page, matches: Callable[[str], bool], min_length: i
             continue
         for line in block["lines"]:
             chars = [char for span in line["spans"] for char in span["chars"]]
-            index = 0
-            while index < len(chars):
-                if not matches(chars[index]["c"]):
-                    index += 1
-                    continue
-                end = index
-                while end < len(chars) and matches(chars[end]["c"]):
-                    end += 1
-                if end - index >= min_length:
-                    rect = pymupdf.Rect(chars[index]["bbox"])
-                    for position in range(index, end):
-                        rect |= pymupdf.Rect(chars[position]["bbox"])
-                    results.append(("".join(char["c"] for char in chars[:index]), rect))
-                index = end
+            results.extend(_runs_in_line(chars, matches, min_length))
     return sorted(results, key=lambda blank: (round(blank[1].y0), blank[1].x0))
 
 
