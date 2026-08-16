@@ -96,8 +96,8 @@ class TestMain(unittest.TestCase):
             assert page_list[0].title == "Dashboard", "Editor pages should not leak in for a display-only user."
 
     @staticmethod
-    def test_main_admin_user_sees_dashboard_with_full_page_set():
-        """An admin user should see the Dashboard page in addition to their full page set."""
+    def test_main_admin_user_does_not_see_dashboard():
+        """An admin user who is not also in the display group should not see the Dashboard page."""
 
         with patch.object(st, "navigation") as mock_navigation, patch.multiple(
                 LocalAuthenticator,
@@ -110,7 +110,27 @@ class TestMain(unittest.TestCase):
             at.run()
             page_list = mock_navigation.call_args.kwargs["pages"]
             page_titles = [page.title for page in sum(page_list.values(), [])]
-            assert "Dashboard" in page_titles, "Admins should see the Dashboard page."
+            assert "Dashboard" not in page_titles, "Admins should not see the Dashboard unless also a display user."
+            assert "Home" in page_titles, "Admins should still see their full baseline and privileged page set."
+            assert "Manage Inventory" in page_titles, \
+                "Admins should still see their full baseline and privileged page set."
+
+    @staticmethod
+    def test_main_admin_and_display_user_sees_dashboard_with_full_page_set():
+        """A user with both admin and display roles should see the Dashboard plus their full admin page set."""
+
+        with patch.object(st, "navigation") as mock_navigation, patch.multiple(
+                LocalAuthenticator,
+                _initialize_authenticator=MagicMock(),
+                login=MagicMock(return_value=False),
+        ):
+            at = AppTest.from_file(TestMain.__APP_PATH)
+            at.session_state["authentication_status"] = True
+            at.session_state["roles"] = ["admin", "display"]
+            at.run()
+            page_list = mock_navigation.call_args.kwargs["pages"]
+            page_titles = [page.title for page in sum(page_list.values(), [])]
+            assert "Dashboard" in page_titles, "An admin who is also a display user should see the Dashboard."
             assert "Home" in page_titles, "Admins should still see their full baseline and privileged page set."
             assert "Manage Inventory" in page_titles, \
                 "Admins should still see their full baseline and privileged page set."

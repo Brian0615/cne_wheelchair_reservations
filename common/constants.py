@@ -31,35 +31,19 @@ class DeviceStatus(StrEnum):
 
 class DeviceType(StrEnum):
     """Types of mobility device available for rent"""
-    __SCOOTER_DEPOSIT = 100
-    __SCOOTER_FEE = 45
-    __WHEELCHAIR_DEPOSIT = 50
-    __WHEELCHAIR_FEE = 20
 
     SCOOTER = "Scooter"
     WHEELCHAIR = "Wheelchair"
 
     @classmethod
-    def get_fee_amount(cls, device):
-        """Get the rental fee for a given device type"""
-        match device:
-            case cls.SCOOTER:
-                return DeviceType.__SCOOTER_FEE
-            case cls.WHEELCHAIR:
-                return DeviceType.__WHEELCHAIR_FEE
-            case _:
-                raise ValueError(f"Unrecognized device {device}")
+    def get_fee_setting_id(cls, device) -> str:
+        """Get the settings key holding the rental fee for a given device type"""
+        return f"{cls(device).value.lower()}_fee"
 
     @classmethod
-    def get_deposit_amount(cls, device):
-        """Get the deposit amount for a given device type"""
-        match device:
-            case cls.SCOOTER:
-                return DeviceType.__SCOOTER_DEPOSIT
-            case cls.WHEELCHAIR:
-                return DeviceType.__WHEELCHAIR_DEPOSIT
-            case _:
-                raise ValueError(f"Unrecognized device {device}")
+    def get_deposit_setting_id(cls, device) -> str:
+        """Get the settings key holding the deposit amount for a given device type"""
+        return f"{cls(device).value.lower()}_deposit"
 
     def get_prefix(self):
         """Get the prefix for a device (for IDs)"""

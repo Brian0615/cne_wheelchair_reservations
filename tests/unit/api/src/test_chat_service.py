@@ -1,5 +1,6 @@
 import datetime
 import re
+from decimal import Decimal
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -395,14 +396,22 @@ class TestChatServiceTools(TestCase):
         result = self.service.reservation_status_counts()
         self.assertIsInstance(result, str)
 
-    def test_fee_and_deposit_schedule_is_static(self):
+    def test_fee_and_deposit_schedule_reads_amounts_from_settings(self):
+        amounts = {"scooter_fee": Decimal(45), "scooter_deposit": Decimal(100),
+                   "wheelchair_fee": Decimal(20), "wheelchair_deposit": Decimal(50)}
+        self.service.db_service.get_setting.side_effect = lambda cne_year, setting_id: amounts[setting_id]
         result = self.service.fee_and_deposit_schedule()
         self.assertEqual(result["fees_and_deposits"]["Scooter"]["rental_fee"], 45)
         self.assertEqual(result["fees_and_deposits"]["Scooter"]["deposit"], 100)
         self.assertEqual(result["fees_and_deposits"]["Wheelchair"]["rental_fee"], 20)
         self.assertEqual(result["fees_and_deposits"]["Wheelchair"]["deposit"], 50)
         self.assertIn(PaymentMethod.CASH, result["accepted_fee_payment_methods"])
-        self.service.db_service.assert_not_called()
+
+    def test_fee_and_deposit_schedule_handles_missing_settings(self):
+        self.service.db_service.get_setting.return_value = None
+        result = self.service.fee_and_deposit_schedule()
+        self.assertIsNone(result["fees_and_deposits"]["Scooter"]["rental_fee"])
+        self.assertIsNone(result["fees_and_deposits"]["Wheelchair"]["deposit"])
 
 
 class TestChatServiceSystemPrompt(TestCase):

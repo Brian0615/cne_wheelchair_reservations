@@ -25,7 +25,8 @@ if authenticator.is_authenticated():
     if authenticator.is_display_user() and not authenticator.is_admin_user():
         # Display-only (TV/kiosk) role: sees ONLY the Dashboard, even if the user also
         # happens to hold another role (e.g. editor). Admins fall through to the branch
-        # below instead, where the Dashboard is added on top of their full page set.
+        # below instead, where the Dashboard is added (only if they're also a display
+        # user) on top of their full page set.
         pages = {"Dashboard": [_dashboard_page(default=True)]}
     else:
         # default pages
@@ -58,13 +59,15 @@ if authenticator.is_authenticated():
             pages["Assistant"] = [
                 st.Page("ui_pages/chatbot.py", title="Chatbot", icon=":material/smart_toy:")
             ]
-            pages["Dashboard"] = [_dashboard_page()]
         if authenticator.is_editor_user():
             pages["Rentals"] += [
                 st.Page("ui_pages/new_rental.py", title="New Rental", icon=":material/add_circle:"),
                 st.Page("ui_pages/manage_rental.py", title="Manage Rental", icon=":material/settings:"),
                 st.Page("ui_pages/complete_rental.py", title="Complete Rental", icon=":material/check_circle:"),
             ]
+        if authenticator.is_display_user():
+            # Only the display group gets the Dashboard, even for a user who is also an admin/editor.
+            pages["Dashboard"] = [_dashboard_page()]
 
 else:  # not authenticated
     pages = {

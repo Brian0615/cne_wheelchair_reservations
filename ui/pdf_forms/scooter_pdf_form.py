@@ -27,6 +27,10 @@ class ScooterPDFForm(BasePDFForm):
             "province_state": self.rental_data.province,
             "postal_code": self.rental_data.postal_code,
             "country": self.rental_data.country,
+            "fee": f"{self.rental_data.fee_payment_amount:.2f}",
+            "fee_summary": str(self.rental_data.fee_payment_amount),
+            "deposit": f"{self.rental_data.deposit_payment_amount:.2f}",
+            "deposit_summary": str(self.rental_data.deposit_payment_amount),
             "id_verified": "yes",
         }
         # add fee and deposit payment method fields
@@ -43,4 +47,5 @@ class ScooterPDFForm(BasePDFForm):
             suffix = ["st", "nd", "rd"][day % 10 - 1]
         field_values["date_day"] = self.rental_data.date.strftime("%-d") + suffix
         field_values["date_month"] = self.rental_data.date.strftime("%B")
+        field_values["date_year"] = self.rental_data.date.strftime("%Y")
         return field_values
