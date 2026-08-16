@@ -27,6 +27,8 @@ class WheelchairPDFForm(BasePDFForm):
             "province_state": self.rental_data.province,
             "postal_code": self.rental_data.postal_code,
             "country": self.rental_data.country,
+            "fee": str(self.rental_data.fee_payment_amount),
+            "deposit": str(self.rental_data.deposit_payment_amount),
             "id_verified": "yes",
             "pickup_time": self.rental_data.pickup_time.strftime("%I:%M %p"),
             "pickup_location": f"({self.rental_data.pickup_location.value})",
@@ -36,6 +38,8 @@ class WheelchairPDFForm(BasePDFForm):
             "date_receipt": self.rental_data.date.strftime("%b %d, %Y"),
             "name_receipt": self.rental_data.name,
             "phone_number_receipt": phone_number_formatted,
+            "fee_receipt": str(self.rental_data.fee_payment_amount),
+            "deposit_receipt": str(self.rental_data.deposit_payment_amount),
         }
         # add fee and deposit payment method fields
         fee_payment_method_formatted = self.rental_data.fee_payment_method.lower().replace(" ", "_")

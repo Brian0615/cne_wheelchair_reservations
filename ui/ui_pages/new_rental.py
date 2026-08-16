@@ -1,7 +1,6 @@
 # pylint: disable=invalid-name
 import streamlit as st
 
-from common.constants import DeviceType
 from common.data_models.rental import NewRental
 from ui.forms import NewRentalForm
 from ui.src.auth_utils import initialize_page
@@ -42,8 +41,8 @@ if rental_info.get("pickup_location") and rental_info.get("device_type"):
             f"at the {rental_info['pickup_location']} location."
         )
 if rental_info.get("device_type"):
-    fee_payment_amount = DeviceType.get_fee_amount(rental_info["device_type"])
-    deposit_payment_amount = DeviceType.get_deposit_amount(rental_info["device_type"])
+    fee_payment_amount = data_service.get_fee_amount(device_type=rental_info["device_type"])
+    deposit_payment_amount = data_service.get_deposit_amount(device_type=rental_info["device_type"])
     if fee_payment_amount != st.session_state.get("new_rental_fee_payment_amount"):
         st.session_state["new_rental_fee_payment_amount"] = fee_payment_amount
         fields_refreshed = True

@@ -485,6 +485,14 @@ class DataService:
         )
         return response.json()
 
+    def get_fee_amount(self, device_type: DeviceType) -> Optional[int]:
+        """Get the rental fee for a device type."""
+        return self.get_setting(setting_id=DeviceType.get_fee_setting_id(device_type))
+
+    def get_deposit_amount(self, device_type: DeviceType) -> Optional[int]:
+        """Get the deposit amount for a device type."""
+        return self.get_setting(setting_id=DeviceType.get_deposit_setting_id(device_type))
+
     @auto_process_api_errors
     def update_settings(self, settings: Dict[str, Any]):
         """Update settings using the API."""

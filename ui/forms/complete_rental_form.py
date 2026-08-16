@@ -3,7 +3,7 @@ from typing import Tuple, Dict, Any
 
 import streamlit as st
 
-from common.constants import DeviceType, Location
+from common.constants import Location
 from common.data_models import RentalSummary
 from ui.forms.base_form import BaseForm
 from ui.forms.form_fields import (
@@ -43,7 +43,7 @@ class CompleteRentalForm(BaseForm):
             "deposit_received": CheckboxField(
                 key=f"{key_prefix}_deposit_received",
                 label=f"{self.rental_info.deposit_payment_method} Deposit of "
-                      f"${DeviceType.get_deposit_amount(self.rental_info.device_type)}",
+                      f"${self.rental_info.deposit_payment_amount}",
             ),
             "submit": ButtonField(key=f"{key_prefix}_submit", label="Complete Rental"),
         }

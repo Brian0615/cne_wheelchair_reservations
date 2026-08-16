@@ -509,15 +509,20 @@ class ChatService:
             return self._no_data("reservations recorded")
         return [ReservationStatusCount(**row).model_dump(mode="json") for row in counts.to_dict(orient="records")]
 
+    def _amount_setting(self, setting_id: str) -> Optional[int]:
+        """Get a dollar amount from settings, as an int rather than a DynamoDB Decimal."""
+        amount = self.db_service.get_setting(cne_year=self.cne_year, setting_id=setting_id)
+        return None if amount is None else int(amount)
+
     def fee_and_deposit_schedule(self) -> dict:
         """Get the rental fee and refundable deposit amounts (in CAD) for each device type, plus the
-        accepted payment methods. This is fixed reference data, not live database data.
+        accepted payment methods.
         """
         return {
             "fees_and_deposits": {
                 device_type.value: {
-                    "rental_fee": DeviceType.get_fee_amount(device_type),
-                    "deposit": DeviceType.get_deposit_amount(device_type),
+                    "rental_fee": self._amount_setting(DeviceType.get_fee_setting_id(device_type)),
+                    "deposit": self._amount_setting(DeviceType.get_deposit_setting_id(device_type)),
                 }
                 for device_type in DeviceType
             },

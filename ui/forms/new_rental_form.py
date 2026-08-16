@@ -26,8 +26,8 @@ class NewRentalForm(BaseForm):
     def __init__(self, key_prefix: str):
 
         # load options from session state
-        fee_payment_amount = st.session_state.get(f"{key_prefix}_fee_payment_amount", 0)
-        deposit_payment_amount = st.session_state.get(f"{key_prefix}_deposit_payment_amount", 0)
+        self.fee_payment_amount = st.session_state.get(f"{key_prefix}_fee_payment_amount", 0)
+        self.deposit_payment_amount = st.session_state.get(f"{key_prefix}_deposit_payment_amount", 0)
         reservation_options = st.session_state.get(f"{key_prefix}_reservations", [])
         device_id_options = st.session_state.get(f"{key_prefix}_available_devices", [])
         country = st.session_state.get(f"{key_prefix}_country", "Canada")
@@ -80,12 +80,12 @@ class NewRentalForm(BaseForm):
             ),
             "fee_payment_method": SelectboxField(
                 key=f"{key_prefix}_fee_payment_method",
-                label=f"Payment Type for **${fee_payment_amount}** Fee",
+                label=f"Payment Type for **${self.fee_payment_amount}** Fee",
                 options=PaymentMethod.get_accepted_fee_payment_methods(),
             ),
             "deposit_payment_method": SelectboxField(
                 key=f"{key_prefix}_deposit_payment_method",
-                label=f"Payment Type for **${deposit_payment_amount}** Deposit",
+                label=f"Payment Type for **${self.deposit_payment_amount}** Deposit",
                 options=PaymentMethod.get_accepted_deposit_payment_methods(),
             ),
             "staff_name": TextField(key=f"{key_prefix}_staff_name", label="Staff Name"),
@@ -196,10 +196,10 @@ class NewRentalForm(BaseForm):
             st.subheader("Payment Information")
             col1, col2 = st.columns(2)
             with col1:
-                result["fee_payment_amount"] = DeviceType.get_fee_amount(device=result["device_type"])
+                result["fee_payment_amount"] = self.fee_payment_amount
                 result["fee_payment_method"] = self.fields["fee_payment_method"].render_field()
             with col2:
-                result["deposit_payment_amount"] = DeviceType.get_deposit_amount(device=result["device_type"])
+                result["deposit_payment_amount"] = self.deposit_payment_amount
                 result["deposit_payment_method"] = self.fields["deposit_payment_method"].render_field()
 
         # Additional Information Section of Form
