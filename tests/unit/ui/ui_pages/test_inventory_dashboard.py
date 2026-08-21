@@ -98,7 +98,7 @@ class TestInventoryDashboard(BaseTestCases.BaseUIPageTest):
         gauge_figs = self._get_mock_reservations_gauge_figs()
         self.assertGreater(len(gauge_figs), 0, "At least one gauge chart should have rendered")
         for fig in gauge_figs:
-            self.assertEqual(110, fig.layout.height)
+            self.assertEqual(150, fig.layout.height)
 
     def test_gauge_captions_use_a_larger_font_than_the_home_page(self):
         """The dashboard's reservation/rental captions should render at a larger font size than the

@@ -19,7 +19,7 @@ initialize_page()
 # font so the larger title text has room to render without being clipped at the top of the chart.
 _GAUGE_TITLE_FONT_SIZE = 20
 _GAUGE_CAPTION_FONT_SIZE = 20
-_GAUGE_CHART_HEIGHT = 110
+_GAUGE_CHART_HEIGHT = 150
 # st.badge (the "BLC/PG Reservations/Rentals" tags) has no font-size parameter of its own -- it
 # renders as a ":color-badge[...]" Markdown directive with its font-size set inline by Streamlit,
 # so overriding it needs a CSS rule with !important. Injecting it here (rather than editing
