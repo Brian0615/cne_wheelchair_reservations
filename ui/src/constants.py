@@ -30,7 +30,7 @@ class Colour(StrEnum):
     def get_reservation_table_status_colour(cls, status: ReservationStatus):
         """Get the colour for a reservation status for the reservation table"""
         match status:
-            case ReservationStatus.CANCELLED:
+            case ReservationStatus.CANCELLED | ReservationStatus.NO_SHOW:
                 return cls.RESERVATION_TABLE_CANCELLED
             case ReservationStatus.CONFIRMED | ReservationStatus.RESERVED:
                 return cls.RESERVATION_TABLE_READY

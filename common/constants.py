@@ -118,6 +118,7 @@ class ReservationStatus(StrEnum):
     COMPLETED = "Completed"
     CANCELLED = "Cancelled"
     WAITLISTED = "Waitlisted"
+    NO_SHOW = "No Show"
 
     @classmethod
     def get_default_reservation_status(cls, device_type: DeviceType):

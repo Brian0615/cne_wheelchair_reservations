@@ -141,13 +141,17 @@ def display_dual_indicator_reservation_chart(
         left_total=len(
             location_reservations[
                 (location_reservations['device_type'] == DeviceType.SCOOTER)
-                & ~location_reservations['status'].isin({ReservationStatus.CANCELLED, ReservationStatus.WAITLISTED})
+                & ~location_reservations['status'].isin({
+                    ReservationStatus.CANCELLED, ReservationStatus.WAITLISTED, ReservationStatus.NO_SHOW
+                })
                 ]
         ),
         right_total=len(
             location_reservations[
                 (location_reservations['device_type'] == DeviceType.WHEELCHAIR)
-                & ~location_reservations['status'].isin({ReservationStatus.CANCELLED, ReservationStatus.WAITLISTED})
+                & ~location_reservations['status'].isin({
+                    ReservationStatus.CANCELLED, ReservationStatus.WAITLISTED, ReservationStatus.NO_SHOW
+                })
                 ]
         ),
         key=f"{location.value.lower()}_reservations_chart",

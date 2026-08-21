@@ -28,7 +28,7 @@ reservation_id = reservation_col.selectbox(
     options=sorted(
         reservations["id"] + " - " + reservations["name"]
         + " (" + reservations["reservation_time"].dt.tz_convert(get_default_timezone()).dt.strftime("%I:%M %p")
-        + ", " + reservations["location"] + ")"
+        + ", " + reservations["location"] + ") - " + reservations["status"]
     ),
     index=None,
     on_change=ReservationForm(key_prefix="update_reservation").clear_form,
@@ -52,7 +52,7 @@ if disable_edits:
 confirm_cancel_col, update_col = st.columns([1, 2])
 with confirm_cancel_col.expander("Confirm or Cancel Reservation", expanded=True):
     match reservation.status:
-        case ReservationStatus.CANCELLED:
+        case ReservationStatus.CANCELLED | ReservationStatus.NO_SHOW:
             status_func = st.error
         case ReservationStatus.CONFIRMED | ReservationStatus.PICKED_UP | ReservationStatus.COMPLETED:
             status_func = st.success
@@ -78,6 +78,19 @@ with confirm_cancel_col.expander("Confirm or Cancel Reservation", expanded=True)
         key="cancel_reservation",
         on_click=update_reservation_status,
         kwargs={"reservation": reservation, "status": ReservationStatus.CANCELLED},
+    )
+    st.button(
+        "Mark as No Show",
+        width="stretch",
+        icon=":material/event_busy:",
+        disabled=reservation.status not in {
+            ReservationStatus.PENDING,
+            ReservationStatus.CONFIRMED,
+            ReservationStatus.RESERVED,
+        },
+        key="mark_reservation_no_show",
+        on_click=update_reservation_status,
+        kwargs={"reservation": reservation, "status": ReservationStatus.NO_SHOW},
     )
 
 with update_col.expander("Change Reservation Info", expanded=True):

@@ -70,5 +70,17 @@
     "reservation_time": "2024-08-30T14:00:00+00:00",
     "status": "Picked Up",
     "notes": ""
+  },
+  {
+    "cne_year": 2025,
+    "id": "S0830007",
+    "date": "2024-08-30",
+    "device_type": "Scooter",
+    "name": "Oscar Diaz",
+    "phone_number": "416-555-0199",
+    "location": "BLC",
+    "reservation_time": "2024-08-30T14:00:00+00:00",
+    "status": "No Show",
+    "notes": ""
   }
 ]
