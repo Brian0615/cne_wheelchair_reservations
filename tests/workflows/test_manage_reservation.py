@@ -114,12 +114,12 @@ class ManageReservationWorkflowTests(WorkflowTestCase):
         self.assertNotEqual(first_name, second_name, "Form should update when a different reservation is selected")
 
     def test_reservation_dropdown_format(self):
-        """Reservation options are formatted as 'ID - Name (HH:MM AM/PM, Location)'."""
+        """Reservation options are formatted as 'ID - Name (HH:MM AM/PM, Location) - Status'."""
         responses = MockAPIResponses(reservations=MOCK_SCOOTER_RESERVATIONS)
         at = self._run_as_admin(responses)
         options = at.selectbox(key="manage_reservations_id_selection").options
-        # First option (sorted by ID): S0820001 - Alice Smith - BLC - 10:00 AM
-        self.assertEqual("S0820001 - Alice Smith (10:00 AM, BLC)", options[0])
+        # First option (sorted by ID): S0820001 - Alice Smith - BLC - 10:00 AM - Reserved
+        self.assertEqual("S0820001 - Alice Smith (10:00 AM, BLC) - Reserved", options[0])
 
     def test_all_status_field_states(self):
         """Confirm/Cancel buttons and form fields are enabled/disabled correctly for every reservation status."""

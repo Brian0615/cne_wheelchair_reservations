@@ -28,7 +28,7 @@ reservation_id = reservation_col.selectbox(
     options=sorted(
         reservations["id"] + " - " + reservations["name"]
         + " (" + reservations["reservation_time"].dt.tz_convert(get_default_timezone()).dt.strftime("%I:%M %p")
-        + ", " + reservations["location"] + ")"
+        + ", " + reservations["location"] + ") - " + reservations["status"]
     ),
     index=None,
     on_change=ReservationForm(key_prefix="update_reservation").clear_form,
