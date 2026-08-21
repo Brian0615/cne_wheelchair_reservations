@@ -42,6 +42,16 @@ class TestHome(BaseTestCases.BaseUIPageTest):
             "The reservation caption should not render as a custom-font markdown span",
         )
 
+    def test_no_show_reservations_excluded_from_gauge_total(self):
+        """A No Show reservation should not count toward the gauge's total (or picked-up value),
+        matching Cancelled/Waitlisted's treatment. The BLC scooter fixture has 4 non-cancelled
+        reservations (Reserved, Confirmed, Completed, No Show), of which only the Completed one
+        should count toward the numerator, and the No Show one should not count toward the total."""
+        gauge_figs = self._get_mock_reservations_gauge_figs()
+        blc_scooter_trace = gauge_figs[0].data[0]
+        self.assertEqual(1, blc_scooter_trace.value, "Only the Completed reservation should count as picked up")
+        self.assertEqual(" / 3", blc_scooter_trace.number.suffix, "The No Show reservation should not count toward the total")
+
     def test_gauge_badge_tags_keep_the_default_font_size(self):
         """The Home page's 'BLC/PG Reservations/Rentals' badge tags should keep st.badge's default
         styling, unaffected by the Inventory Dashboard's font-size override (see the paired
