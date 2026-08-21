@@ -72,9 +72,9 @@ class TestWheelchairPDFForm(unittest.TestCase):
             "fee_payment_method_credit_card", "fee_payment_method_receipt_credit_card",
             "deposit_payment_method_cash", "deposit_payment_method_receipt_cash",
         ]:
-            self.assertEqual("Yes", widget_values[field_name], f"{field_name} should be checked")
+            self.assertEqual(widget_values[field_name], "Yes", f"{field_name} should be checked")
         for field_name in [
             "fee_payment_method_cash", "fee_payment_method_debit_card",
             "deposit_payment_method_credit_card",
         ]:
-            self.assertEqual("Off", widget_values[field_name], f"{field_name} should not be checked")
+            self.assertEqual(widget_values[field_name], "Off", f"{field_name} should not be checked")
