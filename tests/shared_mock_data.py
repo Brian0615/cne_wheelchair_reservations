@@ -74,6 +74,32 @@ MOCK_SCOOTER_RESERVATIONS: List[Dict] = [
         "rental_id": "S0820002",
         "notes": "",
     },
+    {
+        "cne_year": _CNE_YEAR,
+        "id": "S0820006",
+        "date": _DEFAULT_DATE,
+        "device_type": DeviceType.SCOOTER.value,
+        "name": "Frank Harris",
+        "phone_number": "6478203702",
+        "location": Location.PG.value,
+        "reservation_time": f"{_DEFAULT_DATE}T16:00:00-04:00",
+        "status": ReservationStatus.NO_SHOW.value,
+        "rental_id": None,
+        "notes": "",
+    },
+    {
+        "cne_year": _CNE_YEAR,
+        "id": "S0820007",
+        "date": _DEFAULT_DATE,
+        "device_type": DeviceType.SCOOTER.value,
+        "name": "Grace Lee",
+        "phone_number": "6478203703",
+        "location": Location.BLC.value,
+        "reservation_time": f"{_DEFAULT_DATE}T17:00:00-04:00",
+        "status": ReservationStatus.WAITLISTED.value,
+        "rental_id": None,
+        "notes": "",
+    },
 ]
 
 MOCK_WHEELCHAIR_RESERVATIONS: List[Dict] = [

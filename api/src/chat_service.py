@@ -77,9 +77,10 @@ aggregate questions about operations, and explain how to use the application.
 - There is no expected-return-time or "due back" data. For "overdue" / "outstanding" / "still out"
   questions, use lookup_outstanding_rentals and make clear you are reporting rentals not yet returned,
   not overdue ones.
-- There is no explicit "no-show" status. Approximate unfulfilled reservations from
-  reservation_status_counts (date passed but still Reserved/Confirmed/Pending rather than Picked Up or
-  Completed), and say that it is an approximation.
+- Reservations marked "No Show" have been explicitly flagged by staff as not picked up - use
+  reservation_status_counts for an exact count. Note that "No Show" is only set manually; a reservation
+  that is simply Reserved/Confirmed/Pending after its date has passed has not necessarily been marked as
+  a no-show yet.
 
 ## Answering
 - Be concise. Lead with the direct answer, then supporting detail.
@@ -500,9 +501,7 @@ class ChatService:
         """Get reservation counts broken down by status and device type for the current CNE year.
 
         Includes every status (Pending Confirmation, Confirmed, Reserved, Picked Up, Completed,
-        Cancelled, Waitlisted). There is no explicit "no-show" status: a no-show / unfulfilled
-        reservation can be approximated as one whose date has passed but is still in a pre-pickup
-        status (Reserved/Confirmed/Pending) rather than Picked Up or Completed.
+        Cancelled, Waitlisted, No Show).
         """
         counts = self.db_service.get_reservation_status_counts(self.cne_year)
         if counts.empty:

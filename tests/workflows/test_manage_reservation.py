@@ -60,6 +60,17 @@ class ManageReservationWorkflowTests(WorkflowTestCase):
             _, kwargs = mock_update.call_args
             self.assertEqual(ReservationStatus.CANCELLED, kwargs.get("status"))
 
+    def test_mark_no_show_calls_service(self):
+        """Clicking Mark as No Show calls update_reservation_status with NO_SHOW status."""
+        responses = MockAPIResponses(reservations=[_EDITABLE_RESERVATION])
+        at = self._load_reservations_and_select(responses)
+        at.button(key="mark_reservation_no_show").click()
+        with patch.object(DataService, "update_reservation_status") as mock_update:
+            at = self._run_as_admin(responses, at=at)
+            mock_update.assert_called_once()
+            _, kwargs = mock_update.call_args
+            self.assertEqual(ReservationStatus.NO_SHOW, kwargs.get("status"))
+
     def test_update_reservation_details_calls_submit(self):
         """Changing a field and submitting calls submit_update_reservation_form."""
         responses = MockAPIResponses(reservations=[_EDITABLE_RESERVATION])
@@ -83,8 +94,12 @@ class ManageReservationWorkflowTests(WorkflowTestCase):
                 at = self._run_as_admin(responses, at=at, allow_errors=True)
                 confirm_btn = at.button(key="confirm_reservation")
                 cancel_btn = at.button(key="cancel_reservation")
+                no_show_btn = at.button(key="mark_reservation_no_show")
                 self.assertTrue(confirm_btn.disabled, f"Confirm should be disabled for status {reservation['status']}")
                 self.assertTrue(cancel_btn.disabled, f"Cancel should be disabled for status {reservation['status']}")
+                self.assertTrue(
+                    no_show_btn.disabled, f"Mark as No Show should be disabled for status {reservation['status']}"
+                )
 
     def test_switch_selected_reservation_updates_form(self):
         """Switching the selected reservation updates the name field in the form."""
@@ -117,11 +132,11 @@ class ManageReservationWorkflowTests(WorkflowTestCase):
 
             with self.subTest(status=status_str):
                 status = ReservationStatus(status_str)
-                is_cancelled = status == ReservationStatus.CANCELLED
+                is_error_status = status in {ReservationStatus.CANCELLED, ReservationStatus.NO_SHOW}
                 responses = MockAPIResponses(reservations=[reservation])
                 at = self._run_as_admin(responses)
                 at.selectbox(key="manage_reservations_id_selection").select_index(0)
-                at = self._run_as_admin(responses, at=at, allow_errors=is_cancelled)
+                at = self._run_as_admin(responses, at=at, allow_errors=is_error_status)
 
                 # Confirm is disabled when already terminal or already confirmed
                 expect_confirm_disabled = status in {
@@ -136,6 +151,12 @@ class ManageReservationWorkflowTests(WorkflowTestCase):
                     ReservationStatus.COMPLETED,
                     ReservationStatus.PICKED_UP,
                 }
+                # Mark as No Show is only enabled for statuses that could still be picked up
+                expect_no_show_disabled = status not in {
+                    ReservationStatus.PENDING,
+                    ReservationStatus.CONFIRMED,
+                    ReservationStatus.RESERVED,
+                }
                 self.assertEqual(
                     expect_confirm_disabled,
                     at.button(key="confirm_reservation").disabled,
@@ -145,6 +166,11 @@ class ManageReservationWorkflowTests(WorkflowTestCase):
                     expect_cancel_disabled,
                     at.button(key="cancel_reservation").disabled,
                     f"Cancel disabled state incorrect for {status_str}",
+                )
+                self.assertEqual(
+                    expect_no_show_disabled,
+                    at.button(key="mark_reservation_no_show").disabled,
+                    f"Mark as No Show disabled state incorrect for {status_str}",
                 )
 
                 # Date and device_type are always disabled when an existing reservation is loaded
