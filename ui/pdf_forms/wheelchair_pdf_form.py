@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Dict, Union
 
 from ui.pdf_forms.base_pdf_form import BasePDFForm
 
@@ -13,7 +13,7 @@ class WheelchairPDFForm(BasePDFForm):
         "assets/wheelchair_form_fillable.pdf"
     )
 
-    def _create_form_field_values(self) -> Dict[str, str]:
+    def _create_form_field_values(self) -> Dict[str, Union[str, bool]]:
         """Create a dictionary of form fields to fill in the PDF"""
         phone_number_formatted = self.rental_data.phone_number.replace("tel:", "")
         field_values = {
@@ -29,7 +29,7 @@ class WheelchairPDFForm(BasePDFForm):
             "country": self.rental_data.country,
             "fee": str(self.rental_data.fee_payment_amount),
             "deposit": str(self.rental_data.deposit_payment_amount),
-            "id_verified": "yes",
+            "id_verified": True,
             "pickup_time": self.rental_data.pickup_time.strftime("%I:%M %p"),
             "pickup_location": f"({self.rental_data.pickup_location.value})",
             "staff_name": self.rental_data.staff_name,
@@ -44,8 +44,8 @@ class WheelchairPDFForm(BasePDFForm):
         # add fee and deposit payment method fields
         fee_payment_method_formatted = self.rental_data.fee_payment_method.lower().replace(" ", "_")
         deposit_payment_method_formatted = self.rental_data.deposit_payment_method.lower().replace(" ", "_")
-        field_values[f"fee_payment_method_{fee_payment_method_formatted}"] = "yes"
-        field_values[f"deposit_payment_method_{deposit_payment_method_formatted}"] = "yes"
-        field_values[f"fee_payment_method_receipt_{fee_payment_method_formatted}"] = "yes"
-        field_values[f"deposit_payment_method_receipt_{deposit_payment_method_formatted}"] = "yes"
+        field_values[f"fee_payment_method_{fee_payment_method_formatted}"] = True
+        field_values[f"deposit_payment_method_{deposit_payment_method_formatted}"] = True
+        field_values[f"fee_payment_method_receipt_{fee_payment_method_formatted}"] = True
+        field_values[f"deposit_payment_method_receipt_{deposit_payment_method_formatted}"] = True
         return field_values

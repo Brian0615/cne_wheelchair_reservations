@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Dict, Union
 
 from ui.pdf_forms.base_pdf_form import BasePDFForm
 
@@ -13,7 +13,7 @@ class ScooterPDFForm(BasePDFForm):
         "assets/scooter_form_fillable.pdf"
     )
 
-    def _create_form_field_values(self) -> Dict[str, str]:
+    def _create_form_field_values(self) -> Dict[str, Union[str, bool]]:
         """Create a dictionary of form fields to fill in the PDF"""
         phone_number_formatted = self.rental_data.phone_number.replace("tel:", "")
         field_values = {
@@ -31,13 +31,13 @@ class ScooterPDFForm(BasePDFForm):
             "fee_summary": str(self.rental_data.fee_payment_amount),
             "deposit": f"{self.rental_data.deposit_payment_amount:.2f}",
             "deposit_summary": str(self.rental_data.deposit_payment_amount),
-            "id_verified": "yes",
+            "id_verified": True,
         }
         # add fee and deposit payment method fields
         fee_payment_method_formatted = self.rental_data.fee_payment_method.lower().replace(" ", "_")
         deposit_payment_method_formatted = self.rental_data.deposit_payment_method.lower().replace(" ", "_")
-        field_values[f"fee_payment_method_{fee_payment_method_formatted}"] = "yes"
-        field_values[f"deposit_payment_method_{deposit_payment_method_formatted}"] = "yes"
+        field_values[f"fee_payment_method_{fee_payment_method_formatted}"] = True
+        field_values[f"deposit_payment_method_{deposit_payment_method_formatted}"] = True
 
         # format day as 1st, 2nd, 3rd, etc.
         day = self.rental_data.date.day
