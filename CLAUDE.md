@@ -141,4 +141,4 @@ The following environment variables are required for tests:
 1. Snyk vulnerability scan
 2. Unit tests (Python 3.13, pip install from `requirements.txt`)
 3. Build and push multi-arch Docker images to Docker Hub (only on `main`, tags, or releases)
-4. Deploy to ECS (only on `main`)
+4. Deploy to ECS (only on a tag push or published release)

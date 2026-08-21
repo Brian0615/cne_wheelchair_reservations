@@ -169,7 +169,7 @@ jobs:
     name: Deploy to ECS
     needs: build_and_push
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7

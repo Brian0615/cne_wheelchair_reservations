@@ -18,7 +18,7 @@ def coerce_pandas_aware_datetime(data: pd.Series) -> pd.Series:
     return pd.to_datetime(data, errors="coerce", utc=True).dt.tz_convert(get_default_timezone())
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def display_dual_indicator_chart(
         left_title: str,
         right_title: str,
@@ -27,6 +27,8 @@ def display_dual_indicator_chart(
         left_total: Union[float, int],
         right_total: Union[float, int],
         key: str,
+        title_font_size: int = 14,
+        height: int = 75,
 ):
     """
     Display a dual indicator chart with left and right indicators.
@@ -39,6 +41,9 @@ def display_dual_indicator_chart(
         left_total (Union[float, int]): The total value of the left indicator
         right_total (Union[float, int]): The total value of the right indicator
         key (str): The key for the Streamlit component
+        title_font_size (int): The font size for the left/right indicator titles
+        height (int): The height (in px) of the chart, e.g. to give a larger title_font_size
+            enough vertical room to avoid being clipped
     """
     fig = go.Figure()
     if left_value < 0.3 * left_total:
@@ -51,7 +56,7 @@ def display_dual_indicator_chart(
         go.Indicator(
             mode="gauge+number",
             value=left_value,
-            title={"text": left_title, "font": {"size": 14}},
+            title={"text": left_title, "font": {"size": title_font_size}},
             domain={'row': 0, 'column': 0},
             number={'suffix': f" / {left_total}"},
             gauge={
@@ -70,7 +75,7 @@ def display_dual_indicator_chart(
         go.Indicator(
             mode="gauge+number",
             value=right_value,
-            title={"text": right_title, "font": {"size": 14}},
+            title={"text": right_title, "font": {"size": title_font_size}},
             domain={'row': 0, 'column': 1},
             number={'suffix': f" / {right_total}"},
             gauge={
@@ -79,11 +84,26 @@ def display_dual_indicator_chart(
             },
         ),
     )
-    fig.update_layout(height=75, margin={"t": 20, "b": 0, "l": 2, "r": 2}, grid={"rows": 1, "columns": 2})
+    fig.update_layout(height=height, margin={"t": 20, "b": 0, "l": 2, "r": 2}, grid={"rows": 1, "columns": 2})
     st.plotly_chart(fig, key=key, config={'displayModeBar': False})
 
 
-def display_dual_indicator_reservation_chart(reservations: pd.DataFrame, location: Location):
+def _display_caption(text: str, font_size: Optional[int] = None):
+    """Display caption text below a chart, matching st.caption's default look unless a larger
+    font_size is given, in which case it's rendered at that size instead."""
+    if font_size is None:
+        st.caption(text)
+    else:
+        st.markdown(f'<span style="font-size: {font_size}px; opacity: 0.6;">{text}</span>', unsafe_allow_html=True)
+
+
+def display_dual_indicator_reservation_chart(
+        reservations: pd.DataFrame,
+        location: Location,
+        title_font_size: int = 14,
+        caption_font_size: Optional[int] = None,
+        chart_height: int = 75,
+):
     """
     Display a dual indicator chart for reservations at a given location.
     The left indicator is for scooters and the right indicator is for wheelchairs.
@@ -91,6 +111,10 @@ def display_dual_indicator_reservation_chart(reservations: pd.DataFrame, locatio
     Args:
         reservations (pd.DataFrame): The reservations data.
         location (Location): The location to filter reservations by.
+        title_font_size (int): The font size for the left/right indicator titles
+        caption_font_size (Optional[int]): The font size for the caption below the chart, or
+            None to use st.caption's default size
+        chart_height (int): The height (in px) of the chart
     """
     if reservations.empty:
         st.warning(f":material/warning: No reservations at {location} today")
@@ -127,11 +151,19 @@ def display_dual_indicator_reservation_chart(reservations: pd.DataFrame, locatio
                 ]
         ),
         key=f"{location.value.lower()}_reservations_chart",
+        title_font_size=title_font_size,
+        height=chart_height,
     )
-    st.caption("Picked Up / Total Reservations")
+    _display_caption("Picked Up / Total Reservations", caption_font_size)
 
 
-def display_dual_indicator_rental_chart(rentals: pd.DataFrame, location: Location):
+def display_dual_indicator_rental_chart(
+        rentals: pd.DataFrame,
+        location: Location,
+        title_font_size: int = 14,
+        caption_font_size: Optional[int] = None,
+        chart_height: int = 75,
+):
     """
     Display a dual indicator chart for rentals at a given location.
     The left indicator is for scooters and the right indicator is for wheelchairs.
@@ -139,6 +171,10 @@ def display_dual_indicator_rental_chart(rentals: pd.DataFrame, location: Locatio
     Args:
         rentals (pd.DataFrame): The rentals data.
         location (Location): The location to filter rentals by.
+        title_font_size (int): The font size for the left/right indicator titles
+        caption_font_size (Optional[int]): The font size for the caption below the chart, or
+            None to use st.caption's default size
+        chart_height (int): The height (in px) of the chart
     """
     if rentals.empty:
         st.warning(f":material/warning: No rentals at {location} today")
@@ -165,8 +201,10 @@ def display_dual_indicator_rental_chart(rentals: pd.DataFrame, location: Locatio
         left_total=len(location_rentals[location_rentals['device_type'] == DeviceType.SCOOTER]),
         right_total=len(location_rentals[location_rentals['device_type'] == DeviceType.WHEELCHAIR]),
         key=f"{location.value.lower()}_rentals_chart",
+        title_font_size=title_font_size,
+        height=chart_height,
     )
-    st.caption("Completed / Total Rentals")
+    _display_caption("Completed / Total Rentals", caption_font_size)
 
 
 # pylint: disable=unsubscriptable-object

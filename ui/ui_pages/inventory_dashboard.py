@@ -13,18 +13,48 @@ from ui.src.display_utils import display_dual_indicator_rental_chart, display_du
 
 initialize_page()
 
+# Larger than display_dual_indicator_chart's defaults (title 14, caption via st.caption, height 75)
+# so this page's gauge cards match its other enlarged chart text. Scoped to this page only -- the
+# Home page's gauge cards keep the smaller defaults. chart_height is bumped along with the title
+# font so the larger title text has room to render without being clipped at the top of the chart.
+_GAUGE_TITLE_FONT_SIZE = 20
+_GAUGE_CAPTION_FONT_SIZE = 20
+_GAUGE_CHART_HEIGHT = 110
+# st.badge (the "BLC/PG Reservations/Rentals" tags) has no font-size parameter of its own -- it
+# renders as a ":color-badge[...]" Markdown directive with its font-size set inline by Streamlit,
+# so overriding it needs a CSS rule with !important. Injecting it here (rather than editing
+# Streamlit's own CSS) keeps the override scoped to this page's script run -- it's not present in
+# the Home page's DOM at all.
+_GAUGE_BADGE_FONT_SIZE = 20
+
 
 def _render_gauge_cards(reservations, rentals):
     """Render the same BLC/PG reservation and rental gauge cards shown on the Home page."""
+    st.markdown(
+        f"<style>.stMarkdownBadge {{ font-size: {_GAUGE_BADGE_FONT_SIZE}px !important; }}</style>",
+        unsafe_allow_html=True,
+    )
     reservations_col1, reservations_col2, rentals_col1, rentals_col2 = st.columns(4)
     for col, location, colour in zip([reservations_col1, reservations_col2], Location, ["orange", "violet"]):
         with col, st.container(border=True):
             st.badge(f"{location} Reservations", color=colour)
-            display_dual_indicator_reservation_chart(reservations=reservations, location=location)
+            display_dual_indicator_reservation_chart(
+                reservations=reservations,
+                location=location,
+                title_font_size=_GAUGE_TITLE_FONT_SIZE,
+                caption_font_size=_GAUGE_CAPTION_FONT_SIZE,
+                chart_height=_GAUGE_CHART_HEIGHT,
+            )
     for col, location, colour in zip([rentals_col1, rentals_col2], Location, ["orange", "violet"]):
         with col, st.container(border=True):
             st.badge(f"{location} Rentals", color=colour)
-            display_dual_indicator_rental_chart(rentals=rentals, location=location)
+            display_dual_indicator_rental_chart(
+                rentals=rentals,
+                location=location,
+                title_font_size=_GAUGE_TITLE_FONT_SIZE,
+                caption_font_size=_GAUGE_CAPTION_FONT_SIZE,
+                chart_height=_GAUGE_CHART_HEIGHT,
+            )
 
 
 def _render_inventory_charts(scooter_inventory, wheelchair_inventory):
