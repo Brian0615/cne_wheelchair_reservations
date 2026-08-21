@@ -4,6 +4,9 @@ import pandas as pd
 
 from common.constants import DeviceStatus, DeviceType
 from ui.src.device_utils import (
+    _DASHBOARD_CHART_COLUMN_GAP,
+    _DASHBOARD_CHART_LOCATION_GAP,
+    _DASHBOARD_CHART_MAX_ROWS,
     create_dashboard_inventory_chart,
     create_dashboard_legend_chart,
     create_inventory_chart,
@@ -72,8 +75,34 @@ class TestCreateDashboardInventoryChart(TestCase):
                 return trace
         raise AssertionError(f"No rectangle trace found for device {device_id}")
 
+    @staticmethod
+    def _get_label_trace(fig, device_id: str):
+        for trace in fig.data:
+            if trace.mode == "text" and trace.text == device_id:
+                return trace
+        raise AssertionError(f"No label trace found for device {device_id}")
+
+    def test_device_labels_use_a_larger_font_than_the_view_inventory_chart(self):
+        """The Inventory Dashboard's device labels should be more readable than
+        create_inventory_chart's (the View Inventory page), which keeps its original, smaller font."""
+        inventory = pd.DataFrame([{"id": "S01", "status": "Available", "location": "BLC"}])
+        dashboard_label = self._get_label_trace(create_dashboard_inventory_chart(inventory), "S01")
+        view_inventory_label = next(
+            trace for trace in create_inventory_chart(inventory).data if trace.mode == "text"
+        )
+        self.assertGreater(dashboard_label.textfont.size, view_inventory_label.textfont.size)
+
+    def test_column_header_font_matches_device_label_font(self):
+        """Column headers should be sized consistently with the device labels below them."""
+        inventory = pd.DataFrame([{"id": "S01", "status": "Available", "location": "BLC"}])
+        fig = create_dashboard_inventory_chart(inventory)
+        header_trace = next(trace for trace in fig.data if trace.mode == "text" and trace.text == "<b>BLC</b>")
+        label_trace = self._get_label_trace(fig, "S01")
+        self.assertEqual(label_trace.textfont.size, header_trace.textfont.size)
+
     def test_returns_two_columns_for_small_inventory(self):
-        """With <=10 devices total, exactly one BLC/PG column pair is created."""
+        """With <=_DASHBOARD_CHART_MAX_ROWS devices at each location, exactly one column per
+        location is created."""
         import plotly.graph_objects as go
 
         inventory = pd.DataFrame([
@@ -85,11 +114,14 @@ class TestCreateDashboardInventoryChart(TestCase):
         self.assertIsInstance(fig, go.Figure)
         # 2 column-header traces + 2 traces (rectangle + label) per device
         self.assertEqual(2 + 2 * 3, len(fig.data))
-        self.assertEqual(2, fig.layout.xaxis.range[1], "Only one BLC/PG column pair should be needed")
+        self.assertAlmostEqual(
+            2 + _DASHBOARD_CHART_LOCATION_GAP, fig.layout.xaxis.range[1],
+            msg="Only one column per location should be needed",
+        )
 
-    def test_each_device_occupies_the_column_matching_its_location_on_its_own_row(self):
-        """A device's ID should appear in whichever column (BLC or PG) matches its location, with
-        each successive device (regardless of location) taking the next row down."""
+    def test_each_location_gets_its_own_column_with_devices_stacked_by_row(self):
+        """A device's ID should appear in the column for its location, stacked by row within that
+        location's own device order -- locations never share rows or columns with each other."""
         inventory = pd.DataFrame([
             {"id": "S01", "status": "Available", "location": "BLC"},
             {"id": "S02", "status": "Available", "location": "BLC"},
@@ -100,36 +132,96 @@ class TestCreateDashboardInventoryChart(TestCase):
         s01, s02, s03 = (self._get_rectangle_trace(fig, device_id) for device_id in ("S01", "S02", "S03"))
         self.assertEqual(0, s01.x[0], "S01 (BLC) should be in the first (BLC) column")
         self.assertEqual(0, s02.x[0], "S02 (BLC) should be in the first (BLC) column")
-        self.assertEqual(1, s03.x[0], "S03 (PG) should be in the second (PG) column")
+        self.assertAlmostEqual(
+            1 + _DASHBOARD_CHART_LOCATION_GAP, s03.x[0], msg="S03 (PG) should be in the second (PG) column"
+        )
 
-        # each device takes the next sequential row, regardless of its location
+        # the two BLC devices stack in successive rows within their own column
         self.assertEqual(-2, s01.y[0])
         self.assertEqual(-4, s02.y[0])
-        self.assertEqual(-6, s03.y[0])
+        # PG's single device starts back at the top row of its own column, independent of BLC's rows
+        self.assertEqual(-2, s03.y[0])
 
-    def test_wraparound_creates_additional_column_pair_beyond_max_rows(self):
-        """More than 10 devices total should wrap into an additional BLC/PG column pair."""
+    def test_wraparound_creates_additional_column_within_the_same_location(self):
+        """More than _DASHBOARD_CHART_MAX_ROWS devices at one location should wrap into an
+        additional column for that same location, without touching the other location's column."""
         import plotly.graph_objects as go
 
-        devices = [{"id": f"S{i:02d}", "status": "Available", "location": "BLC"} for i in range(1, 13)]
+        num_devices = _DASHBOARD_CHART_MAX_ROWS + 1
+        devices = [{"id": f"S{i:02d}", "status": "Available", "location": "BLC"} for i in range(1, num_devices + 1)]
         inventory = pd.DataFrame(devices)
         fig = create_dashboard_inventory_chart(inventory)
         self.assertIsInstance(fig, go.Figure)
-        # 12 devices need 2 blocks of up to 10 rows each -> 2 BLC/PG column pairs = 4 columns, plus the
-        # extra 0.6-unit gap inserted between the two blocks
-        self.assertAlmostEqual(4.6, fig.layout.xaxis.range[1])
-        # 4 column-header traces + 2 traces (rectangle + label) per device
-        self.assertEqual(4 + 2 * 12, len(fig.data))
+        # BLC needs 2 wrapped columns (joined by the small same-location gap), PG (empty) still gets
+        # its own placeholder column (joined by the larger cross-location gap) -> 3 columns total
+        expected_width = 3 + _DASHBOARD_CHART_COLUMN_GAP + _DASHBOARD_CHART_LOCATION_GAP
+        self.assertAlmostEqual(expected_width, fig.layout.xaxis.range[1])
+        # 3 column-header traces + 2 traces (rectangle + label) per device
+        self.assertEqual(3 + 2 * num_devices, len(fig.data))
 
-        # the 11th device (index 10) should wrap into the second block's BLC column, offset by the gap
-        wrapped_device = self._get_rectangle_trace(fig, "S11")
-        self.assertAlmostEqual(2.6, wrapped_device.x[0])
-        self.assertEqual(-2, wrapped_device.y[0], "The wrapped block's rows should restart from the top")
+        # the first device beyond _DASHBOARD_CHART_MAX_ROWS should wrap into BLC's second column,
+        # offset by the small same-location gap
+        wrapped_device = self._get_rectangle_trace(fig, f"S{num_devices:02d}")
+        self.assertAlmostEqual(1 + _DASHBOARD_CHART_COLUMN_GAP, wrapped_device.x[0])
+        self.assertEqual(-2, wrapped_device.y[0], "The wrapped column's rows should restart from the top")
 
-        # the second block should start noticeably further right than a plain 2-unit column width would
-        # place it, confirming the extra inter-block gap was actually applied
-        first_block_device = self._get_rectangle_trace(fig, "S01")
-        self.assertGreater(wrapped_device.x[0] - first_block_device.x[0], 2, "Blocks should be visually separated")
+        # BLC's second column should still start further right than a plain 1-unit column width
+        # would place it, confirming the inter-column gap was actually applied
+        first_column_device = self._get_rectangle_trace(fig, "S01")
+        self.assertGreater(
+            wrapped_device.x[0] - first_column_device.x[0], 1, "Columns should be visually separated"
+        )
+
+    def test_gap_within_a_location_is_smaller_than_the_gap_between_locations(self):
+        """Wrapped columns belonging to the same location should sit closer together than the gap
+        that separates one location's columns from the next."""
+        num_devices = _DASHBOARD_CHART_MAX_ROWS + 1
+        devices = [{"id": f"S{i:02d}", "status": "Available", "location": "BLC"} for i in range(1, num_devices + 1)]
+        devices.append({"id": "P01", "status": "Available", "location": "PG"})
+        inventory = pd.DataFrame(devices)
+        fig = create_dashboard_inventory_chart(inventory)
+
+        blc_col1 = self._get_rectangle_trace(fig, "S01")
+        blc_col2 = self._get_rectangle_trace(fig, f"S{num_devices:02d}")
+        pg_col1 = self._get_rectangle_trace(fig, "P01")
+
+        within_location_gap = blc_col2.x[0] - blc_col1.x[0]
+        between_location_gap = pg_col1.x[0] - blc_col2.x[0]
+        self.assertLess(
+            within_location_gap, between_location_gap,
+            "BLC's two wrapped columns should sit closer together than the gap to PG's column",
+        )
+
+    def test_divider_line_drawn_between_locations(self):
+        """A vertical divider should separate BLC's columns from PG's, positioned in the gap
+        between the two rather than overlapping either location's cells."""
+        inventory = pd.DataFrame([
+            {"id": "S01", "status": "Available", "location": "BLC"},
+            {"id": "S02", "status": "Backup", "location": "PG"},
+        ])
+        fig = create_dashboard_inventory_chart(inventory)
+
+        self.assertEqual(1, len(fig.layout.shapes), "Exactly one divider should separate BLC from PG")
+        divider = fig.layout.shapes[0]
+        self.assertEqual("line", divider.type)
+
+        blc_cell = self._get_rectangle_trace(fig, "S01")
+        pg_cell = self._get_rectangle_trace(fig, "S02")
+        self.assertGreater(divider.x0, blc_cell.x[2], "Divider should sit to the right of BLC's cell")
+        self.assertLess(divider.x0, pg_cell.x[0], "Divider should sit to the left of PG's cell")
+
+    def test_one_location_without_devices_still_gets_its_own_placeholder_column(self):
+        """If BLC doesn't fill its last column, PG must still start a new column rather than sharing
+        BLC's leftover space -- even when PG has no devices at all."""
+        inventory = pd.DataFrame([
+            {"id": "S01", "status": "Available", "location": "BLC"},
+        ])
+        fig = create_dashboard_inventory_chart(inventory)
+
+        s01 = self._get_rectangle_trace(fig, "S01")
+        self.assertEqual(0, s01.x[0], "S01 (BLC) should be in the first (BLC) column")
+        # 2 column-header traces (one for BLC, one for empty PG) + 2 traces for S01
+        self.assertEqual(2 + 2, len(fig.data))
 
     def test_empty_inventory_still_shows_base_columns(self):
         """An empty inventory should still render the BLC/PG column headers, with no device traces."""
@@ -145,28 +237,46 @@ class TestGetDashboardChartColumnWeight(TestCase):
     """Tests for get_dashboard_chart_column_weight."""
 
     @staticmethod
-    def _make_inventory(num_devices: int) -> pd.DataFrame:
-        return pd.DataFrame([
-            {"id": f"S{i:02d}", "status": "Available", "location": "BLC"} for i in range(num_devices)
-        ])
+    def _make_inventory(num_devices: int, location: str = "BLC") -> pd.DataFrame:
+        return pd.DataFrame(
+            [{"id": f"S{i:02d}", "status": "Available", "location": location} for i in range(num_devices)],
+            columns=["id", "status", "location"],
+        )
 
     def test_empty_inventory_weighs_one(self):
+        """A totally empty inventory renders no chart at all (just a caption), so it should weigh
+        the minimum rather than one placeholder column per location."""
         self.assertEqual(1, get_dashboard_chart_column_weight(self._make_inventory(0)))
 
-    def test_up_to_ten_devices_weighs_one(self):
-        self.assertEqual(1, get_dashboard_chart_column_weight(self._make_inventory(10)))
+    def test_up_to_max_rows_devices_at_one_location_weighs_two(self):
+        """The other (empty) location still gets its own placeholder column."""
+        self.assertEqual(2, get_dashboard_chart_column_weight(self._make_inventory(_DASHBOARD_CHART_MAX_ROWS)))
 
-    def test_eleven_devices_weighs_two(self):
-        """11 devices need a second row-block, so the weight should jump to 2 even though the
-        count barely exceeds a single block -- unlike a raw device-count weighting, which would
-        give 11 devices almost the same weight as 10."""
-        self.assertEqual(2, get_dashboard_chart_column_weight(self._make_inventory(11)))
+    def test_one_over_max_rows_devices_at_one_location_weighs_three(self):
+        """One device over _DASHBOARD_CHART_MAX_ROWS needs a second column for that location, so the
+        weight should jump even though the count barely exceeds a single column -- unlike a raw
+        device-count weighting, which would give it almost the same weight as exactly max_rows."""
+        self.assertEqual(
+            3, get_dashboard_chart_column_weight(self._make_inventory(_DASHBOARD_CHART_MAX_ROWS + 1))
+        )
 
-    def test_twenty_devices_weighs_two(self):
-        self.assertEqual(2, get_dashboard_chart_column_weight(self._make_inventory(20)))
+    def test_two_full_blocks_at_one_location_weighs_three(self):
+        self.assertEqual(
+            3, get_dashboard_chart_column_weight(self._make_inventory(_DASHBOARD_CHART_MAX_ROWS * 2))
+        )
 
-    def test_twenty_one_devices_weighs_three(self):
-        self.assertEqual(3, get_dashboard_chart_column_weight(self._make_inventory(21)))
+    def test_just_over_two_full_blocks_at_one_location_weighs_four(self):
+        self.assertEqual(
+            4, get_dashboard_chart_column_weight(self._make_inventory(_DASHBOARD_CHART_MAX_ROWS * 2 + 1))
+        )
+
+    def test_devices_split_across_both_locations_sum_each_locations_columns(self):
+        """BLC and PG never share a column, so their column counts add rather than combine -- BLC
+        needing 2 columns plus PG needing 1 column needs 3 columns total."""
+        inventory = pd.concat([
+            self._make_inventory(_DASHBOARD_CHART_MAX_ROWS + 1, "BLC"), self._make_inventory(1, "PG")
+        ])
+        self.assertEqual(3, get_dashboard_chart_column_weight(inventory))
 
 
 class TestCreateDashboardLegendChart(TestCase):
@@ -192,3 +302,15 @@ class TestCreateDashboardLegendChart(TestCase):
         label_traces = [trace for trace in fig.data if trace.mode == "text"]
         labels = {trace.text for trace in label_traces}
         self.assertEqual({status.value for status in DeviceStatus}, labels)
+
+    def test_label_font_matches_dashboard_chart_font(self):
+        """The legend's labels should match the Inventory Dashboard chart's font size, since the two
+        are meant to visually match."""
+        legend_label = next(trace for trace in create_dashboard_legend_chart().data if trace.mode == "text")
+
+        inventory = pd.DataFrame([{"id": "S01", "status": "Available", "location": "BLC"}])
+        dashboard_fig = create_dashboard_inventory_chart(inventory)
+        dashboard_label = next(
+            trace for trace in dashboard_fig.data if trace.mode == "text" and trace.text == "S01"
+        )
+        self.assertEqual(dashboard_label.textfont.size, legend_label.textfont.size)

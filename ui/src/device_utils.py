@@ -1,7 +1,7 @@
 import itertools
 import math
 from functools import wraps
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 import streamlit as st
@@ -135,10 +135,12 @@ def remove_devices(data_service: DataService, device_type: DeviceType, inventory
     return None
 
 
-def _add_device_status_cell(fig: go.Figure, bbox: Tuple[float, float, float, float], device: pd.Series):
+def _add_device_status_cell(
+        fig: go.Figure, bbox: Tuple[float, float, float, float], device: pd.Series, font_size: int = 14
+):
     """Add a coloured cell (status-filled rectangle + centered ID label) to a chart at the given
     (x0, y0, x1, y1) bounding box. Shared by create_inventory_chart and create_dashboard_inventory_chart
-    so both charts render device cells identically.
+    so both charts render device cells identically, aside from the dashboard's larger font_size.
     """
     x0, y0, x1, y1 = bbox
     colour = DeviceStatus.get_device_status_colour(device["status"])
@@ -162,7 +164,7 @@ def _add_device_status_cell(fig: go.Figure, bbox: Tuple[float, float, float, flo
             y=[(y0 + y1) / 2.0],
             mode="text",
             text=device["id"],
-            textfont={"color": "#EEEEEE", "size": 14},
+            textfont={"color": "#EEEEEE", "size": font_size},
             textposition="middle center",
             showlegend=False,
             hoverinfo="skip",
@@ -198,80 +200,139 @@ def create_inventory_chart(inventory: pd.DataFrame):
     return fig
 
 
-_DASHBOARD_CHART_MAX_ROWS = 10
+_DASHBOARD_CHART_MAX_ROWS = 8
 _DASHBOARD_CHART_LOCATIONS: List[Location] = list(Location)
-# Extra horizontal spacing (in column-width units) inserted between column pairs/blocks, on top of
-# the normal 0.2-unit gap between the two columns within a pair, so wraparound blocks read as
-# visually distinct groups rather than one continuous row of columns.
-_DASHBOARD_CHART_BLOCK_GAP = 0.6
+# Larger than create_inventory_chart's default font size (14) since the Inventory Dashboard's charts
+# have more room to breathe and benefit from being readable at a glance.
+_DASHBOARD_CHART_FONT_SIZE = 24
+# Horizontal gap (in column-width units) between two wrapped columns of the *same* location, kept
+# small so they read as one continuous group rather than separate blocks.
+_DASHBOARD_CHART_COLUMN_GAP = 0.1
+# Horizontal gap between the last column of one location and the first column of the next, kept
+# larger than _DASHBOARD_CHART_COLUMN_GAP so BLC and PG read as visually distinct blocks.
+_DASHBOARD_CHART_LOCATION_GAP = 0.4
 
 
-def _dashboard_chart_column_x_start(col_index: int, num_locations: int) -> float:
-    """Get the x-axis start position for a chart column, adding extra spacing between blocks."""
-    block, offset_within_block = divmod(col_index, num_locations)
-    return block * (num_locations + _DASHBOARD_CHART_BLOCK_GAP) + offset_within_block
+def _dashboard_chart_location_column_counts(inventory: pd.DataFrame) -> Dict[Location, int]:
+    """Get the number of columns each location needs (in _DASHBOARD_CHART_LOCATIONS order), each
+    wrapping every _DASHBOARD_CHART_MAX_ROWS devices. Every location gets at least one column, even
+    if it has no devices, so its header is always shown and it never has to share a column with
+    another location -- e.g. if BLC doesn't fill its last column, PG still starts a new one.
+    """
+    return {
+        location: max(1, math.ceil(int((inventory["location"] == location).sum()) / _DASHBOARD_CHART_MAX_ROWS))
+        for location in _DASHBOARD_CHART_LOCATIONS
+    }
 
 
-def _dashboard_chart_cell_bbox(
-        col_index: int, row_index: int, num_locations: int
-) -> Tuple[float, float, float, float]:
+def _dashboard_chart_column_starts(location_column_counts: Dict[Location, int]) -> Dict[Location, int]:
+    """Get the starting column index for each location, placed one after another in
+    _DASHBOARD_CHART_LOCATIONS order so locations are never interleaved or share a column."""
+    starts = {}
+    offset = 0
+    for location in _DASHBOARD_CHART_LOCATIONS:
+        starts[location] = offset
+        offset += location_column_counts[location]
+    return starts
+
+
+def _dashboard_chart_column_x_starts(location_column_counts: Dict[Location, int]) -> List[float]:
+    """Get the x-axis start position for every column, in order: columns wrapped within the same
+    location are spaced by the small _DASHBOARD_CHART_COLUMN_GAP, while the first column of a new
+    location is spaced by the larger _DASHBOARD_CHART_LOCATION_GAP, so locations read as distinct
+    blocks even though a location's own wrapped columns read as one group."""
+    x_starts: List[float] = []
+    x = 0.0
+    for location in _DASHBOARD_CHART_LOCATIONS:
+        for block in range(location_column_counts[location]):
+            if x_starts:
+                gap = _DASHBOARD_CHART_COLUMN_GAP if block > 0 else _DASHBOARD_CHART_LOCATION_GAP
+                x += 1 + gap
+            x_starts.append(x)
+    return x_starts
+
+
+def _dashboard_chart_cell_bbox(x_start: float, row_index: int) -> Tuple[float, float, float, float]:
     """Get the (x0, y0, x1, y1) bounding box for a dashboard chart cell at the given column/row."""
-    x_start = _dashboard_chart_column_x_start(col_index, num_locations)
     y0 = -2 * (row_index + 1)
     return x_start, y0, x_start + 0.8, y0 - 1.5
 
 
-def _add_dashboard_chart_column_headers(fig: go.Figure, num_columns: int, num_locations: int):
+def _add_dashboard_chart_column_headers(
+        fig: go.Figure,
+        location_column_counts: Dict[Location, int],
+        column_starts: Dict[Location, int],
+        column_x_starts: List[float],
+):
     """Add the location label above each column of the dashboard chart."""
-    for col_index in range(num_columns):
-        location = _DASHBOARD_CHART_LOCATIONS[col_index % num_locations]
-        x_start = _dashboard_chart_column_x_start(col_index, num_locations)
-        fig.add_trace(
-            go.Scatter(
-                x=[x_start + 0.4],
-                y=[-0.5],
-                mode="text",
-                text=f"<b>{location}</b>",
-                textfont={"size": 14},
-                showlegend=False,
-                hoverinfo="skip",
+    for location in _DASHBOARD_CHART_LOCATIONS:
+        for block in range(location_column_counts[location]):
+            x_start = column_x_starts[column_starts[location] + block]
+            fig.add_trace(
+                go.Scatter(
+                    x=[x_start + 0.4],
+                    y=[-0.5],
+                    mode="text",
+                    text=f"<b>{location}</b>",
+                    textfont={"size": _DASHBOARD_CHART_FONT_SIZE},
+                    showlegend=False,
+                    hoverinfo="skip",
+                )
             )
+
+
+def _add_dashboard_chart_location_dividers(
+        fig: go.Figure,
+        location_column_counts: Dict[Location, int],
+        column_starts: Dict[Location, int],
+        column_x_starts: List[float],
+):
+    """Draw a vertical divider line between each pair of adjacent locations' columns, midway
+    through the larger cross-location gap, so BLC and PG read as clearly separate blocks."""
+    for previous_location, next_location in itertools.pairwise(_DASHBOARD_CHART_LOCATIONS):
+        previous_last_col = column_starts[previous_location] + location_column_counts[previous_location] - 1
+        previous_end = column_x_starts[previous_last_col] + 0.8
+        next_start = column_x_starts[column_starts[next_location]]
+        fig.add_vline(
+            x=(previous_end + next_start) / 2.0,
+            line={"color": "rgba(128, 128, 128, 0.4)", "width": 2},
         )
 
 
 def get_dashboard_chart_column_weight(inventory: pd.DataFrame) -> int:
-    """Get the number of row-blocks create_dashboard_inventory_chart will need for this inventory.
+    """Get the number of columns create_dashboard_inventory_chart will need for this inventory.
 
-    Since the chart wraps into a new column pair every _DASHBOARD_CHART_MAX_ROWS devices, this
-    tracks the chart's actual rendered width (unlike a raw device count) -- e.g. 11 devices need
-    2 blocks (same width as up to 20 devices), not marginally more than 9 devices' single block.
+    Since the chart wraps into a new column every _DASHBOARD_CHART_MAX_ROWS devices per location,
+    this tracks the chart's actual rendered width (unlike a raw device count) -- e.g. 11 devices at
+    one location need 2 columns (same width as up to 20), not marginally more than 9 devices' single
+    column. An empty inventory renders no chart at all (just a caption), so it weighs the minimum.
     Intended for weighting st.columns(...) so multiple dashboard charts share space proportionally
     to how wide they'll actually render, rather than by raw device count.
     """
-    return max(1, math.ceil(len(inventory) / _DASHBOARD_CHART_MAX_ROWS))
+    if inventory.empty:
+        return 1
+    return sum(_dashboard_chart_location_column_counts(inventory).values())
 
 
 # noinspection PyTypeChecker
 def create_dashboard_inventory_chart(inventory: pd.DataFrame):
-    """Create a chart for the Inventory Dashboard: devices are listed in ID order, one row per device
-    (up to _DASHBOARD_CHART_MAX_ROWS). Each row has one column per location (BLC, PG) -- a device's ID
-    is drawn in whichever column matches its current location, leaving the other column blank for that
-    row. Once there are more devices than fit in a single block of rows, an additional column pair is
-    added to the right so the chart wraps around instead of growing taller than the fixed row limit.
+    """Create a chart for the Inventory Dashboard: each location (BLC, PG) gets its own dedicated
+    set of columns, with that location's devices listed in ID order, one row per device (up to
+    _DASHBOARD_CHART_MAX_ROWS), wrapping into an additional column of its own once it has more
+    devices than fit in one. Locations are placed one after another left-to-right and never share a
+    column -- e.g. if BLC doesn't fill its last column, PG still starts a new one.
     """
-    sorted_inventory = inventory.sort_values("id").reset_index(drop=True)
-    num_locations = len(_DASHBOARD_CHART_LOCATIONS)
-    num_blocks = get_dashboard_chart_column_weight(sorted_inventory)
-    num_columns = num_blocks * num_locations
-    # num_blocks columns-worth of width, plus one inter-block gap between each pair of blocks
-    # (none before the first block or after the last).
-    chart_width_units = num_blocks * num_locations + (num_blocks - 1) * _DASHBOARD_CHART_BLOCK_GAP
+    location_column_counts = _dashboard_chart_location_column_counts(inventory)
+    column_starts = _dashboard_chart_column_starts(location_column_counts)
+    column_x_starts = _dashboard_chart_column_x_starts(location_column_counts)
+    # the last column's start plus its own 1-unit width (0.8 filled + 0.2 trailing padding).
+    chart_width_units = column_x_starts[-1] + 1
 
     fig = go.Figure()
     fig.update_layout(
         autosize=False,
         width=int(chart_width_units * 90),
-        height=35 * (_DASHBOARD_CHART_MAX_ROWS + 1),
+        height=50 * (_DASHBOARD_CHART_MAX_ROWS + 1),
         margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
         plot_bgcolor=_TRANSPARENT_BACKGROUND,
         paper_bgcolor=_TRANSPARENT_BACKGROUND,
@@ -281,14 +342,16 @@ def create_dashboard_inventory_chart(inventory: pd.DataFrame):
         range=[-2 * (_DASHBOARD_CHART_MAX_ROWS + 1), 0], visible=False, showgrid=False, zeroline=False
     )
 
-    _add_dashboard_chart_column_headers(fig, num_columns, num_locations)
+    _add_dashboard_chart_column_headers(fig, location_column_counts, column_starts, column_x_starts)
+    _add_dashboard_chart_location_dividers(fig, location_column_counts, column_starts, column_x_starts)
 
-    for i, (_, device) in enumerate(sorted_inventory.iterrows()):
-        block, row_index = divmod(i, _DASHBOARD_CHART_MAX_ROWS)
-        location_index = _DASHBOARD_CHART_LOCATIONS.index(Location(device["location"]))
-        col_index = block * num_locations + location_index
-        bbox = _dashboard_chart_cell_bbox(col_index, row_index, num_locations)
-        _add_device_status_cell(fig, bbox, device)
+    for location in _DASHBOARD_CHART_LOCATIONS:
+        location_inventory = inventory[inventory["location"] == location].sort_values("id").reset_index(drop=True)
+        for i, (_, device) in enumerate(location_inventory.iterrows()):
+            block, row_index = divmod(i, _DASHBOARD_CHART_MAX_ROWS)
+            col_index = column_starts[location] + block
+            bbox = _dashboard_chart_cell_bbox(column_x_starts[col_index], row_index)
+            _add_device_status_cell(fig, bbox, device, font_size=_DASHBOARD_CHART_FONT_SIZE)
     return fig
 
 
@@ -301,7 +364,7 @@ def create_dashboard_legend_chart():
     fig = go.Figure()
     fig.update_layout(
         autosize=False,
-        width=180 * len(statuses),
+        width=210 * len(statuses),
         height=40,
         margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
         plot_bgcolor=_TRANSPARENT_BACKGROUND,
@@ -331,7 +394,7 @@ def create_dashboard_legend_chart():
                 y=[(y0 + y1) / 2.0],
                 mode="text",
                 text=status,
-                textfont={"size": 14},
+                textfont={"size": _DASHBOARD_CHART_FONT_SIZE},
                 textposition="middle right",
                 showlegend=False,
                 hoverinfo="skip",

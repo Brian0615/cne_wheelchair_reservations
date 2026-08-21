@@ -273,6 +273,37 @@ class BaseTestCases:
             ) as file:
                 return json.load(file)
 
+        @staticmethod
+        def _get_gauge_figs(mock_plotly_chart):
+            """Pick out the gauge indicator figures from a mocked st.plotly_chart's calls. Shared by
+            the Home and Inventory Dashboard page tests, which both render the same gauge cards."""
+            return [
+                call.args[0] for call in mock_plotly_chart.call_args_list
+                if call.args[0].data and call.args[0].data[0].type == "indicator"
+            ]
+
+        def _run_with_mock_reservations(self):
+            """Run the page with mocked scooter + wheelchair reservations, so the gauge cards render
+            actual charts instead of the 'No reservations' warning. Shared by the Home and Inventory
+            Dashboard page tests, which both render the same gauge cards."""
+            scooter_reservations = self._load_mock_data_from_json(
+                device_type=DeviceType.SCOOTER, data_type="reservations"
+            )
+            wheelchair_reservations = self._load_mock_data_from_json(
+                device_type=DeviceType.WHEELCHAIR, data_type="reservations"
+            )
+            return self._run_app_test_with_mock_requests(
+                mock_requests=MockRequests(mock_reservations_data=scooter_reservations + wheelchair_reservations)
+            )
+
+        def _get_mock_reservations_gauge_figs(self):
+            """Run the page with mocked reservations and return the rendered gauge indicator
+            figures. Shared by the Home and Inventory Dashboard page tests, which both render the
+            same gauge cards."""
+            with patch("streamlit.plotly_chart") as mock_plotly_chart:
+                self._run_with_mock_reservations()
+                return self._get_gauge_figs(mock_plotly_chart)
+
         def test_unauthenticated_user(self):
             """Test if unauthenticated user is redirected to login page."""
             with patch.multiple(
