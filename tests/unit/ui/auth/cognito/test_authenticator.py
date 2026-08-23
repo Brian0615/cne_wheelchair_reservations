@@ -199,6 +199,37 @@ class TestCognitoAuthenticator(TestCase):
         self.assertTrue(logged_in)
         mock_sleep.assert_not_called()
 
+    def test_set_state_login_logs_exactly_one_info_line_on_success(self):
+        """The consolidated logging design puts a single authoritative INFO line (with the
+        username attached) in _set_state_login, instead of narrating every step along the way."""
+        authenticator = self._build_authenticator()
+        with patch(
+                "ui.auth.cognito.authenticator.verify_access_token",
+                return_value=({"username": "u"}, MagicMock(email="u@example.com")),
+        ), patch.object(CognitoAuthenticator, "_get_user_groups", return_value=[]):
+            with self.assertLogs("ui.auth.cognito.authenticator", level="DEBUG") as logs:
+                authenticator._set_state_login(self._mock_credentials(), persist=False)
+
+        info_logs = [line for line in logs.output if "INFO" in line]
+        self.assertEqual(len(info_logs), 1)
+        self.assertIn("Successfully logged in", info_logs[0])
+
+    def test_login_from_saved_credentials_restore_produces_one_info_line(self):
+        """A typical cookie-restore page load should produce exactly one INFO-level log line,
+        not the ~9 narration lines the old implementation emitted on every script rerun."""
+        authenticator = self._build_authenticator()
+        authenticator.cookie_manager.load_credentials.return_value = self._mock_credentials()
+        with patch(
+                "ui.auth.cognito.authenticator.verify_access_token",
+                return_value=({"username": "u"}, MagicMock(email="u@example.com")),
+        ), patch.object(CognitoAuthenticator, "_get_user_groups", return_value=[]):
+            with self.assertLogs("ui.auth.cognito.authenticator", level="DEBUG") as logs:
+                logged_in = authenticator._login_from_saved_credentials()
+
+        self.assertTrue(logged_in)
+        info_logs = [line for line in logs.output if "INFO" in line]
+        self.assertEqual(len(info_logs), 1)
+
     def test_login_no_credentials(self):
         """Test that the login fails when no credentials are provided."""
         with  patch.object(

@@ -58,6 +58,11 @@ def auto_process_api_errors(func):
         try:
             return func(data_service, *args, **kwargs)
         except requests.ConnectionError as exc:
+            logger.error(
+                "Unable to connect to the API",
+                exc_info=True,
+                extra={"api_host": data_service.api_host, "api_port": data_service.api_port},
+            )
             st.error(
                 f"""
                 **API Connection Error**: Unable to connect to the API. Please verify the API is running and accessible.
@@ -68,9 +73,11 @@ def auto_process_api_errors(func):
             with st.expander(label="Full Error Traceback"):
                 st.write(exc)
             raise
-        except APIError:
+        except APIError as exc:
+            logger.warning("API returned an error", extra={"detail": exc.message})
             raise
         except Exception as exc:
+            logger.exception("Unexpected error calling the API")
             st.error(f"**API Error**: {exc}")
             raise
 

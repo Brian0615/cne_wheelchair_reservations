@@ -18,6 +18,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 
 from common.constants import ReservationStatus, DeviceType, Location
 from common.data_models.reservation import Reservation, NewReservation
+from common.logger import initialize_logger
 from common.utils import get_default_timezone
 from common.cne_dates import CNEDates
 from ui.forms.new_reservation_form import NewReservationForm
@@ -26,6 +27,8 @@ from ui.src.constants import Colour
 from ui.src.data_service import DataService
 from ui.src.display_utils import coerce_pandas_aware_datetime
 from ui.src.utils import process_validation_errors
+
+logger = initialize_logger()
 
 
 def on_dismiss_success_dialog():
@@ -67,9 +70,13 @@ def submit_new_reservation_form(reservation: dict, is_waitlisted: bool):
             reservation["status"] = ReservationStatus.get_default_reservation_status(reservation["device_type"])
 
     reservation = NewReservation(**reservation)
+    logger.info("Attempting to create new reservation", extra={"device_type": reservation.device_type})
     status_code, result = DataService().add_new_reservation(reservation=reservation)
     if status_code == 200:
+        logger.info("Inserted new reservation", extra={"reservation_id": result})
         display_success_dialog(reservation_id=result, reservation=reservation, is_update=False)
+    else:
+        logger.warning("Failed to create new reservation", extra={"status_code": status_code})
 
 
 @process_validation_errors(error_key="update_reservation_form_errors")
@@ -80,17 +87,37 @@ def submit_update_reservation_form(reservation: dict):
         datetime.combine(reservation["date"], reservation["reservation_time"])
     )
     reservation = Reservation(**reservation)
+    logger.info("Attempting to update reservation", extra={"reservation_id": reservation.id})
     status_code = DataService().update_reservation(reservation=reservation)
     if status_code == 200:
+        logger.info("Updated reservation", extra={"reservation_id": reservation.id})
         display_success_dialog(reservation_id=reservation.id, reservation=reservation, is_update=True)
+    else:
+        logger.warning(
+            "Failed to update reservation",
+            extra={"reservation_id": reservation.id, "status_code": status_code},
+        )
 
 
 def update_reservation_status(reservation: Reservation, status: ReservationStatus):
     """Update the reservation status."""
     reservation.status = status
+    logger.info(
+        "Attempting to update reservation status",
+        extra={"reservation_id": reservation.id, "status": status},
+    )
     status_code = DataService().update_reservation_status(reservation_id=reservation.id, status=status)
     if status_code == 200:
+        logger.info(
+            "Updated reservation status",
+            extra={"reservation_id": reservation.id, "status": status},
+        )
         display_success_dialog(reservation_id=reservation.id, reservation=reservation, is_update=True)
+    else:
+        logger.warning(
+            "Failed to update reservation status",
+            extra={"reservation_id": reservation.id, "status_code": status_code},
+        )
 
 
 def get_reservation_counts() -> pd.DataFrame:

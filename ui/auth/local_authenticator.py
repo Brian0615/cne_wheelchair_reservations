@@ -5,7 +5,10 @@ import streamlit as st
 import streamlit_authenticator as st_auth
 import yaml
 
+from common.logger import initialize_logger
 from ui.auth.base_authenticator import BaseAuthenticator
+
+logger = initialize_logger()
 
 
 class LocalAuthenticator(BaseAuthenticator):
@@ -31,6 +34,7 @@ class LocalAuthenticator(BaseAuthenticator):
             with open(os.environ["AUTH_CONFIG_PATH"], "r", encoding="utf-8") as config_file:
                 return yaml.safe_load(config_file)
         except (KeyError, FileNotFoundError) as e:
+            logger.exception("Failed to load local auth config")
             st.error(f"**Authentication Error**: {str(e)}")
             raise
 
@@ -66,6 +70,7 @@ class LocalAuthenticator(BaseAuthenticator):
                 max_login_attempts=5,
             )
         except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.exception("Unexpected error during local login")
             st.error(e)
             return False
 
@@ -73,6 +78,7 @@ class LocalAuthenticator(BaseAuthenticator):
         if status is True:
             return True
         if status is False:
+            logger.warning("Local login failed: incorrect username/password")
             st.error("Username/password is incorrect")
         else:
             st.info("Please enter your username and password")

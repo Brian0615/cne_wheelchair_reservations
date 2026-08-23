@@ -7,6 +7,9 @@ from api.src.dynamodb_service import DynamoDBService
 from api.src.utils import auto_process_database_errors
 from common.constants import DeviceType
 from common.data_models import ChangeDeviceInfo, CompletedRental, NewRental, RentalSummary
+from common.logger import initialize_logger
+
+logger = initialize_logger()
 
 db_service = DynamoDBService()
 router = APIRouter(prefix="/rentals", tags=["rentals"])
@@ -23,7 +26,16 @@ def add_new_rental(new_rental: NewRental):
 @auto_process_database_errors
 def change_rental_device(change_device_info: ChangeDeviceInfo):
     """Change the device of a rental"""
-    return db_service.change_rental_device(change_info=change_device_info)
+    result = db_service.change_rental_device(change_info=change_device_info)
+    logger.info(
+        "Changed rental device",
+        extra={
+            "rental_id": change_device_info.id,
+            "old_device_id": change_device_info.old_device_id,
+            "new_device_id": change_device_info.new_device_id,
+        },
+    )
+    return result
 
 
 @router.post("/complete_rental")

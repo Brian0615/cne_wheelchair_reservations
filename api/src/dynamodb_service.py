@@ -67,7 +67,10 @@ class DynamoDBService:
                 if exc.response["Error"]["Code"] == "TransactionCanceledException":
                     if "ConditionalCheckFailed" in exc.response["CancellationReasons"][0]["Code"]:
                         # This means that the device was not found in the inventory
-                        logger.warning("One or more devices not found in the inventory. No devices were deleted.")
+                        logger.warning(
+                            "One or more devices not found in the inventory. No devices were deleted.",
+                            extra={"device_id": kwargs.get("device_ids", [])},
+                        )
                         raise DeviceNotFoundException(
                             f"At least one of the following devices were not found in the inventory: "
                             f"{kwargs.get('device_ids', [])} (year={kwargs.get('cne_year', '')})",
@@ -84,12 +87,15 @@ class DynamoDBService:
             except botocore.exceptions.ClientError as exc:
                 error_code = exc.response["Error"].get("Code", "")
                 if error_code == "ConditionalCheckFailedException":
-                    logger.warning("One or more devices not found in the inventory. No devices were deleted.")
                     reservation_id = None
                     if "reservation" in kwargs:
                         reservation_id = kwargs.get("reservation").id
                     if "reservation_id" in kwargs:
                         reservation_id = kwargs.get("reservation_id")
+                    logger.warning(
+                        "One or more devices not found in the inventory. No devices were deleted.",
+                        extra={"reservation_id": reservation_id},
+                    )
                     raise ReservationNotFoundOrNotEditableException(
                         f"The reservation was either not found or cannot be updated due to its current status "
                         f"(year={kwargs.get('cne_year', '')})"
@@ -201,7 +207,7 @@ class DynamoDBService:
             self.devices_table.put_item(Item=device.model_dump())
             next_ids[prefix][year] += 1
 
-        logger.info("Added devices to the inventory: %s", devices)
+        logger.info("Added devices to the inventory", extra={"device_id": [device.id for device in devices]})
 
     @timeit(logger=logger)
     def get_available_device_ids(
@@ -486,7 +492,7 @@ class DynamoDBService:
                         reservation_id=rental.reservation_id,
                     ) from exc
             raise exc
-        logger.info("Completed rental: %s", rental.id)
+        logger.info("Completed rental", extra={"rental_id": rental.id})
 
     @timeit(logger=logger)
     def get_rentals_on_date(
@@ -678,7 +684,7 @@ class DynamoDBService:
                         reservation_id=rental.reservation_id,
                     ) from exc
             raise exc
-        logger.info("Inserted new rental: %s", rental_id)
+        logger.info("Inserted new rental", extra={"rental_id": rental_id})
         return rental_id
 
 
@@ -805,7 +811,7 @@ class DynamoDBService:
             device_type=reservation.device_type,
         )
         self.reservations_table.put_item(Item=reservation.model_dump(mode="json"))
-        logger.info("Inserted new reservation: %s", reservation.id)
+        logger.info("Inserted new reservation", extra={"reservation_id": reservation.id})
 
         return reservation.id
 

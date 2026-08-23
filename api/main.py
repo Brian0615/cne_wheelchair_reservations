@@ -1,12 +1,57 @@
+import time
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, File, Response
+from fastapi import FastAPI, HTTPException, File, Request, Response
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.routers import chat_router, devices_router, rentals_router, reservations_router, settings_router
 from api.src.s3_service import S3Service
+from common.logger import initialize_logger
+
+logger = initialize_logger()
 
 app = FastAPI()
+
+
+# pylint: disable=too-few-public-methods
+class AccessLogMiddleware(BaseHTTPMiddleware):
+    """Logs each request's outcome and duration."""
+
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            logger.exception(
+                "Unhandled exception",
+                extra={"method": request.method, "path": request.url.path},
+            )
+            raise
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        logger.info(
+            "Request completed",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+            },
+        )
+        return response
+
+
+app.add_middleware(AccessLogMiddleware)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):  # pylint: disable=unused-argument
+    """Log unhandled exceptions and return a generic 500 response."""
+    logger.exception("Unhandled exception in handler", extra={"path": request.url.path})
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
 # add the routers
 app.include_router(devices_router)
 app.include_router(reservations_router)

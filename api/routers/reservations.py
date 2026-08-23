@@ -8,6 +8,9 @@ from api.src.dynamodb_service import DynamoDBService
 from api.src.utils import auto_process_database_errors
 from common.constants import DeviceType, RESERVATION_ID_PATTERN, ReservationStatus
 from common.data_models import NewReservation, Reservation, ReservationCount
+from common.logger import initialize_logger
+
+logger = initialize_logger()
 
 db_service = DynamoDBService()
 router = APIRouter(prefix="/reservations", tags=["reservations"])
@@ -50,7 +53,9 @@ def insert_reservation(
 @auto_process_database_errors
 def update_reservation(reservation: Reservation) -> None:
     """Update reservation"""
-    return db_service.update_reservation(reservation=reservation)
+    result = db_service.update_reservation(reservation=reservation)
+    logger.info("Updated reservation", extra={"reservation_id": reservation.id})
+    return result
 
 
 @router.post("/update_reservation_status")
@@ -61,8 +66,13 @@ def update_reservation_status(
         reservation_status: ReservationStatus,
 ) -> None:
     """Update the status of a reservation"""
-    return db_service.update_reservation_status(
+    result = db_service.update_reservation_status(
         cne_year=cne_year,
         reservation_id=reservation_id,
         status=reservation_status,
     )
+    logger.info(
+        "Updated reservation status",
+        extra={"reservation_id": reservation_id, "status": reservation_status},
+    )
+    return result
