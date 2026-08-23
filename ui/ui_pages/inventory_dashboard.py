@@ -17,15 +17,15 @@ initialize_page()
 # so this page's gauge cards match its other enlarged chart text. Scoped to this page only -- the
 # Home page's gauge cards keep the smaller defaults. chart_height is bumped along with the title
 # font so the larger title text has room to render without being clipped at the top of the chart.
-_GAUGE_TITLE_FONT_SIZE = 20
-_GAUGE_CAPTION_FONT_SIZE = 20
-_GAUGE_CHART_HEIGHT = 150
+_GAUGE_TITLE_FONT_SIZE = 32
+_GAUGE_CAPTION_FONT_SIZE = 32
+_GAUGE_CHART_HEIGHT = 160
 # st.badge (the "BLC/PG Reservations/Rentals" tags) has no font-size parameter of its own -- it
 # renders as a ":color-badge[...]" Markdown directive with its font-size set inline by Streamlit,
 # so overriding it needs a CSS rule with !important. Injecting it here (rather than editing
 # Streamlit's own CSS) keeps the override scoped to this page's script run -- it's not present in
 # the Home page's DOM at all.
-_GAUGE_BADGE_FONT_SIZE = 20
+_GAUGE_BADGE_FONT_SIZE = 36
 
 
 def _render_gauge_cards(reservations, rentals):
@@ -75,7 +75,7 @@ def _render_inventory_charts(scooter_inventory, wheelchair_inventory):
     ):
         with col:
             with st.container(border=True):
-                st.subheader(f"{device_type}s")
+                st.header(f"{device_type}s")
                 if inventory.empty:
                     st.caption(f"No {device_type}s in inventory")
                     continue

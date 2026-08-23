@@ -200,11 +200,11 @@ def create_inventory_chart(inventory: pd.DataFrame):
     return fig
 
 
-_DASHBOARD_CHART_MAX_ROWS = 8
+_DASHBOARD_CHART_MAX_ROWS = 6
 _DASHBOARD_CHART_LOCATIONS: List[Location] = list(Location)
 # Larger than create_inventory_chart's default font size (14) since the Inventory Dashboard's charts
 # have more room to breathe and benefit from being readable at a glance.
-_DASHBOARD_CHART_FONT_SIZE = 24
+_DASHBOARD_CHART_FONT_SIZE = 32
 # Horizontal gap (in column-width units) between two wrapped columns of the *same* location, kept
 # small so they read as one continuous group rather than separate blocks.
 _DASHBOARD_CHART_COLUMN_GAP = 0.1
@@ -271,7 +271,7 @@ def _add_dashboard_chart_column_headers(
             fig.add_trace(
                 go.Scatter(
                     x=[x_start + 0.4],
-                    y=[-0.5],
+                    y=[-1.0],
                     mode="text",
                     text=f"<b>{location}</b>",
                     textfont={"size": _DASHBOARD_CHART_FONT_SIZE},
@@ -332,7 +332,7 @@ def create_dashboard_inventory_chart(inventory: pd.DataFrame):
     fig.update_layout(
         autosize=False,
         width=int(chart_width_units * 90),
-        height=50 * (_DASHBOARD_CHART_MAX_ROWS + 1),
+        height=60 * (_DASHBOARD_CHART_MAX_ROWS + 1),
         margin={"l": 0, "r": 0, "b": 0, "t": 0, "pad": 0},
         plot_bgcolor=_TRANSPARENT_BACKGROUND,
         paper_bgcolor=_TRANSPARENT_BACKGROUND,
