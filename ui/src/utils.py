@@ -7,9 +7,12 @@ import streamlit as st
 from pydantic import BaseModel, ValidationError
 
 from common.data_models import RentalSummary
+from common.logger import initialize_logger
 from common.utils import get_default_timezone
 from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
+
+logger = initialize_logger()
 
 
 def clean_dataframe_record(row: pd.DataFrame) -> dict:
@@ -129,6 +132,10 @@ def process_validation_errors(error_key: str):
             try:
                 func(*args, **kwargs)
             except ValidationError as exc:
+                logger.warning(
+                    "Form validation failed",
+                    extra={"form": func.__name__, "errors": exc.errors()},
+                )
                 st.session_state[error_key] = exc.errors()
                 st.rerun()
 

@@ -7,6 +7,9 @@ from api.src.dynamodb_service import DynamoDBService
 from api.src.utils import auto_process_database_errors
 from common.constants import DeviceType, Location, DEVICE_ID_PATTERN, DeviceStatus
 from common.data_models import Device, NewDevice
+from common.logger import initialize_logger
+
+logger = initialize_logger()
 
 db_service = DynamoDBService()
 router = APIRouter(prefix="/devices", tags=["devices"])
@@ -42,7 +45,9 @@ def remove_devices(
         device_ids: List[Annotated[str, StringConstraints(to_upper=True, pattern=DEVICE_ID_PATTERN)]]
 ):
     """Remove devices from the inventory"""
-    return db_service.remove_devices(cne_year=cne_year, device_ids=device_ids)
+    result = db_service.remove_devices(cne_year=cne_year, device_ids=device_ids)
+    logger.info("Removed devices from the inventory", extra={"device_id": device_ids})
+    return result
 
 
 @router.post("/update_location")
@@ -53,7 +58,9 @@ def update_devices_location(
         location: Location,
 ):
     """Update the location of devices"""
-    return db_service.update_devices_location(cne_year=cne_year, device_ids=device_ids, location=location)
+    result = db_service.update_devices_location(cne_year=cne_year, device_ids=device_ids, location=location)
+    logger.info("Updated device location", extra={"device_id": device_ids, "location": location})
+    return result
 
 
 @router.post("/update_status")
@@ -64,4 +71,6 @@ def update_devices_status(
         status: DeviceStatus,
 ):
     """Update the status of devices"""
-    return db_service.update_devices_status(cne_year=cne_year, device_ids=device_ids, status=status)
+    result = db_service.update_devices_status(cne_year=cne_year, device_ids=device_ids, status=status)
+    logger.info("Updated device status", extra={"device_id": device_ids, "status": status})
+    return result

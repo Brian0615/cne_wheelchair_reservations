@@ -6,7 +6,7 @@ import requests
 import streamlit as st
 from pydantic import BaseModel
 
-from ui.src.data_service import DataService
+from ui.src.data_service import APIError, DataService, auto_process_api_errors
 
 
 class DummyBaseModel(BaseModel):
@@ -37,6 +37,7 @@ class TestDataService(TestCase):
                 params={"cne_year": 1234},
                 json={"key_a": "a", "key_b": "b"},
                 timeout=100,
+                headers={"X-Request-ID": "-"},
             )
         with patch("requests.get", return_value=Mock(status_code=200, json=Mock(return_value={}))) as mock_get:
             self.data_service._make_request(
@@ -51,6 +52,7 @@ class TestDataService(TestCase):
                 params={"cne_year": 1234},
                 json={"a": "a", "b": "2023-10-01", "c": 1.0},
                 timeout=100,
+                headers={"X-Request-ID": "-"},
             )
 
 
@@ -101,3 +103,38 @@ class TestDataServiceCacheBypass(TestCase):
 
             self.data_service.get_rentals_on_date(date)
             self.assertEqual(2, mock_get.call_count, "The bypass call should not have evicted the shared cache")
+
+
+# pylint: disable=missing-class-docstring,missing-function-docstring
+class TestAutoProcessApiErrors(TestCase):
+    """Tests that auto_process_api_errors logs failures alongside the existing st.error calls."""
+
+    def setUp(self):
+        self.data_service = DataService(api_host="test_host", api_port="1234")
+
+    def test_connection_error_is_logged(self):
+        @auto_process_api_errors
+        def func(data_service):
+            raise requests.ConnectionError("boom")
+
+        with self.assertLogs("ui.src.data_service", level="ERROR"):
+            with self.assertRaises(requests.ConnectionError):
+                func(self.data_service)
+
+    def test_api_error_is_logged(self):
+        @auto_process_api_errors
+        def func(data_service):
+            raise APIError(message="bad request")
+
+        with self.assertLogs("ui.src.data_service", level="WARNING"):
+            with self.assertRaises(APIError):
+                func(self.data_service)
+
+    def test_unexpected_error_is_logged(self):
+        @auto_process_api_errors
+        def func(data_service):
+            raise ValueError("unexpected")
+
+        with self.assertLogs("ui.src.data_service", level="ERROR"):
+            with self.assertRaises(ValueError):
+                func(self.data_service)

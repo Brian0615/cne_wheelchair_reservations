@@ -30,7 +30,7 @@ from common.data_models import (
     ReservationCount,
     ReservationStatusCount,
 )
-from common.logger import initialize_logger
+from common.logger import initialize_logger, timeit
 from common.utils import get_default_timezone
 
 logger = initialize_logger()
@@ -203,6 +203,7 @@ class ChatService:
             self._agents[model_name] = self._build_agent(model_name)
         return self._agents[model_name]
 
+    @timeit(logger=logger)
     def answer(self, message: str, history: Optional[List[ChatMessage]] = None) -> ChatResponse:
         """Answer a user message, using the conversation history for context.
 
@@ -211,6 +212,7 @@ class ChatService:
         the first after the last - this state persists across calls so a conversation picks up where it
         left off instead of retrying an already-exhausted model every turn.
         """
+        logger.info("Chatbot question received", extra={"history_length": len(history or [])})
         logger.debug("Chatbot user message: %s", message)
         history = history or []
         if not history:

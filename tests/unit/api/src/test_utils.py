@@ -34,18 +34,21 @@ class TestAutoProcessDatabaseErrors(TestCase):
         def func():
             raise DeviceNotFoundException("Device not found")
 
-        with self.assertRaises(HTTPException) as ctx:
-            func()
+        with self.assertLogs("api.src.utils", level="WARNING") as logs:
+            with self.assertRaises(HTTPException) as ctx:
+                func()
         self.assertEqual(404, ctx.exception.status_code)
         self.assertIn("Device not found", ctx.exception.detail)
+        self.assertIn("Device not found", logs.output[0])
 
     def test_device_not_found_or_invalid_status_raises_400(self):
         @auto_process_database_errors
         def func():
             raise DeviceNotFoundOrInvalidStatusException(2025, "W01", "Available")
 
-        with self.assertRaises(HTTPException) as ctx:
-            func()
+        with self.assertLogs("api.src.utils", level="WARNING"):
+            with self.assertRaises(HTTPException) as ctx:
+                func()
         self.assertEqual(400, ctx.exception.status_code)
 
     def test_rental_not_found_or_not_editable_raises_400(self):

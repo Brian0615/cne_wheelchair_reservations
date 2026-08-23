@@ -1,7 +1,10 @@
 import streamlit as st
 
+from common.logger import initialize_logger
 from ui.src.auth_utils import initialize_page
 from ui.src.data_service import DataService
+
+logger = initialize_logger()
 
 initialize_page(page_header="Chatbot")
 data_service = DataService()
@@ -47,6 +50,7 @@ if prompt := st.chat_input("Ask a question..."):
                 {"role": message["role"], "content": message["content"]}
                 for message in st.session_state["chat_messages"][:-1]
             ]
+            logger.info("Chatbot question asked")
             chat_response = data_service.chat(message=prompt, history=history)
         if chat_response is not None:
             st.markdown(chat_response.answer)

@@ -84,7 +84,7 @@ class CognitoAuthenticatorBase(ABC):
             # The user explicitly logged out during this session. Request cookies are read
             # from the connection's initial request and may still carry the (now cleared)
             # tokens, so ignore them here to avoid logging the user straight back in.
-            logger.info("Session is logged out; ignoring saved cookies")
+            logger.debug("Session is logged out; ignoring saved cookies")
             return False
 
         credentials = self.cookie_manager.load_credentials()
@@ -92,10 +92,10 @@ class CognitoAuthenticatorBase(ABC):
             # No saved credentials in cookies -- nothing to restore. Do not call
             # reset_credentials() here; there is nothing to clear and it would only add a
             # needless cookie-component render.
-            logger.info("No saved credentials in cookies")
+            logger.debug("No saved credentials in cookies")
             return False
 
-        logger.info("Found credentials in cookies, trying to log in ...")
+        logger.debug("Found credentials in cookies, trying to log in ...")
         logged_in = self._set_state_login(credentials=credentials, persist=False)
         if not logged_in:
             # Deliberately not calling reset_credentials() here: cookies are read via
@@ -106,7 +106,7 @@ class CognitoAuthenticatorBase(ABC):
             # causes the "Missing Submit Button" flash. Stale/expired credentials are
             # harmless -- verification will simply keep failing -- and get overwritten
             # the next time the user logs in successfully (see _set_state_login persist).
-            logger.info("Ignoring invalid cookie credentials")
+            logger.debug("Ignoring invalid cookie credentials")
         return logged_in
 
     def _set_state_login(self, credentials: Credentials, persist: bool = True) -> bool:
@@ -141,7 +141,7 @@ class CognitoAuthenticatorBase(ABC):
                 # immediately after logging in logs the user right back out. Give the
                 # round-trip time to land before anything reruns the script.
                 time.sleep(0.5)
-            logger.info("Successfully logged in")
+            logger.info("Successfully logged in", extra={"username": claims["username"]})
             return True
         logger.info("Could not log in")
         self._set_state_logout()
@@ -153,18 +153,13 @@ class CognitoAuthenticatorBase(ABC):
 
     def _login_from_saved_credentials(self) -> bool:
         logged_in = False
-        logger.info("_login_from_saved_credentials")
         session_state_credentials = self.session_manager.load_credentials()
         if session_state_credentials:
             logged_in = self._set_state_login(credentials=session_state_credentials, persist=False)
-            logger.info("Logged in with session state credentials: %s", logged_in)
         else:
-            logger.info("No credentials in session state")
+            logger.debug("No credentials in session state")
         if not logged_in:
-            logger.info("Logging in from cookies")
             logged_in = self._login_from_cookies()
-            logger.info("Logged in with cookies credentials: %s", logged_in)
-        logger.info("_login_from_saved_credentials finished")
         return logged_in
 
     def restore_session(self) -> bool:
@@ -380,19 +375,15 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
             status_container.success("Logged in")
             st.rerun()
 
-        logger.info("Trying to log in from saved credentials ...")
         logged_in = self._login_from_saved_credentials()
         if logged_in:
-            logger.info("Success")
             return True
 
-        logger.info("Showing login form ...")
         # login
         login_submitted, username, password, status_container = self._show_login_form(
             form_placeholder
         )
         if not login_submitted:
-            logger.debug("Login button was not pushed yet")
             return False
         if not username or not password:
             status_container.error("Username and/or password is empty")
@@ -402,7 +393,6 @@ class CognitoAuthenticator(CognitoAuthenticatorBase):
             username=username,
             password=password,
         )
-        logger.info("_login was called, result: %s", is_logged_in)
 
         if self.session_manager.is_reset_password_session():
             status_container.info("Password reset is required")

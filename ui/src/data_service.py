@@ -21,7 +21,7 @@ from common.data_models import (
     RentalSummary,
     Reservation,
 )
-from common.logger import initialize_logger, timeit
+from common.logger import initialize_logger, request_id_var, timeit
 from common.cne_dates import CNEDates
 
 logger = initialize_logger()
@@ -58,6 +58,11 @@ def auto_process_api_errors(func):
         try:
             return func(data_service, *args, **kwargs)
         except requests.ConnectionError as exc:
+            logger.error(
+                "Unable to connect to the API",
+                exc_info=True,
+                extra={"api_host": data_service.api_host, "api_port": data_service.api_port},
+            )
             st.error(
                 f"""
                 **API Connection Error**: Unable to connect to the API. Please verify the API is running and accessible.
@@ -68,9 +73,11 @@ def auto_process_api_errors(func):
             with st.expander(label="Full Error Traceback"):
                 st.write(exc)
             raise
-        except APIError:
+        except APIError as exc:
+            logger.warning("API returned an error", extra={"detail": exc.message})
             raise
         except Exception as exc:
+            logger.exception("Unexpected error calling the API")
             st.error(f"**API Error**: {exc}")
             raise
 
@@ -108,6 +115,7 @@ class DataService:
             params=params,
             json=json,
             timeout=timeout,
+            headers={"X-Request-ID": request_id_var.get()},
         )
         if response.status_code == 200:
             return response
@@ -451,6 +459,7 @@ class DataService:
             params={"rental_id": rental_id},
             files={"pdf_bytes": (f"{rental_id}.pdf", pdf_bytes, "application/pdf")},
             timeout=DEFAULT_TIMEOUT,
+            headers={"X-Request-ID": request_id_var.get()},
         )
         self.download_rental_form.clear()
         return response.status_code, response.json()
@@ -464,6 +473,7 @@ class DataService:
             f"http://{_self.api_host}:{_self.api_port}/forms/download_rental_form",
             params={"rental_id": rental_id},
             timeout=DEFAULT_TIMEOUT,
+            headers={"X-Request-ID": request_id_var.get()},
         )
         return response.status_code, response.content
 

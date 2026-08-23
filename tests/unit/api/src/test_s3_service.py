@@ -45,5 +45,6 @@ class TestS3Service(TestCase):
 
     def test_download_missing_form_raises_file_not_found(self):
         with patch.dict(os.environ, {"DEV_MODE": "false", "CNE_YEAR": "2025"}):
-            with self.assertRaises(FileNotFoundError):
-                self.service.download_rental_form(rental_id="W9999999")
+            with self.assertLogs("api.src.s3_service", level="WARNING"):
+                with self.assertRaises(FileNotFoundError):
+                    self.service.download_rental_form(rental_id="W9999999")

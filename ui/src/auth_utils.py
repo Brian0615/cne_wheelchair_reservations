@@ -1,9 +1,11 @@
 import os
+import uuid
 from typing import Optional, Union
 
 import streamlit as st
 from streamlit.errors import StreamlitAPIException
 
+from common.logger import request_id_var, username_var
 from ui.auth.cognito_authenticator import CognitoAuthenticator
 from ui.auth.local_authenticator import LocalAuthenticator
 from version import APP_VERSION
@@ -36,21 +38,16 @@ def get_authenticator() -> Union[LocalAuthenticator, CognitoAuthenticator]:
 def initialize_page(page_header: Optional[str] = None, render_login: bool = False):
     """Initialize a Streamlit page with login and optional header."""
 
+    request_id = str(uuid.uuid4())
+    request_id_var.set(request_id)
+    st.session_state["request_id"] = request_id
+
     st.set_page_config(
         layout="centered" if render_login else "wide",
         menu_items={
             "About": f"**CNE Wheelchair Reservations** v{APP_VERSION}"
         }
     )
-
-    # developer mode details
-    if os.getenv("DEV_MODE", default="False").lower() == "true" and not render_login:
-        with st.expander("Developer Details", expanded=False):
-            tabs = st.tabs(["Session State", "Headers", "Query Params", "Cookies"])
-            tabs[0].write(st.session_state)
-            tabs[1].write(st.context.headers)
-            tabs[2].write(st.query_params)
-            tabs[3].write(st.context.cookies)
 
     # authentication setup
     authenticator = get_authenticator()
@@ -66,6 +63,19 @@ def initialize_page(page_header: Optional[str] = None, render_login: bool = Fals
 
     if render_login:
         st.rerun()
+
+    username_var.set(authenticator.get_current_user())
+
+    # developer mode details
+    if os.getenv("DEV_MODE", default="False").lower() == "true" and not render_login:
+        with st.expander("Developer Details", expanded=False):
+            tabs = st.tabs(["Session State", "Headers", "Query Params", "Cookies", "Tracing"])
+            tabs[0].write(st.session_state)
+            tabs[1].write(st.context.headers)
+            tabs[2].write(st.query_params)
+            tabs[3].write(st.context.cookies)
+            tabs[4].write({"request_id": request_id, "username": authenticator.get_current_user()})
+
     st.sidebar.write(f"Welcome, **{authenticator.get_current_user()}**!")
     authenticator.render_logout()
     if page_header:

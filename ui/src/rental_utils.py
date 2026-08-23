@@ -11,6 +11,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer
 
 from common.constants import DeviceType, WALK_IN_RESERVATION_ID, RentalStatus
 from common.data_models import CompletedRental, NewRental, ChangeDeviceInfo
+from common.logger import initialize_logger
 from common.utils import get_default_timezone
 from ui.forms import NewRentalForm
 from ui.pdf_forms.scooter_pdf_form import ScooterPDFForm
@@ -19,6 +20,8 @@ from common.cne_dates import CNEDates
 from ui.src.data_service import DataService
 from ui.src.reservation_utils import build_styled_table, load_fonts
 from ui.src.utils import clear_session_state_for_form, process_validation_errors
+
+logger = initialize_logger()
 
 
 def on_dismiss_complete_rental_success_dialog():
@@ -95,8 +98,13 @@ def submit_complete_rental_form(completed_rental: dict):
     data_service = DataService()
     status_code, result = data_service.complete_rental(completed_rental)
     if status_code == 200:
+        logger.info("Rental completed", extra={"rental_id": completed_rental.id})
         display_complete_rental_success_dialog(completed_rental)
     else:
+        logger.warning(
+            "Failed to complete rental",
+            extra={"rental_id": completed_rental.id, "status_code": status_code},
+        )
         st.error(
             f"""
             **API Error**
@@ -127,6 +135,7 @@ def submit_new_rental_form(new_rental: dict):
     data_service = DataService()
     status_code, add_result = data_service.add_new_rental(new_rental)
     if status_code == 200:
+        logger.info("Inserted new rental", extra={"rental_id": add_result})
         form_data = get_pdf_form_class(device_type=new_rental.device_type)(
             rental_data=new_rental,
             rental_id=add_result,
@@ -136,6 +145,10 @@ def submit_new_rental_form(new_rental: dict):
         if status_code == 200:
             display_new_rental_success_dialog(rental_id=add_result, new_rental=new_rental, form_data=form_data)
         else:
+            logger.warning(
+                "Failed to upload rental form",
+                extra={"rental_id": add_result, "status_code": status_code},
+            )
             st.error(
                 f"""
                 **API Error**
@@ -144,6 +157,7 @@ def submit_new_rental_form(new_rental: dict):
                 """
             )
     else:
+        logger.warning("Failed to create new rental", extra={"status_code": status_code})
         st.error(
             f"""
             **API Error**
@@ -182,7 +196,20 @@ def change_rental_device(change_data: dict):
     # change device
     status_code, _ = DataService().change_rental_device(change_data)
     if status_code == 200:
+        logger.info(
+            "Changed rental device",
+            extra={
+                "rental_id": change_data.id,
+                "old_device_id": change_data.old_device_id,
+                "new_device_id": change_data.new_device_id,
+            },
+        )
         display_change_device_success_dialog(change_data)
+    else:
+        logger.warning(
+            "Failed to change rental device",
+            extra={"rental_id": change_data.id, "status_code": status_code},
+        )
 
 
 def _append_device_late_returns_table(
