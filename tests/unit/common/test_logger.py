@@ -42,6 +42,13 @@ class TestContextFilter(unittest.TestCase):
         ContextFilter().filter(record)
         self.assertEqual("brian", record.username)
 
+    def test_does_not_override_explicit_username(self):
+        """A username passed explicitly via `extra` (e.g. during login, before the
+        contextvar is set) must not be clobbered by the contextvar's default."""
+        record = _make_record(username="explicit_user")
+        ContextFilter().filter(record)
+        self.assertEqual("explicit_user", record.username)
+
 
 class TestPlainFormatter(unittest.TestCase):
     """Test the PlainFormatter class."""

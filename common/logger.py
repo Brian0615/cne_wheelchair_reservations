@@ -16,10 +16,12 @@ _RESERVED_LOG_RECORD_ATTRS = frozenset(vars(logging.makeLogRecord({})).keys())
 
 # pylint: disable=too-few-public-methods
 class ContextFilter(logging.Filter):
-    """Injects the current username contextvar into every LogRecord."""
+    """Injects the current username contextvar into every LogRecord, unless the log call
+    already passed an explicit `username` via `extra` (e.g. before the contextvar is set)."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.username = username_var.get()
+        if not hasattr(record, "username"):
+            record.username = username_var.get()
         return True
 
 
