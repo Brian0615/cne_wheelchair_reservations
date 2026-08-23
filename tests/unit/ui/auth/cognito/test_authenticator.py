@@ -211,7 +211,7 @@ class TestCognitoAuthenticator(TestCase):
                 authenticator._set_state_login(self._mock_credentials(), persist=False)
 
         info_logs = [line for line in logs.output if "INFO" in line]
-        self.assertEqual(1, len(info_logs))
+        self.assertEqual(len(info_logs), 1)
         self.assertIn("Successfully logged in", info_logs[0])
 
     def test_login_from_saved_credentials_restore_produces_one_info_line(self):
@@ -228,7 +228,7 @@ class TestCognitoAuthenticator(TestCase):
 
         self.assertTrue(logged_in)
         info_logs = [line for line in logs.output if "INFO" in line]
-        self.assertEqual(1, len(info_logs))
+        self.assertEqual(len(info_logs), 1)
 
     def test_login_no_credentials(self):
         """Test that the login fails when no credentials are provided."""
