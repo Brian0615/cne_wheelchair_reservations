@@ -16,9 +16,10 @@ class TestInventoryDashboard(BaseTestCases.BaseUIPageTest):
         self.page_path = "ui/ui_pages/inventory_dashboard.py"
 
     def test_no_header_is_shown(self):
-        """The old 'Inventory Dashboard' page header should no longer be rendered."""
+        """The old 'Inventory Dashboard' page title should no longer be rendered (the Scooters/
+        Wheelchairs column headers are a separate, later addition and are not this title)."""
         at = self._run_app_test_with_mock_requests(mock_requests=MockRequests())
-        self.assertEqual(0, len(at.header))
+        self.assertNotIn("Inventory Dashboard", [header.value for header in at.header])
 
     def test_reservation_and_rental_gauge_cards_present(self):
         """The same BLC/PG reservation and rental gauge cards from the Home page should be shown."""
@@ -59,9 +60,11 @@ class TestInventoryDashboard(BaseTestCases.BaseUIPageTest):
 
     def test_inventory_chart_columns_weighted_by_chart_width_not_raw_count(self):
         """Column widths should be proportional to each chart's rendered width (one column per
-        location, wrapping every 10 of that location's devices), not raw device count -- the
-        fixtures (11 scooters, 10 wheelchairs) are deliberately close in count but both land in
-        the same 2-column total (neither location in either fixture exceeds 10 devices)."""
+        location, wrapping every _DASHBOARD_CHART_MAX_ROWS of that location's devices), not raw
+        device count -- the fixtures (11 scooters split 7 BLC/4 PG, 10 wheelchairs split 3 BLC/7 PG)
+        are deliberately close in overall count but each has exactly one location over
+        _DASHBOARD_CHART_MAX_ROWS (6): scooter's BLC (7) and wheelchair's PG (7) each wrap into a
+        second column, giving both device types the same 3-column total despite the close counts."""
         scooter_data = self._load_mock_data_from_json(device_type=DeviceType.SCOOTER, data_type="inventory")
         wheelchair_data = self._load_mock_data_from_json(device_type=DeviceType.WHEELCHAIR, data_type="inventory")
         self.assertEqual(11, len(scooter_data))
@@ -78,9 +81,9 @@ class TestInventoryDashboard(BaseTestCases.BaseUIPageTest):
                 if call.args and isinstance(call.args[0], list) and len(call.args[0]) == 2
             ]
             self.assertEqual(1, len(inventory_columns_calls))
-            # both fixtures split across BLC and PG with neither location over 10 devices, so both
-            # need exactly 1 column per location (2 total) despite the close overall counts
-            self.assertEqual([2, 2], inventory_columns_calls[0].args[0])
+            # scooter's BLC (7) and wheelchair's PG (7) each exceed _DASHBOARD_CHART_MAX_ROWS (6)
+            # and wrap into a second column, so both device types need 3 columns total
+            self.assertEqual([3, 3], inventory_columns_calls[0].args[0])
 
     def test_gauge_titles_use_a_larger_font_than_the_home_page(self):
         """The dashboard's gauge titles should use a larger font size than the Home page's default,
@@ -89,7 +92,7 @@ class TestInventoryDashboard(BaseTestCases.BaseUIPageTest):
         self.assertGreater(len(gauge_figs), 0, "At least one gauge chart should have rendered")
         for fig in gauge_figs:
             for trace in fig.data:
-                self.assertEqual(20, trace.title.font.size)
+                self.assertEqual(32, trace.title.font.size)
 
     def test_gauge_chart_height_is_increased_to_avoid_clipping(self):
         """The dashboard's gauge charts should be taller than the Home page's default, giving the
@@ -98,7 +101,7 @@ class TestInventoryDashboard(BaseTestCases.BaseUIPageTest):
         gauge_figs = self._get_mock_reservations_gauge_figs()
         self.assertGreater(len(gauge_figs), 0, "At least one gauge chart should have rendered")
         for fig in gauge_figs:
-            self.assertEqual(150, fig.layout.height)
+            self.assertEqual(160, fig.layout.height)
 
     def test_gauge_captions_use_a_larger_font_than_the_home_page(self):
         """The dashboard's reservation/rental captions should render at a larger font size than the
@@ -111,7 +114,7 @@ class TestInventoryDashboard(BaseTestCases.BaseUIPageTest):
         ]
         self.assertGreater(len(caption_markdowns), 0, "At least one reservation caption should have rendered")
         for value in caption_markdowns:
-            self.assertIn("font-size: 20px", value)
+            self.assertIn("font-size: 32px", value)
 
     def test_gauge_badge_tags_use_a_larger_font_than_the_home_page(self):
         """The dashboard's 'BLC/PG Reservations/Rentals' badge tags should render at a larger font
@@ -124,7 +127,7 @@ class TestInventoryDashboard(BaseTestCases.BaseUIPageTest):
             markdown.value for markdown in at.markdown if "stMarkdownBadge" in markdown.value
         ]
         self.assertEqual(1, len(badge_style_markdowns), "Exactly one badge font-size override should be injected")
-        self.assertIn("font-size: 20px !important", badge_style_markdowns[0])
+        self.assertIn("font-size: 36px !important", badge_style_markdowns[0])
 
     def test_legend_present(self):
         """The status legend chart should always be rendered as a Plotly chart."""
