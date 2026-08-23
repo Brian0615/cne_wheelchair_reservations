@@ -12,8 +12,3 @@ class TestNewRental(BaseTestCases.BaseUIPageTest):
         """Check that the default time in a new rental form is in the correct timezone"""
         at = self._run_app_test_with_mock_requests(mock_requests=MockRequests())
         self.assertIsNone(at.time_input[0].value)  # pylint: disable=no-member
-
-    def test_request_id_is_populated_after_page_load(self):
-        """Check that initialize_page generates and stores a request ID for tracing."""
-        at = self._run_app_test_with_mock_requests(mock_requests=MockRequests())
-        self.assertTrue(at.session_state["request_id"])

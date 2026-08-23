@@ -1,5 +1,4 @@
 import time
-import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -9,7 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.routers import chat_router, devices_router, rentals_router, reservations_router, settings_router
 from api.src.s3_service import S3Service
-from common.logger import initialize_logger, request_id_var
+from common.logger import initialize_logger
 
 logger = initialize_logger()
 
@@ -17,12 +16,10 @@ app = FastAPI()
 
 
 # pylint: disable=too-few-public-methods
-class RequestContextMiddleware(BaseHTTPMiddleware):
-    """Binds a request ID to the current context and logs each request's outcome and duration."""
+class AccessLogMiddleware(BaseHTTPMiddleware):
+    """Logs each request's outcome and duration."""
 
     async def dispatch(self, request: Request, call_next):
-        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
-        token = request_id_var.set(request_id)
         start_time = time.perf_counter()
         try:
             response = await call_next(request)
@@ -32,10 +29,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 extra={"method": request.method, "path": request.url.path},
             )
             raise
-        finally:
-            request_id_var.reset(token)
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
-        response.headers["X-Request-ID"] = request_id
         logger.info(
             "Request completed",
             extra={
@@ -48,7 +42,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         return response
 
 
-app.add_middleware(RequestContextMiddleware)
+app.add_middleware(AccessLogMiddleware)
 
 
 @app.exception_handler(Exception)

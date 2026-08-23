@@ -21,7 +21,7 @@ from common.data_models import (
     RentalSummary,
     Reservation,
 )
-from common.logger import initialize_logger, request_id_var, timeit
+from common.logger import initialize_logger, timeit
 from common.cne_dates import CNEDates
 
 logger = initialize_logger()
@@ -115,7 +115,6 @@ class DataService:
             params=params,
             json=json,
             timeout=timeout,
-            headers={"X-Request-ID": request_id_var.get()},
         )
         if response.status_code == 200:
             return response
@@ -459,7 +458,6 @@ class DataService:
             params={"rental_id": rental_id},
             files={"pdf_bytes": (f"{rental_id}.pdf", pdf_bytes, "application/pdf")},
             timeout=DEFAULT_TIMEOUT,
-            headers={"X-Request-ID": request_id_var.get()},
         )
         self.download_rental_form.clear()
         return response.status_code, response.json()
@@ -473,7 +471,6 @@ class DataService:
             f"http://{_self.api_host}:{_self.api_port}/forms/download_rental_form",
             params={"rental_id": rental_id},
             timeout=DEFAULT_TIMEOUT,
-            headers={"X-Request-ID": request_id_var.get()},
         )
         return response.status_code, response.content
 

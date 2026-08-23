@@ -43,4 +43,3 @@ class TestLogin(BaseTestCases.BaseUIPageTest):
 
         self.assertEqual(0, len(at.exception), "Login page should render without unhandled exceptions")
         self.assertEqual(1, len(at.button), "Login form submit button should be present")
-        self.assertTrue(at.session_state["request_id"], "A request ID should be generated even before login")

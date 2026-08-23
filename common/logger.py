@@ -1,17 +1,14 @@
 import contextvars
 import inspect
-import json
 import logging
 import os
 import time
-import traceback
 from functools import wraps
 from inspect import iscoroutinefunction
 from typing import Optional
 
-# Correlation identifiers propagated via contextvars so any logger anywhere in the call stack
-# automatically includes them, without threading them through every function signature.
-request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
+# The current user, propagated via a contextvar so any logger anywhere in the call stack
+# automatically includes it, without threading it through every function signature.
 username_var: contextvars.ContextVar[str] = contextvars.ContextVar("username", default="-")
 
 _RESERVED_LOG_RECORD_ATTRS = frozenset(vars(logging.makeLogRecord({})).keys())
@@ -19,32 +16,32 @@ _RESERVED_LOG_RECORD_ATTRS = frozenset(vars(logging.makeLogRecord({})).keys())
 
 # pylint: disable=too-few-public-methods
 class ContextFilter(logging.Filter):
-    """Injects the current request_id and username contextvars into every LogRecord."""
+    """Injects the current username contextvar into every LogRecord."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.request_id = request_id_var.get()
         record.username = username_var.get()
         return True
 
 
-class JsonFormatter(logging.Formatter):
-    """Formats log records as single-line JSON, suitable for CloudWatch Logs Insights."""
+class PlainFormatter(logging.Formatter):
+    """Formats log records as a single human-readable line, with any `extra` fields
+    appended as key=value pairs."""
 
     def format(self, record: logging.LogRecord) -> str:
-        payload = {
-            "timestamp": self.formatTime(record, "%Y-%m-%dT%H:%M:%S.%f%z"),
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-            "request_id": getattr(record, "request_id", "-"),
-            "username": getattr(record, "username", "-"),
+        line = (
+            f"{self.formatTime(record, '%Y-%m-%d %H:%M:%S')} "
+            f"{record.levelname} {record.name} [{getattr(record, 'username', '-')}]: "
+            f"{record.getMessage()}"
+        )
+        extras = {
+            key: value for key, value in record.__dict__.items()
+            if key not in _RESERVED_LOG_RECORD_ATTRS and key != "username"
         }
-        for key, value in record.__dict__.items():
-            if key not in _RESERVED_LOG_RECORD_ATTRS and key not in ("request_id", "username"):
-                payload[key] = value
+        if extras:
+            line += " " + " ".join(f"{key}={value}" for key, value in extras.items())
         if record.exc_info:
-            payload["exception"] = "".join(traceback.format_exception(*record.exc_info))
-        return json.dumps(payload, default=str)
+            line += "\n" + self.formatException(record.exc_info)
+        return line
 
 
 def _resolve_log_level(default: int = logging.DEBUG) -> int:
@@ -64,7 +61,7 @@ def initialize_logger(log_level: Optional[int] = None) -> logging.Logger:
         # Create a console handler
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logger.level)
-        console_handler.setFormatter(JsonFormatter())
+        console_handler.setFormatter(PlainFormatter())
         console_handler.addFilter(ContextFilter())
 
         # Add the handlers to the logger

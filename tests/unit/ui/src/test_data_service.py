@@ -37,7 +37,6 @@ class TestDataService(TestCase):
                 params={"cne_year": 1234},
                 json={"key_a": "a", "key_b": "b"},
                 timeout=100,
-                headers={"X-Request-ID": "-"},
             )
         with patch("requests.get", return_value=Mock(status_code=200, json=Mock(return_value={}))) as mock_get:
             self.data_service._make_request(
@@ -52,7 +51,6 @@ class TestDataService(TestCase):
                 params={"cne_year": 1234},
                 json={"a": "a", "b": "2023-10-01", "c": 1.0},
                 timeout=100,
-                headers={"X-Request-ID": "-"},
             )
 
 

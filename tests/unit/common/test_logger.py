@@ -1,11 +1,10 @@
 import asyncio
-import json
 import logging
 import time
 import unittest
 from unittest.mock import patch
 
-from common.logger import ContextFilter, JsonFormatter, initialize_logger, request_id_var, timeit, username_var
+from common.logger import ContextFilter, PlainFormatter, initialize_logger, timeit, username_var
 
 
 def _make_record(message: str = "hello", level: int = logging.INFO, **extra) -> logging.LogRecord:
@@ -28,56 +27,50 @@ class TestContextFilter(unittest.TestCase):
     """Test the ContextFilter class."""
 
     def tearDown(self):
-        request_id_var.set("-")
         username_var.set("-")
 
     def test_defaults_when_unset(self):
-        """Test that request_id and username default to '-' when unset."""
+        """Test that username defaults to '-' when unset."""
         record = _make_record()
         ContextFilter().filter(record)
-        self.assertEqual("-", record.request_id)
         self.assertEqual("-", record.username)
 
     def test_injects_context_values(self):
-        """Test that request_id and username are injected from the contextvars."""
-        request_id_var.set("req-123")
+        """Test that username is injected from the contextvar."""
         username_var.set("brian")
         record = _make_record()
         ContextFilter().filter(record)
-        self.assertEqual("req-123", record.request_id)
         self.assertEqual("brian", record.username)
 
 
-class TestJsonFormatter(unittest.TestCase):
-    """Test the JsonFormatter class."""
+class TestPlainFormatter(unittest.TestCase):
+    """Test the PlainFormatter class."""
 
-    def test_format_produces_expected_keys(self):
-        """Test that formatting produces valid JSON with the expected keys."""
-        record = _make_record(message="Something happened", request_id="req-1", username="brian")
-        payload = json.loads(JsonFormatter().format(record))
-        self.assertEqual("INFO", payload["level"])
-        self.assertEqual("test.logger", payload["logger"])
-        self.assertEqual("Something happened", payload["message"])
-        self.assertEqual("req-1", payload["request_id"])
-        self.assertEqual("brian", payload["username"])
-        self.assertIn("timestamp", payload)
+    def test_format_includes_expected_fields(self):
+        """Test that formatting produces a readable line with the expected fields."""
+        record = _make_record(message="Something happened", username="brian")
+        line = PlainFormatter().format(record)
+        self.assertIn("INFO", line)
+        self.assertIn("test.logger", line)
+        self.assertIn("Something happened", line)
+        self.assertIn("brian", line)
 
     def test_format_includes_extra_fields(self):
-        """Test that ad-hoc `extra` fields are included as real JSON keys."""
-        record = _make_record(request_id="-", username="-", duration_ms=12.34, rental_id="W0820001")
-        payload = json.loads(JsonFormatter().format(record))
-        self.assertEqual(12.34, payload["duration_ms"])
-        self.assertEqual("W0820001", payload["rental_id"])
+        """Test that ad-hoc `extra` fields are appended as key=value pairs."""
+        record = _make_record(username="-", duration_ms=12.34, rental_id="W0820001")
+        line = PlainFormatter().format(record)
+        self.assertIn("duration_ms=12.34", line)
+        self.assertIn("rental_id=W0820001", line)
 
     def test_format_includes_exception(self):
-        """Test that exception info is serialized into the payload."""
+        """Test that exception info is appended to the line."""
         try:
             raise ValueError("boom")
         except ValueError:
-            record = _make_record(request_id="-", username="-")
+            record = _make_record(username="-")
             record.exc_info = __import__("sys").exc_info()
-        payload = json.loads(JsonFormatter().format(record))
-        self.assertIn("ValueError: boom", payload["exception"])
+        line = PlainFormatter().format(record)
+        self.assertIn("ValueError: boom", line)
 
 
 class TestInitializeLogger(unittest.TestCase):
