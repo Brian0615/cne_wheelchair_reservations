@@ -96,6 +96,7 @@ def submit_complete_rental_form(completed_rental: dict):
 
     # complete rental
     data_service = DataService()
+    logger.info("Attempting to complete rental", extra={"rental_id": completed_rental.id})
     status_code, result = data_service.complete_rental(completed_rental)
     if status_code == 200:
         logger.info("Rental completed", extra={"rental_id": completed_rental.id})
@@ -133,6 +134,7 @@ def submit_new_rental_form(new_rental: dict):
 
     # try to add the new rental
     data_service = DataService()
+    logger.info("Attempting to create new rental", extra={"device_type": new_rental.device_type})
     status_code, add_result = data_service.add_new_rental(new_rental)
     if status_code == 200:
         logger.info("Inserted new rental", extra={"rental_id": add_result})
@@ -194,6 +196,14 @@ def change_rental_device(change_data: dict):
     change_data = ChangeDeviceInfo(**change_data)
 
     # change device
+    logger.info(
+        "Attempting to change rental device",
+        extra={
+            "rental_id": change_data.id,
+            "old_device_id": change_data.old_device_id,
+            "new_device_id": change_data.new_device_id,
+        },
+    )
     status_code, _ = DataService().change_rental_device(change_data)
     if status_code == 200:
         logger.info(

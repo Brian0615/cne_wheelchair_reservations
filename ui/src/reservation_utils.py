@@ -70,6 +70,7 @@ def submit_new_reservation_form(reservation: dict, is_waitlisted: bool):
             reservation["status"] = ReservationStatus.get_default_reservation_status(reservation["device_type"])
 
     reservation = NewReservation(**reservation)
+    logger.info("Attempting to create new reservation", extra={"device_type": reservation.device_type})
     status_code, result = DataService().add_new_reservation(reservation=reservation)
     if status_code == 200:
         logger.info("Inserted new reservation", extra={"reservation_id": result})
@@ -86,6 +87,7 @@ def submit_update_reservation_form(reservation: dict):
         datetime.combine(reservation["date"], reservation["reservation_time"])
     )
     reservation = Reservation(**reservation)
+    logger.info("Attempting to update reservation", extra={"reservation_id": reservation.id})
     status_code = DataService().update_reservation(reservation=reservation)
     if status_code == 200:
         logger.info("Updated reservation", extra={"reservation_id": reservation.id})
@@ -100,6 +102,10 @@ def submit_update_reservation_form(reservation: dict):
 def update_reservation_status(reservation: Reservation, status: ReservationStatus):
     """Update the reservation status."""
     reservation.status = status
+    logger.info(
+        "Attempting to update reservation status",
+        extra={"reservation_id": reservation.id, "status": status},
+    )
     status_code = DataService().update_reservation_status(reservation_id=reservation.id, status=status)
     if status_code == 200:
         logger.info(
